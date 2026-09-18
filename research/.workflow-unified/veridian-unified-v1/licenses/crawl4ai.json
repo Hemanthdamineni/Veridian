@@ -1,0 +1,21 @@
+{
+  "repo": "crawl4ai",
+  "status": "PASS",
+  "spdx": "Apache-2.0",
+  "osiApproved": true,
+  "evidenceFiles": [
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawl4ai/LICENSE",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawl4ai/pyproject.toml",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawl4ai/setup.py",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawl4ai/README.md",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawl4ai/README-first.md"
+  ],
+  "obligations": [
+    "Include the Apache-2.0 license text in redistributions (LICENSE file)",
+    "Preserve copyright, patent, trademark, and attribution notices from source",
+    "Include the custom attribution notice: \"This product includes software developed by UncleCode (https://x.com/unclecode) as part of the Crawl4AI project (https://github.com/unclecode/crawl4ai).\" in a prominent location (NOTICE file, README, About/Credits section, or CLI help output)",
+    "State changes made to files if modifications are distributed",
+    "Grant patent license per Section 3 of Apache-2.0"
+  ],
+  "rationale": "The repository is licensed under Apache License 2.0 (OSI-approved, permissive). The LICENSE file contains the full Apache-2.0 text plus an appended 'Attribution Requirement' section specifying a custom attribution notice to UncleCode/Crawl4AI. This attribution requirement is consistent with Apache-2.0 Section 4's allowance for additional attribution notices. The pyproject.toml (line 11) and setup.py (line 52) both declare license='Apache-2.0'. Both README files confirm Apache-2.0 licensing. No COPYING, NOTICE (separate), or other license files were found. The license is compatible with commercial use and proprietary distribution without copyleft obligations."
+}

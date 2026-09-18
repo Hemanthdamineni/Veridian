@@ -1,0 +1,35 @@
+{
+  "repo": "browser-harness-js",
+  "category": "frameworks",
+  "focus": "full-deep-analysis",
+  "summary": "Browser Harness JS is a minimalist Chrome DevTools Protocol (CDP) bridge exposing every CDP domain and command as typed JavaScript calls over a single persistent WebSocket. It uses codegen to produce a ~655KB TypeScript file from vendored `browser_protocol.json` and `js_protocol.json`, generating 56 domain namespaces and 652 typed method wrappers with no helper abstractions \u2014 no `click()`, no `goto()`, no `upload_file()`. The SDK ships a Bun-based HTTP REPL server that holds one persistent `Session` and a CLI that forwards JS snippets to it, making it a thin remote-control tool for an already-running Chrome. Verified from actual code: the `Session` class handles WebSocket transport, CDP message correlation (id-based promises), `Target.attachToTarget` with `flatten: true` for target routing, event subscriptions, and auto-detection of Chromium profile directories across macOS/Linux/Windows by reading `DevToolsActivePort` files.",
+  "maturityAssessment": {
+    "claimedMaturity": "Nowhere does the README claim stability or production readiness. The README is purely functional \u2014 it describes the tool but makes no maturity guarantees at all.",
+    "objectiveSignals": {
+      "stars": "Unknown (no store stars visible from local clone, only 13 commits)",
+      "lastCommit": "2026-04-20",
+      "commitCount": "13",
+      "maintainers": "1",
+      "issueActivity": "Unknown from local clone",
+      "releaseFrequency": ""
+    },
+    "contradictionFlags": "No false maturity claims detected. The 0.1.0 version is honest for a 13-commit single-author project built over 2 days. The README makes no production-readiness promises."
+  },
+  "findings": [
+    {
+      "capability": "core-capabilities",
+      "description": "1. Code-generated CDP bindings: 56 CDP domains (Page, DOM, Runtime, Network, Input, etc.) with 652 typed methods, fully JSDoc'd, generated from vendored protocol JSONs. 2. Persistent WebSocket connection to Chrome browser endpoint with target attachment via session.use(targetId) and automatic sessionId injection on domain-level calls. 3. OS-auto-detection of running Chromium-based browsers by scanning profile directories for DevToolsActivePort files \u2014 supports Chrome, Chromium, Edge, Brave, Arc, Vivaldi, Opera, Comet, Canary on macOS/Linux/Windows. 4. Long-lived HTTP REPL server (Bun.serve on 127.0.0.1:9876) that evaluates JS snippets against a singleton Session with state persistence across calls via globalThis. 5. Event subscription interface with one-shot event waiting with predicate and timeout support. 6. Thin utility helpers only for CDP gaps: listPageTargets (filters chrome:// URL protocols), resolveWsUrl, detectBrowsers. 7. CLI wrapper that auto-spawns the server and forwards snippets, plus status/start/stop/restart lifecycle commands.",
+      "sourceFiles": [],
+      "evidence": "1. Code-generated CDP bindings: 56 CDP domains (Page, DOM, Runtime, Network, Input, etc.) with 652 typed methods, fully JSDoc'd, generated from vendored protocol JSONs. 2. Persistent WebSocket connect",
+      "confidence": 0.7
+    }
+  ],
+  "apiSurface": "Users call the browser-harness-js CLI with JS snippets: `browser-harness-js await session.connect()` or multi-line heredocs. Globals available in snippets: session (persistent Session with all domains mounted), listPageTargets(), detectBrowsers(), resolveWsUrl(opts), CDP (type namespaces). Output is raw \u2014 strings print as bare text, objects as compact JSON, errors to stderr with exit code 1. Server endpoints are /eval (POST raw JS), /health (GET JSON status), /quit (POST graceful shutdown). The SDK can also be imported directly: `import {Session} from ./session.ts` for programmatic use in Bun/TypeScript code.",
+  "integrationPoints": "The REPL server /eval endpoint provides a clean HTTP integration surface. A pipeline orchestrator could spawn the server, connect to Chrome via session.connect, then post CDP commands over HTTP. Could work alongside Playwright \u2014 use Playwright for page lifecycle and browser-harness-js for CDP calls Playwright does not expose. The target-attachment model allows tab switching, useful for managing multiple product pages. Event subscription with predicates fits a queue/stream architecture \u2014 session.waitFor for Network.responseReceived could intercept API responses for data extraction. However, the single-Session-per-process model means each scraper instance needs its own REPL or the SDK must be imported as a library inside a multi-worker orchestrator.",
+  "strengthsForVeridian": "1. Zero abstraction over CDP \u2014 Veridian data teams have total control over every parameter and no helpers silently choose defaults that break long-running headless scraping. 2. Codegen from protocol JSON means new Chrome CDP methods arrive as soon as the JSON updates, with no framework release lag. 3. Event subscription patterns are ideal for network-response interception for direct API data extraction. 4. The 652-method surface means Veridian can call any CDP command directly, not just the curated subset Playwright exposes. 5. Clean, well-structured Session source code is readable and forkable \u2014 session.ts is 380 lines and understandable in one sitting.",
+  "weaknessesForVeridian": "1. No browser launch logic, no process lifecycle, no sandbox, no stealth mode. You must bring your own Chrome. A Veridian pipeline manages browser processes externally. 2. Bunny-only runtime: REPL and SDK import Bun APIs (Bun.file, Bun.serve, Bun.sleep, Bun.write). Veridian scraper is Python-based \u2014 this adds a Node ecosystem dependency chain using Bun. 3. Single-maintainer project with low size: 13 commits, 1 contributor, 2 days of dev. Roadmap risk is extreme. 4. No anti-detection and headless profile \u2014 competitors have Playwright and stealth plugins. You must construct your own fingerprint detection logic against CDP raw. 5. Localhost-only HTTP server with zero auth: never designed for production pipelines or scale \u2014 you'd import Session directly as a library, not the CLI. 6. No error recovery, no retry, no graceful degradation on CDP errors \u2014 raw stack traces on failure. 7. Codegen internals must be deeply understood for custom type changes.",
+  "verdict": "Weak Fit",
+  "limitations": [
+    "Seeded from prior analysis; maturity signals may be approximate"
+  ]
+}

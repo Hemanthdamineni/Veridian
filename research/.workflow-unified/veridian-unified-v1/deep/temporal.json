@@ -1,0 +1,35 @@
+{
+  "repo": "temporal",
+  "category": "queue",
+  "focus": "full-deep-analysis",
+  "summary": "Temporal is a distributed, durable orchestration engine for executing long-running business logic. The TypeScript SDK provides a full framework for authoring workflows and activities with deterministic replay guarantees. I verified the core architecture: a Rust core bridge (via Node-API native modules) handles persistence and task queue polling, while TypeScript workflows run in V8 isolates (worker_threads) for sandboxing. Workers poll for workflow/activity/Nexus tasks and execute them with full observability, interceptors, and built-in retry/heartbeat/cancellation semantics. The monorepo contains 15+ packages including client, worker, workflow, activity, testing, and Nexus (service-to-service) modules.",
+  "maturityAssessment": {
+    "claimedMaturity": "Production-ready orchestration platform used by major companies (Netflix, Snap, Coinbase, etc.). Official TypeScript SDK with semantic versioning at 1.21.1.",
+    "objectiveSignals": {
+      "stars": "Not in this clone (upstream temporalio/sdk-typescript has ~3.5k stars)",
+      "lastCommit": "2026-07-31 (3 days ago)",
+      "commitCount": "1,466 commits",
+      "maintainers": "10+ active contributors (Roey Berman 665, James Watkins-Harvey 219, Loren 134+18, Spencer Judge 74, Chris Olszewski 59, Thomas Hardy 57, plus 10+ others)",
+      "issueActivity": "60 commits in last month, active PR/issue flow",
+      "releaseFrequency": "Monthly releases (1.21.1 July 2026, 1.21.0 June 2026)"
+    },
+    "contradictionFlags": "None. This is genuinely production-grade infrastructure with a large team, active maintenance, and real-world adoption at scale."
+  },
+  "findings": [
+    {
+      "capability": "core-capabilities",
+      "description": "- Workflow execution with deterministic replay (event sourcing)\n- Activity execution with heartbeating, retries (exponential backoff), cancellation propagation\n- Worker task queue polling (workflow, activity, Nexus) with concurrency control\n- Workflow updates, signals, queries for live interaction\n- Child workflows, continue-as-new, cron schedules\n- Data conversion with pluggable payload converters + external storage (extstore)\n- Interceptors for cross-cutting concerns (tracing, auth, logging)\n- Built-in testing framework with in-memory server and time-skipping\n- Worker versioning/deployment management (build IDs, deployment versions)\n- Metrics (Prometheus), structured logging, OpenTelemetry integration\n- Replay API for debugging nondeterminism\n- Nexus operations for service-to-service RPC",
+      "sourceFiles": [],
+      "evidence": "- Workflow execution with deterministic replay (event sourcing)\n- Activity execution with heartbeating, retries (exponential backoff), cancellation propagation\n- Worker task queue polling (workflow, a",
+      "confidence": 0.7
+    }
+  ],
+  "apiSurface": "Primary entry points:\n- `new Client({ namespace, address })` \u2014 high-level client with .workflow, .activity, .schedule, .taskQueue, .nexus sub-clients\n- `Worker.create({ taskQueue, workflowsPath, activities })` \u2014 runs workflows/activities; .run() starts polling\n- Workflow authoring: `proxyActivities`, `defineSignal`, `defineQuery`, `defineUpdate`, `setHandler`, `sleep`, `condition`\n- Activity authoring: plain async functions with `ActivityInfo` context via `@temporalio/activity`\n- Testing: `TestWorkflowEnvironment.create()`, `env.client`, `env.worker`\n- Replay: `Worker.runReplayHistory()`, `Worker.runReplayHistories()`",
+  "integrationPoints": "For a Playwright-based scraping pipeline: \n- Each scraping job = a Workflow execution (durable, retryable, visible)\n- Each page scrape / extraction = an Activity (heartbeats for long pages, cancellable)\n- Cron Schedules for periodic scraping runs\n- Workflow updates for dynamic config changes mid-run\n- Child workflows for parallel sub-tasks (e.g., scrape multiple sites)\n- Activity timeouts/retries handle flaky sites automatically\n- Nexus could expose scraping as a service to other systems\n- Built-in visibility replaces custom queue monitoring",
+  "strengthsForVeridian": "- True durability: workflows survive process crashes, server restarts\n- Excellent observability: full history, stack traces, metrics, replay debugging\n- Type-safe workflow/activity definitions with IDE support\n- Battle-tested at massive scale (exabytes of history)\n- Built-in testing framework with time-skipping and deterministic replay\n- Handles complex orchestration patterns (sagas, retries, compensation) out of the box\n- Activity heartbeating perfect for long-running Playwright navigations",
+  "weaknessesForVeridian": "- Heavy infrastructure: requires Temporal server/cluster (self-hosted or Temporal Cloud)\n- Native dependencies (Rust core) complicate deployment (no Bun/Deno/edge for workers)\n- Steep learning curve: event sourcing, determinism constraints, replay semantics\n- Overkill for simple scrape-and-store pipelines\n- Worker must run on Node.js 20/22/24 (no browser, no serverless functions)\n- Adds ~10MB native binary + Rust toolchain to build pipeline\n- Operational complexity: namespace management, worker versioning, history growth",
+  "verdict": "Strong Candidate",
+  "limitations": [
+    "Seeded from prior analysis; maturity signals may be approximate"
+  ]
+}

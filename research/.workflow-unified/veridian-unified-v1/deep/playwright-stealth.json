@@ -1,0 +1,35 @@
+{
+  "repo": "playwright-stealth",
+  "category": "stealth",
+  "focus": "full-deep-analysis",
+  "summary": "playwright-stealth is a thin Python wrapper that ports puppeteer-extra-plugin-stealth's JavaScript evasion scripts to Playwright Python. It injects 17+ stealth scripts via Playwright's `add_init_script()` API to mask automation fingerprints \u2014 hiding `navigator.webdriver`, faking `navigator.plugins`/`mimeTypes`, spoofing WebGL vendor/renderer, mocking `chrome.runtime`/`chrome.loadtimes`/`chrome.csi`/`chrome.app`, patching `navigator.permissions`, `navigator.languages`, `navigator.platform`, `navigator.hardwareConcurrency`, media codecs, iframe contentWindow, window.outerdimensions, and hairline detection. The Python layer (stealth.py, ~150 lines) is merely a config dataclass and script loader; all real evasion logic lives in the JS files under `playwright_stealth/js/`. The library uses Proxy-based interception with error-stack sanitization to avoid detection of the Proxy wrappers themselves. It's essentially a direct port of the puppeteer-extra stealth plugin with minimal Playwright-specific adaptation.",
+  "maturityAssessment": {
+    "claimedMaturity": "README describes it as 'Helper scripts for avoiding bot detection' with usage example; no explicit production-ready claims. Version 0.3.0 signals early/alpha stage.",
+    "objectiveSignals": {
+      "stars": "Unknown (local clone, no GitHub stars visible)",
+      "lastCommit": "Merge PR #1 (fix-resourcelib-read-text) \u2014 appears recent but exact date unavailable",
+      "commitCount": "13 total commits",
+      "maintainers": "1 (Bernardas Ali\u0161auskas)",
+      "issueActivity": "No issues visible in local clone; original puppeteer-extra-plugin-stealth is actively maintained",
+      "releaseFrequency": "Very low \u2014 version 0.3.0 with only 13 commits over unknown timeframe"
+    },
+    "contradictionFlags": "None \u2014 version 0.3.0 and minimal commit history honestly reflect early-stage library. No 'production-ready' claims contradicted by evidence."
+  },
+  "findings": [
+    {
+      "capability": "core-capabilities",
+      "description": "- navigator.webdriver hiding (delete from prototype or return undefined)\n- navigator.plugins & mimeTypes simulation with Chrome-typical entries (PDF viewer, Native Client)\n- navigator.vendor, platform, languages, hardwareConcurrency spoofing\n- navigator.permissions mock (returns 'granted' for notifications)\n- navigator.userAgent override capability\n- WebGL vendor/renderer spoofing (Intel Iris OpenGL Engine default)\n- chrome.runtime mock with sendMessage/connect and realistic error signatures\n- chrome.loadtimes, chrome.csi, chrome.app mocks\n- iframe.contentWindow property patching\n- window.outerWidth/outerHeight/devicePixelRatio spoofing\n- Hairline detection evasion (canvas fingerprinting)\n- Media codecs simulation (H.264, VP8, VP9, etc.)\n- Proxy error-stack sanitization to hide instrumentation\n- toString() proxy patching to show native code strings\n- Configurable per-script enable/disable via StealthConfig dataclass\n- Sync (stealth_sync) and async (stealth_async) APIs",
+      "sourceFiles": [],
+      "evidence": "- navigator.webdriver hiding (delete from prototype or return undefined)\n- navigator.plugins & mimeTypes simulation with Chrome-typical entries (PDF viewer, Native Client)\n- navigator.vendor, platform",
+      "confidence": 0.7
+    }
+  ],
+  "apiSurface": "- `stealth_async(page: AsyncPage, config: StealthConfig = None) -> None` \u2014 main async entry point\n- `stealth_sync(page: SyncPage, config: StealthConfig = None) -> None` \u2014 sync entry point\n- `StealthConfig` dataclass with 20+ boolean/option fields controlling each evasion\n- Usage: `await stealth_async(page)` or `await stealth_async(page, StealthConfig(webgl_vendor=False, ...))`\n- All evasions enabled by default; disable via `StealthConfig(webdrive=False, ...)`\n- Custom scripts injectable by subclassing StealthConfig and overriding `enabled_scripts` property",
+  "integrationPoints": "- **Playwright pipeline**: Call `await stealth_async(page)` immediately after `browser.new_page()` and before any `page.goto()`\n- **Queue integration**: Stateless \u2014 no persistent state; safe to reuse config across pages/workers\n- **Search/matching**: No built-in detection testing; would need external verification (bot.sannysoft.com, pixelscan.net, etc.)\n- **Deterministic ETL**: Works well \u2014 same config yields same fingerprint; no randomness unless user adds it\n- **Headless/headful**: Scripts auto-detect headful mode and skip (won't break real Chrome)\n- **Multi-browser**: Scripts target Chromium; Firefox/WebKit support untested (some evasions Chrome-specific like chrome.runtime)\n- **Resource loading**: Uses importlib.resources \u2014 works in packaged/installed distributions",
+  "strengthsForVeridian": "- **Minimal, auditable surface** \u2014 ~150 lines Python + readable JS; easy to verify/extend\n- **Direct puppeteer-extra port** \u2014 inherits battle-tested evasions from actively maintained JS ecosystem\n- **Playwright-native** \u2014 uses `add_init_script()` correctly; no CDP hacks or brittle workarounds\n- **Configurable per-evasion** \u2014 disable specific scripts that break target sites\n- **Sync + async** \u2014 supports both Playwright APIs\n- **No external deps** \u2014 only Playwright; no selenium, no browser binary management\n- **Extensible generator pattern** \u2014 easy to inject custom scripts for site-specific needs\n- **Deterministic** \u2014 same config = same fingerprint; good for reproducible scraping",
+  "weaknessesForVeridian": "- **Chromium-centric** \u2014 many evasions (chrome.*, webgl vendor) are Chrome-specific; Firefox/WebKit may leak\n- **Single maintainer, low activity** \u2014 13 commits, v0.3.0, no recent releases visible; bus factor = 1\n- **No auto-update of fingerprints** \u2014 static Chrome versions in JS; real Chrome updates may change detection vectors\n- **No built-in verification** \u2014 must test against external bot detection sites manually\n- **Missing modern evasions** \u2014 no Canvas/WebGL noise, no AudioContext fingerprinting, no Battery API, no WebRTC IP leak protection\n- **Hardcoded defaults** \u2014 Intel GPU, Google Inc vendor, en-US languages; may not match target locale/hardware\n- **No stealth for `navigator.webdriver` in Firefox** \u2014 script only handles Chrome's webdriver property\n- **utils.js uses `eval()`** \u2014 for function materialization; may trip CSP in locked-down environments\n- **No TypeScript types** \u2014 Python-only; JS scripts lack type definitions for IDE support",
+  "verdict": "Viable Option",
+  "limitations": [
+    "Seeded from prior analysis; maturity signals may be approximate"
+  ]
+}

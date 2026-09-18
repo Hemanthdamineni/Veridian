@@ -1,0 +1,38 @@
+{
+  "repo": "extruct",
+  "category": "jsonld-extraction",
+  "heritage": true,
+  "heritageBasis": "declared_prior",
+  "tier": "A",
+  "relevanceScore": 0.95,
+  "sourceFileCount": 25,
+  "directoryCount": 29,
+  "hasArchitectureDocs": false,
+  "hasTests": true,
+  "keyFiles": [
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/parsing/extruct/extruct/_extruct.py",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/parsing/extruct/extruct/jsonld.py",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/parsing/extruct/extruct/w3cmicrodata.py",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/parsing/extruct/extruct/rdfa.py",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/parsing/extruct/extruct/opengraph.py",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/parsing/extruct/extruct/uniform.py",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/parsing/extruct/extruct/dublincore.py",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/parsing/extruct/extruct/microformat.py"
+  ],
+  "affectedConcerns": [
+    "jsonld-extraction"
+  ],
+  "rationale": "extruct provides direct multi-format embedded metadata parsing (JSON-LD, Microdata, RDFa, OpenGraph, Microformats, Dublin Core) from HTML markup into unified Schema.org-compatible dictionaries. It is highly relevant to extracting structured e-commerce product and laptop specifications from web pages. The codebase is compact (~1,304 LOC across 13 source files) and mature with comprehensive test suites.",
+  "limitations": [
+    "Does not perform DOM selection or browser rendering; requires raw HTML strings/bytes as input.",
+    "Relies on external parsers (mf2py, pyRDFa3, rdflib, jstyleson) for non-JSONLD syntaxes.",
+    "No built-in LLM integration or self-healing capability."
+  ],
+  "evidencePaths": [
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/parsing/extruct/extruct/_extruct.py",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/parsing/extruct/extruct/jsonld.py",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/parsing/extruct/extruct/w3cmicrodata.py",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/parsing/extruct/extruct/uniform.py",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/parsing/extruct/README.rst"
+  ]
+}

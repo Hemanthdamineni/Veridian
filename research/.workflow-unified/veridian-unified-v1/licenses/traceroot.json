@@ -1,0 +1,20 @@
+{
+  "repo": "traceroot",
+  "status": "REVIEW",
+  "spdx": "Apache-2.0",
+  "osiApproved": true,
+  "evidenceFiles": [
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/observability/traceroot/LICENSE",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/observability/traceroot/ee/LICENSE",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/observability/traceroot/pyproject.toml"
+  ],
+  "obligations": [
+    "Non-ee content is Apache 2.0: must retain copyright notice, license copy, and modification notices on redistribution",
+    "ee/ directories are TraceRoot Enterprise Edition — production use requires a valid Enterprise license key and compliance with TraceRoot Terms of Service (https://traceroot.ai/terms)",
+    "ee/ directories may be copied and modified for development/testing without a license key, but any production deployment requires a paid Enterprise license",
+    "Third-party components retain their original licenses (must be individually verified for compatibility)",
+    "All patches/modifications to ee/ code are owned by TraceRoot AI, Inc. — contributor assignment of rights to those patches",
+    "Apache 2.0 patent license grant terminates if patent litigation is filed against TraceRoot AI, Inc."
+  ],
+  "rationale": "REVIEW status assigned because the repository uses a dual-license model. The root LICENSE file (lines 1-14) declares that all content outside ee/ directories is Apache 2.0 (OSI-approved, permissive), but the TraceRoot Enterprise License in ee/LICENSE (the 'Enterprise License') imposes significant restrictions: no production use without a valid paid license key, no redistribution or sublicensing of the Software, and assignment of all modification rights to TraceRoot AI, Inc. The four ee/ directories identified (ee/, frontend/packages/core/src/ee/, frontend/ui/src/ee/, frontend/worker/src/ee/) contain code that is not open-source under any OSI-approved license. This creates a codebase where some components are permissively licensed and others are proprietary/restricted. Veridian would need to: (1) strictly separate ee/ content from any Veridian distribution, (2) ensure no Veridian component depends on or incorporates ee/ code at build or runtime, and (3) individually verify third-party component licenses. The Apache 2.0 portion alone would be PASS, but the intertwined proprietary ee/ code requires legal review to confirm that Veridian's use (including any dynamic linking, embedding, or derivative work) does not trigger the Enterprise License restrictions."
+}

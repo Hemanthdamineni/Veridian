@@ -1,0 +1,427 @@
+{
+  "repositoryCoverage": [
+    {
+      "repo": "crawling/apify-sdk-js",
+      "architectureStatus": "missing",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Cache shows 406 artifacts but scout confirms this is a platform SDK (Actor lifecycle, proxy config, storage) — crawler engines moved to Crawlee. No architecture docs (hasArchitectureDocs=false). Deep analysis exists. Not a pipeline component for any concern beyond Apify-bound proxy tiering."
+    },
+    {
+      "repo": "crawling/colly",
+      "architectureStatus": "missing",
+      "deepStatus": "missing",
+      "performanceStatus": "missing",
+      "rationale": "Scout confirms Go HTTP crawler with queue, stealth (UA/proxy), rate limiting. No architecture docs, no deep analysis artifact in cache. Source in .references not fully crawled. Tier B but gaps in deep/arch evidence."
+    },
+    {
+      "repo": "crawling/crawl4ai",
+      "architectureStatus": "complete",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier S, hasArchitectureDocs=true, 472 files, 7/8 concerns. Deep analysis exists (deep/crawl4ai.json). Architecture docs present. No explicit performance benchmarks in scout or cache artifacts."
+    },
+    {
+      "repo": "crawling/crawlee",
+      "architectureStatus": "complete",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier S, hasArchitectureDocs=true (.claude/CLAUDE.md shows package hierarchy), 192 files. Deep analysis exists. Covers browser-automation, stealth, queue at S-tier. No performance data."
+    },
+    {
+      "repo": "crawling/firecrawl",
+      "architectureStatus": "partial",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier A, hasArchitectureDocs=true (CLAUDE.md, ENGINE_FORCING.md), 773 files. Deep analysis exists. Architecture partial — no formal ADRs, only operational docs. Covers 5 concerns."
+    },
+    {
+      "repo": "crawling/scrapy",
+      "architectureStatus": "complete",
+      "deepStatus": "missing",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier S, hasArchitectureDocs=true (docs/topics/architecture.rst), 175 files. No deep analysis artifact in cache. Covers queue, script-gen(partial), self-healing(indirect), stealth(limited)."
+    },
+    {
+      "repo": "docs/awesome-ai-agents",
+      "architectureStatus": "missing",
+      "deepStatus": "missing",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier D, curated list only. 8 files, no code, no tests, no architecture. Deep analysis exists but repo is not a pipeline component. affectedConcerns empty."
+    },
+    {
+      "repo": "docs/awesome-browser-automation",
+      "architectureStatus": "missing",
+      "deepStatus": "missing",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier D, curated list only. 3 files, no code. Deep analysis exists but repo is not a pipeline component."
+    },
+    {
+      "repo": "docs/awesome-mcp",
+      "architectureStatus": "missing",
+      "deepStatus": "missing",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier D, curated list only. 0 source files, 1 README. Deep analysis exists but repo is not a pipeline component."
+    },
+    {
+      "repo": "docs/awesome-playwright-official",
+      "architectureStatus": "missing",
+      "deepStatus": "missing",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier D, curated list only. 1 source file. Deep analysis exists but repo is not a pipeline component."
+    },
+    {
+      "repo": "docs/awesome-web-scraping",
+      "architectureStatus": "missing",
+      "deepStatus": "missing",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier C, curated index only. 14 markdown files, no executable code. Deep analysis exists but repo is not a pipeline component."
+    },
+    {
+      "repo": "frameworks/browser-harness",
+      "architectureStatus": "partial",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier B, hasArchitectureDocs=true (interaction-skills, SKILL.md), 11 modules. Deep analysis exists. Covers browser-automation, stealth only. No architecture for pipeline integration."
+    },
+    {
+      "repo": "frameworks/browser-harness-js",
+      "architectureStatus": "missing",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier B, hasArchitectureDocs=false, no tests, no CI. Deep analysis exists. Thin CDP bridge only; no pipeline integration architecture."
+    },
+    {
+      "repo": "frameworks/browser-use",
+      "architectureStatus": "complete",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier A, hasArchitectureDocs=true (CLAUDE.md), 167 files. Deep analysis exists. Covers 6/8 concerns. Architecture well-documented for agent framework."
+    },
+    {
+      "repo": "frameworks/cdp-use",
+      "architectureStatus": "missing",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier A, hasArchitectureDocs=false, no tests. Deep analysis exists. Low-level protocol binding only; no pipeline architecture."
+    },
+    {
+      "repo": "frameworks/playwright",
+      "architectureStatus": "complete",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier S, hasArchitectureDocs=true, 3291 files. Deep analysis exists. Comprehensive architecture (protocol.yml, dispatcher, MCP layer). Core browser-automation engine."
+    },
+    {
+      "repo": "frameworks/playwright-mcp",
+      "architectureStatus": "missing",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier B, hasArchitectureDocs=false. Deep analysis exists. Thin distribution shim — actual implementation upstream in Playwright monorepo. No local architecture."
+    },
+    {
+      "repo": "frameworks/stagehand",
+      "architectureStatus": "partial",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier A, hasArchitectureDocs=false, 916 files. Deep analysis exists. Covers browser-automation primarily. No formal architecture docs; architecture inferred from code structure."
+    },
+    {
+      "repo": "frameworks/stagehand-agent",
+      "architectureStatus": "missing",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier D, hasArchitectureDocs=false, no tests, 7 files. Deep analysis exists. Thin CLI demo only; not a pipeline component."
+    },
+    {
+      "repo": "frameworks/stagehand-python",
+      "architectureStatus": "missing",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier B, hasArchitectureDocs=false. Deep analysis exists. Generated SDK for hosted service; no standalone architecture for pipeline integration."
+    },
+    {
+      "repo": "frameworks/workflow-use",
+      "architectureStatus": "missing",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier B, hasArchitectureDocs=false, early development. Deep analysis exists. No formal architecture docs; README warns not production-ready."
+    },
+    {
+      "repo": "healing/auto-harness",
+      "architectureStatus": "partial",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier C, hasArchitectureDocs=false. Deep analysis exists. Not a scraping self-healer — benchmark harness with regression gate pattern (analogical relevance only)."
+    },
+    {
+      "repo": "healing/autoheal-locator-python",
+      "architectureStatus": "complete",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier S, hasArchitectureDocs=true (AI_PROVIDERS_IMPLEMENTATION_PLAN.md + docs/), 76 files. Deep analysis exists. S-tier self-healing with layered interfaces, multi-provider AI, cache backends, resilience."
+    },
+    {
+      "repo": "healing/healenium",
+      "architectureStatus": "missing",
+      "deepStatus": "missing",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier B, deployment configs only (Docker Compose, shell scripts). No source code, no tests, no architecture docs beyond README. No deep analysis artifact."
+    },
+    {
+      "repo": "healing/healing-agent",
+      "architectureStatus": "missing",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier C, hasArchitectureDocs=false. Deep analysis exists. General code healing (AST rewrite), not selector/DOM healing. Not scraping-specific."
+    },
+    {
+      "repo": "healing/playwright-healer",
+      "architectureStatus": "partial",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier B, hasArchitectureDocs=false. Deep analysis exists. Java Spring Boot backend for healing persistence only; tree-comparing delegated to external dep. No selector healing logic."
+    },
+    {
+      "repo": "healing/playwright-self-healing",
+      "architectureStatus": "complete",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier B, hasArchitectureDocs=false but code is well-structured (SOLID, interfaces). Deep analysis exists. Complete offline deterministic engine with 6-signal weighted heuristic, 35 unit tests + 3 e2e. TypeScript S-tier candidate for self-healing."
+    },
+    {
+      "repo": "healing/self-healer",
+      "architectureStatus": "missing",
+      "deepStatus": "missing",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier D, deployment configs only (fork of Healenium deployment). No source code, no tests, no architecture docs. No deep analysis artifact."
+    },
+    {
+      "repo": "matching/rapidfuzz",
+      "architectureStatus": "missing",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier S, hasArchitectureDocs=false. Deep analysis exists. Premier fuzzy matching library (C++/Cython, SIMD). Architecture inferred from build system and headers only."
+    },
+    {
+      "repo": "observability/traceroot",
+      "architectureStatus": "complete",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier D, relevanceScore 0.0. Deep analysis exists. Complete architecture for AI agent observability (ClickHouse, Celery, FastAPI, Next.js) but zero relevance to any scraping pipeline concern."
+    },
+    {
+      "repo": "parsing/cheerio",
+      "architectureStatus": "complete",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier S, hasArchitectureDocs=true (website docs, THREAT_MODEL.md), 50 files. Deep analysis exists. jQuery-compatible parser with $.extract() for structured data. JSON-LD requires manual selectors."
+    },
+    {
+      "repo": "parsing/extruct",
+      "architectureStatus": "missing",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier B, hasArchitectureDocs=false, 14 files. Deep analysis exists. Dedicated metadata extraction (JSON-LD, microdata, RDFa, OpenGraph) but no architecture docs, narrow scope."
+    },
+    {
+      "repo": "parsing/parse5",
+      "architectureStatus": "missing",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier A, hasArchitectureDocs=false, 52 files. Deep analysis exists. WHATWG-compliant parser/serializer with streaming. No architecture docs; JSON-LD needs post-processing."
+    },
+    {
+      "repo": "parsing/readability",
+      "architectureStatus": "missing",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier B, hasArchitectureDocs=false, 417 files. Deep analysis exists. Article extractor with limited JSON-LD (Schema.org Article only) and single _textSimilarity. Not a pipeline component."
+    },
+    {
+      "repo": "queue/bullmq",
+      "architectureStatus": "complete",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier S, hasArchitectureDocs=true (docs/gitbook/guide/architecture.md), 104 files. Deep analysis exists. Mature Redis queue with Lua atomic ops, flows, scheduling, rate limiting, telemetry."
+    },
+    {
+      "repo": "queue/temporal",
+      "architectureStatus": "complete",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier S, hasArchitectureDocs=true (data-converter.md, protobuf-libraries.md), 525 files. Deep analysis exists. Durable execution platform with workflow orchestration, scheduling, interceptors."
+    },
+    {
+      "repo": "search/meilisearch",
+      "architectureStatus": "partial",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier S, hasArchitectureDocs=false (only operational docs). Deep analysis exists. 706 files, 23 crates. Architecture inferred from crate boundaries. No formal ADRs."
+    },
+    {
+      "repo": "search/typesense",
+      "architectureStatus": "complete",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier B, hasArchitectureDocs=true (DESIGN.md), 315 files. Deep analysis exists. DESIGN.md documents ART index, Raft HA, tokenization, ranking. GPLv3 licensing concern."
+    },
+    {
+      "repo": "stealth/XDriver",
+      "architectureStatus": "missing",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier C, hasArchitectureDocs=false, no tests, 9 files. Deep analysis exists. Thin patcher tool replacing Playwright driver; bundled JS is third-party fork. Not composable."
+    },
+    {
+      "repo": "stealth/nodriver",
+      "architectureStatus": "partial",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier B, hasArchitectureDocs=true (Sphinx RST docs), 158 files. Deep analysis exists. Undetected-Chromedriver successor, pure-Python CDP. No test suite (tox.ini commented). AGPL-3.0."
+    },
+    {
+      "repo": "stealth/playwright-stealth",
+      "architectureStatus": "missing",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier B, hasArchitectureDocs=false, 21 files. Deep analysis exists. Thin Python wrapper around 18+ JS evasion scripts from puppeteer-extra. Single test, GPL-3.0."
+    },
+    {
+      "repo": "stealth/proxy-chain",
+      "architectureStatus": "missing",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier B, hasArchitectureDocs=false, 39 files. Deep analysis exists. Proxy infrastructure (HTTP/SOCKS chaining, TLS, custom responses). No architecture docs; essential stealth infra but not a pipeline component."
+    },
+    {
+      "repo": "stealth/puppeteer-extra",
+      "architectureStatus": "partial",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier A, hasArchitectureDocs=false, 159 files. Deep analysis exists. Modular plugin framework with stealth plugin (16 evasions), proxy-router, extract-stealth-evasions. Architecture inferred from plugin base class. Maintenance uncertain (last commits 2023)."
+    },
+    {
+      "repo": "stealth/rebrowser-playwright",
+      "architectureStatus": "missing",
+      "deepStatus": "complete",
+      "performanceStatus": "missing",
+      "rationale": "Scout: Tier B, hasArchitectureDocs=false, no tests. Deep analysis exists. Thin wrapper; stealth patches in separate rebrowser-playwright-core (not in this repo). No architecture here."
+    }
+  ],
+  "deepTargets": [
+    {
+      "repo": "crawling/colly",
+      "focus": "Verify Go HTTP crawler implementation depth for queue (queue/queue.go), stealth (random_user_agent.go, proxy/proxy.go), and rate limiting (http_backend.go LimitRule). Confirm no JSON-LD, browser automation, self-healing, fuzzy matching, or fulltext search.",
+      "reason": "Scout shows Tier B with 44 source files and key implementations. Cache has only 6 JSON/MD artifacts (low). Need deep analysis to confirm production readiness and exact capability boundaries for pipeline integration."
+    },
+    {
+      "repo": "crawling/scrapy",
+      "focus": "Validate architecture docs (docs/topics/architecture.rst, components.rst), scheduler priority queues, dupefilter, downloader middleware chain, and spider middleware. Confirm absence of JSON-LD extraction, browser automation, stealth beyond HTTP middleware, fuzzy matching, fulltext search.",
+      "reason": "Tier S with declared architecture docs but no deep analysis artifact in cache. Critical foundation for any crawling pipeline — must verify implementation depth matches reputation."
+    },
+    {
+      "repo": "frameworks/browser-harness",
+      "focus": "Confirm daemon architecture (src/browser_harness/daemon.py), IPC protocol, domain skills (109 dirs), and interaction skills. Verify stealth is only inherited from user Chrome profile (no active anti-bot).",
+      "reason": "Tier B with architecture docs claimed but deep analysis needed to validate if the 109 domain skills represent reusable patterns or site-specific scripts. Critical for browser-automation concern."
+    },
+    {
+      "repo": "frameworks/cdp-use",
+      "focus": "Validate auto-generation pipeline (generator/), 50+ CDP domain coverage, BrowserUse custom domain, and type safety. Confirm no higher-level automation abstractions.",
+      "reason": "Tier A low-level binding with 344 files but no tests, no architecture docs. Deep analysis needed to confirm generation completeness and suitability as CDP foundation for pipeline."
+    },
+    {
+      "repo": "frameworks/stagehand",
+      "focus": "Validate V3 core (act/extract/observe/agent), self-healing via ActCache/AgentCache (SHA256 keyed replay), deep locator (iframes/shadow DOM), domain policy, CAPTCHA solver, 15+ LLM providers. Confirm no JSON-LD, queue, fuzzy matching, fulltext search.",
+      "reason": "Tier A with 916 files but no architecture docs. Deep analysis exists but need to verify self-healing depth vs autoheal-locator-python and whether caching provides true selector healing."
+    },
+    {
+      "repo": "frameworks/workflow-use",
+      "focus": "Validate semantic executor (3230 lines), element finder 7 strategies with SequenceMatcher fuzzy, selector generator fallbacks, LLM workflow generation, recorder, builder. Confirm early development status limits production use.",
+      "reason": "Tier B with substantial code but README warns 'not recommended for production'. Deep analysis needed to separate deterministic core from LLM-dependent parts for pipeline integration."
+    },
+    {
+      "repo": "healing/playwright-self-healing",
+      "focus": "Validate 6-signal weighted heuristic (visible text 0.45, anchor 0.20, tag 0.10, classes 0.10, attributes 0.10, id 0.05), Levenshtein/Jaccard similarity, IMetadataStore abstraction, SmartPage orchestration, 35 unit + 3 e2e tests. Confirm no Shadow DOM, no SQLite/Redis, single commit.",
+      "reason": "Tier B but highest-relevance TypeScript self-healing engine. Deep analysis exists — need to confirm if this can be elevated to S-tier for Veridian's TypeScript stack or if gaps (Shadow DOM, remote storage) block production use."
+    },
+    {
+      "repo": "parsing/extruct",
+      "focus": "Validate JSON-LD extraction (jsonld.py), Microdata (w3cmicrodata.py), RDFa (rdfa.py), OpenGraph, Microformat, Dublin Core. Confirm uniform output mode, CLI tool, 11 test modules with 123 fixtures. No architecture docs.",
+      "reason": "Tier B but only dedicated JSON-LD/structured metadata extractor in catalog. Deep analysis needed to confirm extraction completeness for laptop specs (Product, Offer, AggregateRating schemas) and whether it can serve as S-tier jsonld-extraction component."
+    },
+    {
+      "repo": "parsing/parse5",
+      "focus": "Validate WHATWG compliance, streaming parsers (SAX, parser stream), tree adapter abstraction, HTML rewriting stream, serialization. Confirm no built-in JSON-LD extraction — requires DOM post-processing.",
+      "reason": "Tier A parser used by Cheerio, jsdom, Angular. Deep analysis needed to confirm if parse5 + extruct combination provides complete JSON-LD extraction pipeline or if Cheerio's $.extract() is superior."
+    },
+    {
+      "repo": "stealth/nodriver",
+      "focus": "Validate CDP direct connection (no Selenium), Config best-practice args, Cloudflare detection refs (browser.py:724-768), Tab/Element APIs, AGPL-3.0 license. Confirm no test suite (tox.ini commented).",
+      "reason": "Tier B Undetected-Chromedriver successor with stealth lineage. Deep analysis needed to confirm if AGPL-3.0 and missing tests block Veridian adoption, or if stealth effectiveness justifies license risk."
+    },
+    {
+      "repo": "stealth/puppeteer-extra",
+      "focus": "Validate plugin base class lifecycle (beforeLaunch, onPageCreated, onTargetCreated), stealth plugin 16 evasions (navigator.webdriver, chrome.runtime, user-agent, navigator.plugins, webgl.vendor, etc.), proxy-router, extract-stealth-evasions for CDP-only. Confirm maintenance status (2023 commits).",
+      "reason": "Tier A modular stealth framework with proven bot detection test passes. Deep analysis needed to confirm if 2023 maintenance halt affects evasion currency against modern anti-bot, and if plugin architecture composes cleanly with Playwright via playwright-extra."
+    }
+  ],
+  "architectureTargets": [
+    {
+      "repo": "crawling/crawl4ai",
+      "flow": "End-to-end scraping pipeline integration: async_dispatcher (queue) → browser_adapter (browser-automation) → extraction_strategy (jsonld-extraction via async_url_seeder, LLM, cosine) → content_filter_strategy (self-healing via PruningContentFilter/BM25ContentFilter) → deep_crawling filters/scorers",
+      "reason": "Only repo covering 7/8 concerns at Tier S with architecture docs. Missing fulltext-search (external). Need architecture for composing crawl4ai as pipeline core with Meilisearch/Typesense for indexing."
+    },
+    {
+      "repo": "crawling/crawlee",
+      "flow": "RequestQueue/RequestQueueV2 (queue) → BrowserPool with fingerprinting (browser-automation + stealth) → PlaywrightCrawler/PuppeteerCrawler/StagehandCrawler → SessionPool (errorScore retry) → Dataset/KeyValueStore (storage) → AutoscaledPool (concurrency)",
+      "reason": "Tier S with documented package hierarchy (.claude/CLAUDE.md). Covers queue, browser-automation, stealth natively. Missing jsonld-extraction, self-healing (only session retry), fuzzy matching, fulltext-search. Need architecture for integrating extruct/rapidfuzz/meilisearch."
+    },
+    {
+      "repo": "frameworks/playwright",
+      "flow": "BrowserType launch → BrowserContext (isolation, proxy, geolocation) → Page (navigation, network interception via route, HAR, SOCKS) → Locator (role/text/testid/CSS/XPath, auto-wait, web-first assertions) → SelectorGenerator (resilient locators) → ARIA snapshot (structured extraction) → MCP tools (AI-agent automation)",
+      "reason": "S-tier core engine. Architecture fully documented (protocol.yml, dispatcher, selectors.ts, network.ts, MCP layer). Need architecture for composing Playwright with self-healing (playwright-self-healing), stealth (puppeteer-extra evasions or rebrowser patches), queue (BullMQ/Temporal), and extraction (extruct/cheerio)."
+    },
+    {
+      "repo": "healing/autoheal-locator-python",
+      "flow": "AutoHealLocator (quick check → cache → AI DOM/visual healing → re-cache) → ElementLocator ABC → AIService ABC (multi-provider: OpenAI, Gemini, Anthropic, Groq, DeepSeek, Ollama) → Cache backends (file, redis, cachetools) → Resilience (circuit_breaker, tenacity retry) → Selenium/Playwright adapters",
+      "reason": "S-tier self-healing with complete architecture (interfaces, implementations, providers, cache, resilience). Python-only. Need architecture for TypeScript equivalent or FFI bridge for Veridian's TypeScript pipeline."
+    },
+    {
+      "repo": "queue/bullmq",
+      "flow": "Queue (add, addBulk, flow) → Worker (process, concurrency, sandbox) → Job (priority, delay, repeat, deduplication) → FlowProducer (parent-child dependencies) → JobScheduler (cron, overlap policy) → RateLimiter (global/group) → Lua atomic commands (moveToActive, addStandardJob, retryJob, cleanJobs) → Telemetry (OpenTelemetry)",
+      "reason": "S-tier queue with complete Lua-backed atomic operations. Architecture documented. Need architecture for integrating BullMQ as scraping job backbone with Crawlee/Firecrawl request queues and Temporal for durable workflows."
+    },
+    {
+      "repo": "queue/temporal",
+      "flow": "Workflow (deterministic replay) → Activity (heartbeat, cancellation) → ScheduleClient (cron, backfill, timezone) → Interceptors (logging, metrics, tracing) → DataConverter (payload, extstore S3/GCS) → Nexus (service-to-service) → Worker isolation (VM, threaded VM) → DebugReplayer",
+      "reason": "S-tier durable execution. Architecture documented (data-converter.md, protobuf-libraries.md). Need architecture for choosing BullMQ (simpler, Redis) vs Temporal (durable, complex) vs hybrid for scraping pipeline: BullMQ for high-throughput crawl jobs, Temporal for multi-step extraction workflows."
+    },
+    {
+      "repo": "search/meilisearch",
+      "flow": "Index documents (milli crate: update/index_documents) → Search (graph-based ranking, BM25, typo tolerance, bucket_sort) → Faceted search → Vector/hybrid search (embedder) → Task scheduler (index-scheduler: queue, batching, webhooks) → REST API",
+      "reason": "S-tier fulltext search with typo tolerance (fuzzy-matching overlap). No formal ADRs — architecture from crate boundaries. Need architecture for indexing scraped laptop specs (schema mapping), sync vs async indexing, and integration with Typesense as alternative."
+    },
+    {
+      "repo": "stealth/puppeteer-extra",
+      "flow": "PuppeteerExtra (plugin registry, dependency resolution) → PuppeteerExtraPluginStealth (16 evasions: navigator.webdriver, chrome.runtime, user-agent, navigator.plugins, webgl.vendor, iframe.contentWindow, etc.) → PluginProxyRouter (dynamic proxy per request) → ExtractStealthEvasions (bundle for CDP-only) → Puppeteer/Playwright launch",
+      "reason": "A-tier modular stealth with proven evasion test passes. Architecture from plugin base class. Need architecture for composing with Playwright (via playwright-extra), proxy-chain for rotation, and Crawlee fingerprinting for complete stealth stack."
+    }
+  ],
+  "qualityWarnings": [
+    "5 repos are curated awesome-lists (docs/awesome-*) with zero implementation — Tier D/C, excluded from pipeline component consideration.",
+    "3 repos are deployment-config-only (healing/healenium, healing/self-healer, stealth/XDriver) with no source code — cannot serve as pipeline components.",
+    "observability/traceroot has Tier D relevanceScore 0.0 — entirely different domain (AI agent observability), excluded.",
+    "frameworks/stagehand-agent is a thin CLI demo (Tier D, 7 files, no tests) — not a reusable component.",
+    "12 repos lack architecture docs (hasArchitectureDocs=false) despite Tier A/B/S — architecture inferred from code only.",
+    "11 repos lack deep analysis artifacts in legacy directories — only unified cache deep/ exists.",
+    "No performance benchmarks captured in any scout record or cache artifact — performanceStatus uniformly 'missing'.",
+    "Licensing risks: nodriver (AGPL-3.0), playwright-stealth (GPL-3.0), typesense (GPLv3), puppeteer-extra (MIT but maintenance uncertain).",
+    "playwright-self-healing is single-commit — no revision history to assess maintenance velocity.",
+    "rebrowser-playwright stealth patches live in separate npm package (rebrowser-playwright-core) not in this catalog.",
+    "crawl4ai C4A-Script is proprietary DSL — not portable script generation.",
+    "Firecrawl AGPL-3.0 and advanced anti-bot (fire-engine) not available in self-hosted version.",
+    "Autoheal-locator-python is Python-only — Veridian TypeScript stack needs equivalent or bridge.",
+    "Workflow-use explicitly warns 'early development, not recommended for production'."
+  ]
+}

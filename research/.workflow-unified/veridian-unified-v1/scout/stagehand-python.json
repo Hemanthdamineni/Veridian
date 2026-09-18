@@ -1,0 +1,57 @@
+{
+  "repo": "stagehand-python",
+  "category": "frameworks",
+  "heritage": false,
+  "heritageBasis": "none",
+  "tier": "B",
+  "relevanceScore": 6,
+  "sourceFileCount": 54,
+  "directoryCount": 20,
+  "hasArchitectureDocs": false,
+  "hasTests": true,
+  "keyFiles": [
+    "src/stagehand/__init__.py",
+    "src/stagehand/_client.py",
+    "src/stagehand/_custom/session.py",
+    "src/stagehand/_custom/sea_server.py",
+    "src/stagehand/resources/sessions.py",
+    "src/stagehand/_streaming.py",
+    "src/stagehand/_models.py",
+    "src/stagehand/_base_client.py",
+    "pyproject.toml",
+    "README.md",
+    "examples/full_example.py",
+    "examples/local_example.py"
+  ],
+  "affectedConcerns": [
+    "browser-automation",
+    "self-healing",
+    "script-generation",
+    "stealth"
+  ],
+  "rationale": "Stagehand-python is the official Python SDK for the Stagehand API (Browserbase), providing both synchronous and asynchronous clients for AI-driven browser automation. It enables natural-language browser actions (act, observe, extract, navigate, execute) with streaming SSE responses, self-healing via auto-caching of repeatable actions, and a local mode using an embedded SEA binary. The codebase is largely generated from an OpenAPI spec via Stainless, with handwritten custom logic for session binding, local server management, and streaming. It has 54 source files across 20 directories, 24 test files, and 13 examples. Relevant to browser-automation (primary), self-healing (auto-caching), script-generation (natural language instructions), and stealth (via Browserbase infrastructure). Tier B: production-grade SDK with good architecture but is a client for a hosted service, not a standalone automation engine.",
+  "limitations": [
+    "Client library only - requires Stagehand API service (Browserbase) to function; does not run browser automation locally without the SEA binary",
+    "Self-healing is server-side (auto-caching on the Stagehand service), not client-side selector healing",
+    "No built-in JSON-LD/Schema.org extraction, fuzzy matching, queue scheduling, or full-text search",
+    "Stealth capabilities depend on Browserbase infrastructure, not exposed as configurable client features",
+    "Architecture is spec-generated (Stainless) with limited custom extension points"
+  ],
+  "evidencePaths": [
+    "src/stagehand/_client.py",
+    "src/stagehand/_custom/session.py",
+    "src/stagehand/_custom/sea_server.py",
+    "src/stagehand/resources/sessions.py",
+    "src/stagehand/_streaming.py",
+    "src/stagehand/types/session_act_params.py",
+    "src/stagehand/types/session_extract_params.py",
+    "src/stagehand/types/session_observe_params.py",
+    "examples/full_example.py",
+    "examples/local_example.py",
+    "pyproject.toml",
+    "README.md",
+    ".stats.yml",
+    "tests/test_client.py",
+    "tests/api_resources/test_sessions.py"
+  ]
+}

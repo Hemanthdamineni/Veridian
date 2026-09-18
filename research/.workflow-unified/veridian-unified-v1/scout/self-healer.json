@@ -1,0 +1,50 @@
+{
+  "repo": "https://github.com/qosha1/healing-playwright (fork of healenium/healenium deployment config)",
+  "category": "healing",
+  "heritage": false,
+  "heritageBasis": "none",
+  "tier": "D",
+  "relevanceScore": 3,
+  "sourceFileCount": 16,
+  "directoryCount": 10,
+  "hasArchitectureDocs": false,
+  "hasTests": false,
+  "keyFiles": [
+    "docker-compose.yaml",
+    "docker-compose-web.yaml",
+    "docker-compose-selenoid.yaml",
+    "docker-compose-appium.yaml",
+    "db/sql/init.sql",
+    "selenoid-config/browsers.json",
+    "shell-installation/selenium-grid/start_healenium.sh",
+    "shell-installation/web/start_healenium.sh",
+    "README.md"
+  ],
+  "affectedConcerns": [
+    "self-healing",
+    "browser-automation"
+  ],
+  "rationale": "This is a deployment-configuration-only artifact (Docker Compose + shell scripts + Selenoid browser config + GitHub issue templates) for the Healenium self-healing framework. It contains zero application source code, zero test files, and zero architecture/design documents. The repo originates from a fork of Healenium, wired to qosha1/healing-playwright remote, but no Playwright-specific code is present. All files orchestrate external Docker images (hlm-backend:3.4.8, hlm-proxy:2.1.6, hlm-selector-imitator:1.6, postgres:15.5-alpine, selenium/node-*). The README describes Healenium as an open-source self-healing library for automated Selenium testing (README line 19-23) that acts as a proxy between client and Selenium server, using machine learning to heal test failures from UI changes. No evidence connects it to a structured laptop-spec extraction pipeline. Tier D reflects that this is a config-only deployment artifact, not source that can be directly integrated.",
+  "limitations": [
+    "Repository contains no application source code -- it is purely Docker Compose orchestration and shell scripts",
+    "No test files of any kind exist in the repository",
+    "No architecture or design documents present",
+    "No evidence of integration with any laptop-spec extraction pipeline",
+    "The repository is a shallow clone/fork of Healenium's deployment configuration; Healenium's actual self-healing logic lives in separate upstream repositories (healenium-backend, healenium-proxy, healenium-selector-imitator)",
+    "No Playwright-specific code despite the remote pointing to 'healing-playwright'",
+    "No CI/CD pipeline configuration beyond GitHub issue templates",
+    "License is Apache 2.0 (LICENSE file) but no SPDX identifiers in source since there is no source code"
+  ],
+  "evidencePaths": [
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/healing/self-healer/README.md",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/healing/self-healer/docker-compose.yaml",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/healing/self-healer/docker-compose-web.yaml",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/healing/self-healer/docker-compose-selenoid.yaml",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/healing/self-healer/docker-compose-appium.yaml",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/healing/self-healer/db/sql/init.sql",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/healing/self-healer/selenoid-config/browsers.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/healing/self-healer/shell-installation/selenium-grid/download_services.sh",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/healing/self-healer/shell-installation/selenium-grid/start_healenium.sh",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/healing/self-healer/shell-installation/web/start_healenium.sh"
+  ]
+}

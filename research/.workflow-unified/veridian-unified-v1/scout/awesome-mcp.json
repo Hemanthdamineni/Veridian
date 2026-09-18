@@ -1,0 +1,25 @@
+{
+  "repo": "awesome-mcp",
+  "category": "docs",
+  "heritage": false,
+  "heritageBasis": "none",
+  "tier": "C",
+  "relevanceScore": 0.3,
+  "sourceFileCount": 14,
+  "directoryCount": 3,
+  "hasArchitectureDocs": false,
+  "hasTests": false,
+  "keyFiles": [
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/docs/awesome-mcp/README.md"
+  ],
+  "affectedConcerns": [],
+  "rationale": "awesome-mcp is a curated markdown list of Model Context Protocol (MCP) servers and clients. It contains no executable code or implementations of scraping pipeline concerns directly, serving strictly as a reference document index.",
+  "limitations": [
+    "Contains only markdown documentation files and list entries; no code implementation.",
+    "Does not directly implement any of the eight target scraping pipeline concerns.",
+    "Third-party claims in listed repositories are external and unverified within this repo."
+  ],
+  "evidencePaths": [
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/docs/awesome-mcp/README.md#L14"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "repo": "https://github.com/neosigmaai/auto-harness.git",
+  "status": "PASS",
+  "spdx": "MIT",
+  "osiApproved": true,
+  "evidenceFiles": [
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/healing/auto-harness/LICENSE",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/healing/auto-harness/pyproject.toml",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/healing/auto-harness/.git/config",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/healing/auto-harness/README.md"
+  ],
+  "obligations": [
+    "Preserve the copyright notice and permission notice in all copies or substantial portions of the software (LICENSE lines 12-13).",
+    "Include the MIT license text with any redistribution (standard MIT license-preservation clause, LICENSE lines 1-21)."
+  ],
+  "rationale": "The repository ships a LICENSE file containing the canonical text of the MIT License, Copyright (c) 2026 NeoSigma (LICENSE lines 1-21). MIT is a permissive, OSI-approved license (SPDX MIT). No NOTICE, COPYING, or alternative license file is present; the only license file is LICENSE (verified via directory listing). pyproject.toml does not declare a license field but contains no conflicting terms. The .git/config remote origin is https://github.com/neosigmaai/auto-harness.git, consistent with the repository identity. Bundle content was checked for adverse terms: agent, templates, and helpers source files (agent/agent.py, agent/templates/*.py, agent/helpers/bird_interact/*, program_templates/*, benchmark.py, gating.py, prepare.py, record.py) carry no embedded third-party license headers claiming copyleft or proprietary constraints; templates are described as 'Harness-owned copy' of upstream agent definitions (agent/templates/bird_interact.py header), with stock behavior preserved aside from GPT-5 temperature handling (README.md lines 112, 218). Runtime dependencies (openai, pyyaml, tau2 from sierra-research/tau2-bench) are declared in pyproject.toml 'dependencies' and are not vendored into this repo's distribution, so their licenses are external to this package's license determination. No block or human-review constraint was identified; status PASS."
+}

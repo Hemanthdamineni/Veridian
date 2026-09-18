@@ -1,0 +1,17 @@
+{
+  "repo": "healenium",
+  "status": "PASS",
+  "spdx": "Apache-2.0",
+  "osiApproved": true,
+  "evidenceFiles": [
+    ".references/healing/healenium/LICENSE",
+    ".references/healing/healenium/README.md"
+  ],
+  "obligations": [
+    "Include copy of Apache-2.0 license in distributions",
+    "Retain copyright/patent/trademark/attribution notices",
+    "Include NOTICE file if present in original (none found)",
+    "State changes to modified files"
+  ],
+  "rationale": "Primary LICENSE file is the full Apache License 2.0 text (lines 1-201). README.md line 4 confirms via badge: 'License Apache' linking to apache.org/licenses/LICENSE-2.0. No NOTICE, COPYING, or alternative license files present. No pom.xml, package.json, build.gradle, or other manifest files found in the repository root that could declare a different license. Apache-2.0 is OSI-approved and permissive, compatible with most commercial and open-source use. Status PASS."
+}

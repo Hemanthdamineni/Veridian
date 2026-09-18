@@ -1,0 +1,33 @@
+{
+  "repo": "temporalio/sdk-typescript",
+  "status": "PASS",
+  "spdx": "MIT",
+  "osiApproved": true,
+  "evidenceFiles": [
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/LICENSE",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/CONTRIBUTING.md",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/activity/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/client/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/cloud/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/common/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/core-bridge/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/create-project/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/envconfig/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/lambda-worker/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/meta/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/nexus/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/nyc-test-coverage/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/plugin/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/proto/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/test/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/test-helpers/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/testing/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/worker/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/workflow/package.json"
+  ],
+  "obligations": [
+    "Preserve the above copyright notice and this permission notice in all copies or substantial portions of the Software (MIT license clause, per LICENSE line 12-13)"
+  ],
+  "rationale": "PASS: The repository (temporalio/sdk-typescript) is licensed entirely under MIT (SPDX: MIT, OSI-approved). Root LICENSE file contains standard MIT text. Root package.json declares \"license\": \"MIT\". All 18 subdirectory package.json files also declare \"license\": \"MIT\". CONTRIBUTING.md (line 23) states 'The Temporal TypeScript SDK ... is open sourced under the MIT license.' No NOTICE, COPYING, or PATENTS files exist. The sole submodule (sdk-core at packages/core-bridge/sdk-core) reference was noted but was not evaluated here — its own license would be assessed against its own tree. MIT is a permissive, compatible license requiring only preservation of the copyright notice and permission notice. No copyleft or proprietary constraints identified."
+}

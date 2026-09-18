@@ -1,0 +1,35 @@
+{
+  "repo": "self-healer",
+  "category": "healing",
+  "focus": "full-deep-analysis",
+  "summary": "Healenium is an open-source self-healing framework for Selenium-based test automation. This specific repository (healenium/self-healer) is NOT a library -- it is an infrastructure orchestration repo containing docker-compose files and shell scripts to deploy Healenium services. The actual core logic lives in separate repos (healenium-backend Java/Spring JAR, hlm-proxy, selector-imitator) and is pulled as pre-built Docker images or JAR downloads. The architecture works by proxying Selenium WebDriver commands through hlm-proxy, which intercepts failed element-locator calls, queries the hlm-backend (backed by PostgreSQL) for previously healed selectors using ML-based scoring, and substitutes working selectors. Verified from the code: there is zero application logic in this repo -- only YAML compositions, a 2-line SQL init script, shell scripts that download JARs, and a browsers.json for Selenoid. The README describes the Healenium product overall, not this repo specifically, which is misleading.",
+  "maturityAssessment": {
+    "claimedMaturity": "README positions Healenium as a production-ready self-healing framework with Docker Hub images, Telemetry community, and IDEA plugin. It presents installation guides, configuration options (disable healing, score cap), and multi-browser support. The marketing tone is 'use in production now.'",
+    "objectiveSignals": {
+      "stars": "Unable to determine (this is the infra repo, not the core product repo; Docker Hub images have notable pull counts based on badge)",
+      "lastCommit": "2025-05-07 (version bump to 2.1.6, tag-only release commits)",
+      "commitCount": "165",
+      "maintainers": "9 distinct committers over the repo's history",
+      "issueActivity": "Has GitHub Issues link but actual activity unknown from local clone; issue templates present (bug_report.yml, custom.yml)",
+      "releaseFrequency": ""
+    },
+    "contradictionFlags": "CRITICAL: This repo contains NO source code -- zero. It is a docker-compose/orchestration repo. 165 commits are nearly all version bumps (tags like '2.1.6', '2.1.5', '2.1.4 Update Readme'). The README describes the Healenium product's capabilities (ML-based healing, proxy architecture, reporting) but none of that intelligence exists in this repo. This repo is a thin deployment wrapper. Hard passwords are hardcoded in docker-compose files (YDk2nmNs4s9aCP6K). The 'shell-installation' scripts are crude -- they curl JARs and git-clone during startup, meaning no integrity verification. No package manifest (no package.json, no setup.py, no pyproject.toml, no go.mod) exists because this is not a software package -- it is a deployment recipe."
+  },
+  "findings": [
+    {
+      "capability": "core-capabilities",
+      "description": "This repo provides: (1) docker-compose.yaml deploying a full Selenium Grid stack (postgres-db, healenium backend, selector-imitator, hlm-proxy, chrome/edge/firefox nodes, selenium-hub); (2) docker-compose-web.yaml for a web-only (non-proxy) mode; (3) docker-compose-selenoid.yaml and docker-compose-appium.yaml for alternate Selenium providers; (4) shell-installation scripts that download hlm-backend.jar and clone healenium-selector-imitator from GitHub; (5) a 2-line Postgres init.sql; (6) selenoid-config/browsers.json mapping Chrome/Firefox versions. No healing logic, no ML, no scoring algorithm, not selector comparison code exists in this repo.",
+      "sourceFiles": [],
+      "evidence": "This repo provides: (1) docker-compose.yaml deploying a full Selenium Grid stack (postgres-db, healenium backend, selector-imitator, hlm-proxy, chrome/edge/firefox nodes, selenium-hub); (2) docker-com",
+      "confidence": 0.7
+    }
+  ],
+  "apiSurface": "Not a library. Users deploy this via `docker-compose up` or by running shell scripts. The API surface is purely docker running services: proxy at 8085 (WebDriver proxy), backend at 7878 (REST), selector-imitator at 8000 (REST), plus PostgreSQL at 5432. Users writing tests (Java/Python/JS/C#) point their Selenium WebDriver URL to `http://localhost:8085` instead of directly to Selenium Hub. No importable library, no SDK method calls, no CLI beyond shell scripts.",
+  "integrationPoints": "The proxy-based approach is relevant -- Playwright scrapers could route through a similar healing proxy that intercepts failed locators. The concept of storing previously-successful selectors in a DB and scoring their current relevance is architecturally transferable. The score_cap threshold (.6) and poetry models at recovery_tries hint at a scoring system that a scraping pipeline could borrow. However, direct integration is impossible since this project is Selenium-specific and the actual code is in Java (backend) and Python (proxy). To integrate with a Playwright pipeline, you would need to fork or reimplement the proxy concept in Playwright-friendly code, using the hlm-proxy's approach as a design reference.",
+  "strengthsForVeridian": "The core concept -- a healing proxy that intercepts failed locator attempts, queries a historical database of working selectors, and substitutes with scored confidence -- is directly applicable to a scraping of Elemental UI. The docker compose composition is clean, shows good service separation, and demonstrates the architecture. The selector containment/imitator concept (converting between selector formats) is useful for multi-format scraping. Works with JavaScript, Python, C#, so the language ecosystem is broad.",
+  "weaknessesForVeridian": "Massive weaknesses: (1) This repo contains zero executable code for healing -- it as docker-compose recipes. (2) All actual logic is in separate undisclosed repos whose quality was cannot verify. (3) Selenium -- not Playwright, which is a different browser automation paradigm. (4) Designed for automated tests against known apps, not for an information scraping pipeline on unknown third-party sites. (5) Pre-built Docker images mean we depend on upstream repos being maintained and of good quality. (6) No programmatic Python API -- it's a standalone service, adds significant operational overhead. (7) The healing relies on having previous reference selectors in a DB, requiring a pre-crawl training phase. (8) Hardcoded passwords in plaintext docker labs and shell scripts. (9) The 165 commits are all simple version bumps -- no meaningful development happens in this repo. (10) The one thing we'd actually want (the ML scoring logic, the selector comparison algorithm) is buried inside a Java JAR and a Python service in other repos.",
+  "verdict": "Reject",
+  "limitations": [
+    "Seeded from prior analysis; maturity signals may be approximate"
+  ]
+}

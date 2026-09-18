@@ -1,0 +1,18 @@
+manufacturer:
+  apple:
+    brand: "Apple"
+    base_url: "https://www.apple.com"
+    regions:
+      - code: US
+        name: "United States"
+        base_url: "https://www.apple.com"
+        language: en-US
+        currency: USD
+        category_paths:
+          laptops: "/macbook-air"
+          laptops_pro: "/macbook-pro"
+        selectors:
+          product_link: "a.product-link"
+          product_name: "h1.product-name"
+          specs_table: "table.specs-table"
+          next_page: "a.next-page"

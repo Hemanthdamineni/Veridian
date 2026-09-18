@@ -1,0 +1,29 @@
+manufacturer:
+  hp:
+    brand: "HP"
+    base_url: "https://www.hp.com"
+    regions:
+      - code: US
+        name: "United States"
+        base_url: "https://www.hp.com/us-en"
+        language: en-US
+        currency: USD
+        category_paths:
+          laptops: "/shop/vwa/laptops"
+        selectors:
+          product_link: "a.product-link"
+          product_name: "h1.product-name"
+          specs_table: "table.specs-table"
+          next_page: "a.next-page"
+      - code: IN
+        name: "India"
+        base_url: "https://www.hp.com/in-en"
+        language: en-IN
+        currency: INR
+        category_paths:
+          laptops: "/shop/vwa/laptops"
+        selectors:
+          product_link: "a.product-link"
+          product_name: "h1.product-name"
+          specs_table: "table.specs-table"
+          next_page: "a.next-page"

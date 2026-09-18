@@ -1,0 +1,17 @@
+{
+  "repo": "playwright-stealth",
+  "status": "BLOCK",
+  "spdx": "GPL-3.0-or-later",
+  "osiApproved": true,
+  "evidenceFiles": [
+    "pyproject.toml",
+    "playwright_stealth/js/README.md",
+    "README.md"
+  ],
+  "obligations": [
+    "GPL-3.0-or-later is strong copyleft: any combined/derivative work that includes playwright-stealth must be distributed under GPL-3.0-or-later, including corresponding source code",
+    "If the bundled JS evasion scripts are treated as derivative of MIT-licensed puppeteer-extra-plugin-stealth (Copyright (c) 2018-2023 berstend), MIT attribution/license text may need to be retained for those files, creating a GPL-over-MIT attribution ambiguity",
+    "No LICENSE/COPYING/NOTICE text file ships in the repository; the only license declaration is the SPDX string in pyproject.toml, so downstream distribution must supply the GPL-3.0 license text itself"
+  ],
+  "rationale": "The package manifest pyproject.toml line 5 explicitly declares `license = 'GPL-3.0-or-later'`, and this declaration is unchanged since the initial commit (10496d7). GPL-3.0-or-later is strong copyleft, which is an identified copyleft constraint on a composite scraping stack, so status is BLOCK rather than PASS. No LICENSE/COPYING/NOTICE text file exists anywhere in the repo tree or git history. The JS evasion scripts under playwright_stealth/js are documented (playwright_stealth/js/README.md line 8 and README.md lines 17-18) as 'mostly taken from' berstend/puppeteer-extra-plugin-stealth, which is MIT-licensed (verified via upstream repo); bundling MIT-derived JS inside a package declared GPL-3.0-or-later creates a mixed-source ambiguity that an implementer must resolve before redistribution. OSI-approval is true because GPL-3.0 (of which '-or-later' is the standard upgrade-clause variant) is on the OSI approved list, but that approval does not change the copyleft blocking determination for the Veridian stack."
+}

@@ -1,0 +1,15 @@
+{
+  "repo": "healing-agent",
+  "status": "PASS",
+  "spdx": "MIT",
+  "osiApproved": true,
+  "evidenceFiles": [
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/healing/healing-agent/LICENSE",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/healing/healing-agent/pyproject.toml",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/healing/healing-agent/README.md"
+  ],
+  "obligations": [
+    "Preserve the above copyright notice and this permission notice in all copies or substantial portions of the Software (per LICENSE, lines 12-13)"
+  ],
+  "rationale": "PASS. The repository ships a single canonical LICENSE file containing the complete MIT License text, copyright (c) 2024 matebenyovszky (/.references/healing/healing-agent/LICENSE, full file, 22 lines). pyproject.toml independently confirms licensing: `license = { text = \"MIT\" }` (line 14) and the classifier `License :: OSI Approved :: MIT License` (line 31), which is an OSI-approved permissive license. README.md also states 'Healing Agent is distributed under the MIT License. See LICENSE for more information.' (lines 167-169). No NOTICE, COPYING, or COPYRIGHT file exists; no source file contains additional license/copyright headers or third-party copyleft text (grep across all .py files for license/copyright/spdx/opensource returned nothing). The MIT license imposes no copyleft or proprietary constraints on derivative use; the only obligation is preservation of the copyright and permission notice in copies. Git remote origin confirms the source repository is github.com/matebenyovszky/healing-agent, matching the license holder. Verdict: permissive and compatible; no human legal review required."
+}

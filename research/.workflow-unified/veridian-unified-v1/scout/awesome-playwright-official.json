@@ -1,0 +1,36 @@
+{
+  "repo": "awesome-playwright-official",
+  "category": "docs",
+  "heritage": false,
+  "heritageBasis": "none",
+  "tier": "D",
+  "relevanceScore": 0.2,
+  "sourceFileCount": 0,
+  "directoryCount": 4,
+  "hasArchitectureDocs": false,
+  "hasTests": false,
+  "keyFiles": [
+    "README.md",
+    "CONTRIBUTING.md",
+    ".claude/skills/audit-entries/SKILL.md",
+    ".claude/skills/review-prs/SKILL.md"
+  ],
+  "affectedConcerns": [
+    "browser-automation",
+    "stealth"
+  ],
+  "rationale": "awesome-playwright-official is a curated Awesome list repository (docs category) containing a single 130-line README cataloging ~90 Playwright resources, frameworks, wrappers, and tools. It also includes CONTRIBUTING.md and two Claude skill definitions (audit-entries, review-prs) for repository maintenance. The README is structured into 8 sections: Integrations, Language Support, Utils, Scraping and Automation, AI and Agents, Reporters, Showcases, and Guides. The Scraping and Automation section links to stealth-browser tools (camofox-browser, CloakBrowser, invisible_playwright, brows ers-benchmark, playwright-captcha, Human Browser) relevant to browser-automation and stealth pipeline concerns, but this repo provides only external hyperlinks -- no implementation code, schemas, or test suites. Tier D assigned: focused documentation scan with zero implementation depth. Relevance score 0.2 reflects that the repo catalogs adjacent tools but provides no executable capability for any pipeline concern.",
+  "limitations": [
+    "Curated markdown list with zero executable code or internal engine logic.",
+    "Does not implement any extraction, scraping, or automation functionality directly.",
+    "No source code, no schemas, no test suites, no architecture documentation.",
+    "Entries are external links subject to staleness; audit-entries skill exists to detect this.",
+    "No direct relevance to JSON-LD extraction, script generation, self-healing selectors, queue scheduling, fuzzy matching, or full-text search."
+  ],
+  "evidencePaths": [
+    "README.md:1-130",
+    "CONTRIBUTING.md:1-26",
+    ".claude/skills/audit-entries/SKILL.md:1-103",
+    ".claude/skills/review-prs/SKILL.md:1-112"
+  ]
+}

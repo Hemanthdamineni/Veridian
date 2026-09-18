@@ -1,0 +1,35 @@
+{
+  "repo": "scrapy",
+  "category": "crawling",
+  "focus": "full-deep-analysis",
+  "summary": "Scrapy is a mature, production-grade web crawling and scraping framework built on Twisted with async/await support (since v2.14). The architecture centers on an ExecutionEngine that coordinates a Scheduler, Downloader (with pluggable handlers for HTTP/HTTPS/S3/FTP), and Scraper (with spider middleware, item pipelines, and signal system). Spiders define async start() methods yielding Requests, with callbacks producing Items or new Requests. The framework provides 200+ settings controlling concurrency, retries, throttling, caching, robots.txt, feed exports (JSON/CSV/XML), and JOBDIR persistence. Verified in code: Twisted reactor with asyncio integration, middleware chains for download/spider/item processing, signal-based extensibility, priority-based scheduler, and comprehensive default middleware stack (retry, redirect, cookies, auth, proxy, compression, cache, stats).",
+  "maturityAssessment": {
+    "claimedMaturity": "Development Status :: 5 - Production/Stable (per pyproject.toml classifiers); README states 'maintained by Zyte (formerly Scrapinghub) and many other contributors'",
+    "objectiveSignals": {
+      "stars": "~50,000+ (historical GitHub, not in local repo)",
+      "lastCommit": "2026-08-03 (a499dc951)",
+      "commitCount": "11,267",
+      "maintainers": "20+ distinct contributors (top: Pablo Hoffman 2205, Andrey Rakhmatullin 1155, Mikhail Korobov 949, Daniel Gra\u00f1a 930, Adri\u00e1n Chaves 870)",
+      "issueActivity": "Active GitHub issues/PRs (tracker URL in pyproject.toml)",
+      "releaseFrequency": "Active - commits daily, version 2.17.0"
+    },
+    "contradictionFlags": "None - claims match reality. Battle-tested at scale by Zyte/Scrapinghub for 15+ years."
+  },
+  "findings": [
+    {
+      "capability": "core-capabilities",
+      "description": "Async/await spider callbacks (v2.14+), Twisted reactor with asyncio integration, pluggable download handlers (HTTP/HTTPS via http11, S3, FTP, data:, file:), middleware chains (downloader: retry, redirect, cookies, auth, proxy, compression, cache, stats; spider: start, httperror, referer, urllength, depth, metacopy), item pipelines with async support, feed exports (JSON, JSONL, CSV, XML, marshal, pickle) to file/FTP/S3/GCS/stdout, priority-based scheduler with disk/memory queues, request fingerprinting/deduplication (RFPDupeFilter), AutoThrottle extension, robots.txt compliance (protego), HTTP caching, telnet console, spider contracts for testing, JOBDIR persistence, stats collection, signal system for extensibility, configurable concurrency (global, per-domain, per-IP), DOWNLOAD_DELAY with randomization, retry policies with exception/HTTP code lists",
+      "sourceFiles": [],
+      "evidence": "Async/await spider callbacks (v2.14+), Twisted reactor with asyncio integration, pluggable download handlers (HTTP/HTTPS via http11, S3, FTP, data:, file:), middleware chains (downloader: retry, redir",
+      "confidence": 0.7
+    }
+  ],
+  "apiSurface": "Primary: scrapy crawl <spider> CLI; programmatic: CrawlerProcess(settings).crawl(SpiderClass).start() or AsyncCrawlerProcess(settings).crawl(SpiderClass); await runner.crawl(SpiderClass). Spider API: class MySpider(Spider): name='x'; async def start(self): yield Request(url); async def parse(self, response): yield Item|Request. Settings via Settings dict or settings.py. Middlewares/pipelines/extensions via settings dicts with priority ints. Signals via crawler.signals.connect(handler, signal). Feed exports via FEEDS dict.",
+  "integrationPoints": "Playwright integration via scrapy-playwright (external package) - download handler replaces HTTP11 for JS-rendered pages. Queue: Scrapy's Scheduler is internal; for distributed crawling use scrapy-redis or scrapy-cluster. Search: not built-in; feed exports can pipe to Elasticsearch/Meilisearch via custom FeedStorage. Matching: item pipelines can implement deduplication/matching logic. For Veridian: use scrapy-playwright for laptop vendor JS sites, feed exports to JSONL for ETL pipeline, custom item pipeline for spec normalization/matching, JOBDIR for resume capability, AutoThrottle for polite scraping.",
+  "strengthsForVeridian": "Battle-tested at massive scale (Zyte), comprehensive middleware for cross-cutting concerns (retry, throttle, cache, robots), async-first modern API, built-in feed exports to multiple formats/destinations, JOBDIR for crash recovery, extensible via signals/middlewares/pipelines/addons, excellent docs, active maintenance. Deterministic request/response model fits ETL pipelines well.",
+  "weaknessesForVeridian": "No native JavaScript rendering (requires scrapy-playwright or Splash), Twisted learning curve steep for non-Twisted devs, reactor management complexity, single-process (distributed needs external tools), no built-in browser fingerprinting/evasion, settings sprawl (200+ knobs), synchronous default settings loading can surprise. For laptop specs: vendor sites often need JS rendering; scrapy-playwright adds dependency but works.",
+  "verdict": "Strong Candidate",
+  "limitations": [
+    "Seeded from prior analysis; maturity signals may be approximate"
+  ]
+}

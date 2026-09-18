@@ -1,0 +1,55 @@
+{
+  "repo": "apify-sdk-js",
+  "category": "crawling",
+  "heritage": false,
+  "heritageBasis": "none",
+  "tier": "C",
+  "relevanceScore": 4,
+  "sourceFileCount": 11,
+  "directoryCount": 116,
+  "hasArchitectureDocs": false,
+  "hasTests": true,
+  "keyFiles": [
+    "src/actor.ts",
+    "src/index.ts",
+    "src/proxy_configuration.ts",
+    "src/configuration.ts",
+    "src/platform_event_manager.ts",
+    "src/storage.ts",
+    "src/key_value_store.ts",
+    "src/charging.ts",
+    "src/patched_apify_client.ts",
+    "test/apify/proxy_configuration.test.ts",
+    "docs/02_concepts/05_session_management.mdx"
+  ],
+  "affectedConcerns": [
+    "stealth"
+  ],
+  "rationale": "This is the Apify platform SDK (npm package 'apify' v3.7.2, HEAD 0baa8dc634), the runtime wrapper for Apify Actors. The crawling engines (CheerioCrawler, PlaywrightCrawler, PuppeteerCrawler), RequestQueue, Dataset, and SessionPool were moved out to Crawlee; src/index.ts:25-39 re-exports them from @crawlee/core and README.md:38 states the crawlers now live in the crawlee module. Own implementation is small and platform-bound: Actor lifecycle (init/exit/reboot, graceful shutdown on migrating/aborting), websocket platform events (PlatformEventManager, src/platform_event_manager.ts:83-112), storage open-by-alias/id/name (src/storage.ts), APIFY_*/ACTOR_* env-var config mapping (src/configuration.ts), pay-per-event charging (src/charging.ts), and a ProxyConfiguration (src/proxy_configuration.ts) that composes Apify Proxy URLs with sessionId-pinned IPs, country/subdivision geolocation, and tiered proxy switching driven by Crawlee blocked-request statistics. Sole genuine pipeline-adjacent asset is the proxy rotation/session-pinning/tiering logic, a partial fit for the stealth/anti-IP-block concern but bound to Apify's hosted proxy (proxy.apify.com) and delegating the base class to @crawlee/core. No jsonld-extraction, fulltext-search, fuzzy-matching, self-healing, queue, browser-automation, or script-generation logic exists in src/ (grep for jsonld/schema.org/fuzzy/bloom/full-text/elastic/solr returns only proxy/JSDoc references). 11 implementation files (~4,414 lines, much of it JSDoc); 34 test files (vitest unit tests in test/apify/*.test.ts plus e2e SDK actor fixtures in test/e2e/sdk/); 74 docs files are user guides for a Docusaurus site, not architecture docs. Tier C: moderate but narrow relevance, shallow own-implementation depth relative to the pipeline; worth a focused read of proxy_configuration.ts and the Actor lifecycle for the stealth/deployment angle only.",
+  "limitations": [
+    "Crawler engines, RequestQueue, SessionPool implementations are NOT in this repo; they are re-exported from @crawlee/core (src/index.ts:25-39) and documented as moved to crawlee (README.md:38). Any queue/browser-automation/session claim would have to be sourced from Crawlee, not here.",
+    "ProxyConfiguration is bound to Apify's proprietary cloud proxy (hostname proxy.apify.com, APIFY_PROXY_PASSWORD, proxy status endpoint http://proxy.apify.com/?format=json, src/proxy_configuration.ts:512-534); it composes URLs against a hosted service and is not a general stealth/anti-bot engine (no fingerprinting, header spoofing, or TLS shaping).",
+    "Tiered proxy switching (src/proxy_configuration.ts:74-78, 236-238, 388-406) is driven by Crawlee crawler blocked-request statistics that live outside this repo; not self-contained.",
+    "No jsonld-extraction, fulltext-search, fuzzy-matching, script-generation, or self-healing-selector code exists in src/; a grep of src/ for jsonld|schema.org|fuzzy|bloom|full.?text|elastic|solr returns no hits.",
+    "Platform events and storage rely on Apify cloud infrastructure (ACTOR_EVENTS_WEBSOCKET_URL, APIFY_IS_AT_HOME); local runs degrade to warnings (src/platform_event_manager.ts:72-78).",
+    "hasArchitectureDocs=false: docs/ is user-facing guides and the website/ is a Docusaurus doc site (79 dirs incl. versioned_docs); no ADR/architecture/design documents found."
+  ],
+  "evidencePaths": [
+    "src/index.ts:25-39",
+    "src/actor.ts:536-609",
+    "src/actor.ts:1311-1330",
+    "src/proxy_configuration.ts:74-78",
+    "src/proxy_configuration.ts:236-238",
+    "src/proxy_configuration.ts:331-356",
+    "src/proxy_configuration.ts:388-406",
+    "src/proxy_configuration.ts:411-443",
+    "src/proxy_configuration.ts:512-534",
+    "src/platform_event_manager.ts:83-112",
+    "src/configuration.ts:121-184",
+    "package.json:75-90",
+    "README.md:38",
+    "docs/02_concepts/05_session_management.mdx:9-54",
+    "test/apify/proxy_configuration.test.ts",
+    "test/apify/actor.test.ts"
+  ]
+}

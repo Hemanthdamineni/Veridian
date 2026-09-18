@@ -1,0 +1,18 @@
+{
+  "repo": "scrapy",
+  "status": "PASS",
+  "spdx": "BSD-3-Clause",
+  "osiApproved": true,
+  "evidenceFiles": [
+    ".references/crawling/scrapy/LICENSE",
+    ".references/crawling/scrapy/pyproject.toml",
+    ".references/crawling/scrapy/AUTHORS"
+  ],
+  "obligations": [
+    "Include copy of BSD-3-Clause license in redistributions (source and binary forms)",
+    "Retain copyright notice, list of conditions, and disclaimer in source redistributions",
+    "Reproduce copyright notice, list of conditions, and disclaimer in documentation/materials for binary redistributions",
+    "Do not use 'Scrapy' name or contributor names to endorse/promote derived products without specific prior written permission"
+  ],
+  "rationale": "Repository contains full BSD-3-Clause license text in LICENSE file (lines 1-27). The pyproject.toml (line 49) declares license='BSD-3-Clause' and license-files=['LICENSE', 'AUTHORS']. The AUTHORS file lists contributors. BSD-3-Clause is an OSI-approved permissive license with no copyleft obligations. It permits commercial use, modification, and proprietary distribution provided the three conditions (copyright retention, binary redistribution notice, no endorsement) are met. No NOTICE, COPYING, or additional license files were found. Status PASS for permissive/compatible licensing."
+}

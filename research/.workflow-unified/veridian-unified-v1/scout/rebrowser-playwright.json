@@ -1,0 +1,44 @@
+{
+  "repo": "rebrowser-playwright",
+  "category": "stealth",
+  "heritage": true,
+  "heritageBasis": "declared_prior",
+  "tier": "B",
+  "relevanceScore": 8,
+  "sourceFileCount": 140,
+  "directoryCount": 30,
+  "hasArchitectureDocs": false,
+  "hasTests": false,
+  "keyFiles": [
+    "package.json",
+    "README.md",
+    "index.js",
+    "lib/index.js",
+    "lib/runner/runner.js",
+    "lib/worker/workerMain.js",
+    "lib/common/configLoader.js",
+    "lib/reporters/html.js",
+    "lib/transform/transform.js",
+    "lib/matchers/expect.js",
+    "types/test.d.ts"
+  ],
+  "affectedConcerns": [
+    "browser-automation",
+    "stealth"
+  ],
+  "rationale": "rebrowser-playwright is a fork of the upstream Playwright test runner (v1.52.0) that applies rebrowser-patches as a drop-in replacement for stealth/anti-bot evasion. The repo itself is a thin wrapper: package.json patches name/description/keywords and swaps the dependency 'playwright-core' for 'npm:rebrowser-playwright-core@~1.52.0' (the actual stealth-patched core). The lib/ directory (93 JS files across 8 subdirectories) is the full Playwright test runner source unchanged from upstream — including test orchestration, worker management, config loading, reporters, matchers, and ESM/transform pipeline. No test files, architecture docs, or CI configs are present in this checkout. Git history shows the 'patched' commits only differ from 'original' in README.md and package.json, confirming all stealth logic lives in rebrowser-playwright-core, not in this package. Relevance to Veridian's scraping pipeline is high (S-tier on stealth alone) but downgraded to B because this repo contains no stealth implementation source — it is a repackage that delegates to a separate core package; the actual anti-detection patches are in rebrowser-playwright-core (not in this scout directory). The tier reflects that this fork's value as a Veridian pipeline ingredient depends on evaluating that core package, not just this thin wrapper.",
+  "limitations": [
+    "No stealth patch source code present in this repository; the stealth logic is entirely in rebrowser-playwright-core (npm alias), which is not in this scout directory",
+    "Zero test files — the repo is a packaged distribution, not a development checkout",
+    "No architecture documentation or design docs — only the upstream Playwright README",
+    "No CI configuration, no contribution guide, no changelog specific to the fork",
+    "The lib/ directory is the unmodified Playwright test runner, not stealth-specific code",
+    "node_modules not installed — cannot inspect rebrowser-playwright-core to verify actual patches"
+  ],
+  "evidencePaths": [
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/stealth/rebrowser-playwright/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/stealth/rebrowser-playwright/README.md",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/stealth/rebrowser-playwright/lib/index.js",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/stealth/rebrowser-playwright/lib/runner/runner.js"
+  ]
+}

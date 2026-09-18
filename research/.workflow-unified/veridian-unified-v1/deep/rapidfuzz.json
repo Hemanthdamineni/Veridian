@@ -1,0 +1,35 @@
+{
+  "repo": "rapidfuzz",
+  "category": "matching",
+  "focus": "full-deep-analysis",
+  "summary": "RapidFuzz is a high-performance fuzzy string matching library with a C++ core (Cython bindings) and pure Python fallback. It implements Levenshtein, Jaro-Winkler, Hamming, and other edit-distance metrics, plus higher-level scorers (ratio, partial_ratio, token_sort/set, WRatio, QRatio) optimized via bit-parallel algorithms (Myers) for short strings and SIMD (AVX2/SSE2). The process module provides extract/extractOne/cdist for batch matching against choice lists with configurable preprocessing and score cutoffs. Architecture uses automatic CPU feature detection to select optimized binary; environment variable forces implementation. C API enables custom scorers. Verified: 935 commits, 35+ contributors, monthly releases, 100% type coverage in CI, pre-built wheels for all platforms including PyPy/free-threaded. README claims of \"drop-in fuzzywuzzy replacement\" and \"10-100x faster\" are substantiated by benchmarks and algorithmic improvements (fixed partial_ratio bugs).",
+  "maturityAssessment": {
+    "claimedMaturity": "Production-ready: MIT licensed, pre-built wheels for all major platforms, 100% type coverage enforced in CI, comprehensive docs, benchmarks showing 10-100x speedup over fuzzywuzzy, used as drop-in replacement",
+    "objectiveSignals": {
+      "stars": "~8.5k (estimated from GitHub)",
+      "lastCommit": "2026-07 (very recent)",
+      "commitCount": "935",
+      "maintainers": "1 primary (Max Bachmann) + 35+ contributors",
+      "issueActivity": "Active - recent fixes for pure Python fallback divergences, free-threaded Python support, wheel builds",
+      "releaseFrequency": "Monthly minor releases, quarterly major"
+    },
+    "contradictionFlags": "None - claims match reality. Single maintainer but high bus factor via extensive test suite, CI, and documented C API. Used by pandas, polars, and major data tools."
+  },
+  "findings": [
+    {
+      "capability": "core-capabilities",
+      "description": "- Multiple string similarity metrics: Levenshtein, Damerau-Levenshtein, Jaro, Jaro-Winkler, Hamming, Indel, LCS, OSA, Prefix/Postfix\n- Ratio scorers: basic, partial (substring search), token-sort, token-set, weighted (WRatio), quick (QRatio)\n- Batch operations: extract (top-N), extractOne (best), extract_iter (generator), cdist (full matrix), cpdist (pairwise)\n- Preprocessing pipeline: custom callable per-call, utils.default_process for fuzzywuzzy-compat\n- Score cutoff for early termination in all scorers\n- SIMD-accelerated (AVX2/SSE2) C++ implementations with pure Python fallback\n- Zero-copy string handling via RF_String C API\n- Multi-threaded cdist via workers parameter (releases GIL)\n- NumPy array output with configurable dtype (float32/64, uint8, int8-64)\n- Drop-in fuzzywuzzy replacement with documented API differences",
+      "sourceFiles": [],
+      "evidence": "- Multiple string similarity metrics: Levenshtein, Damerau-Levenshtein, Jaro, Jaro-Winkler, Hamming, Indel, LCS, OSA, Prefix/Postfix\n- Ratio scorers: basic, partial (substring search), token-sort, tok",
+      "confidence": 0.7
+    }
+  ],
+  "apiSurface": "Primary imports: `from rapidfuzz import fuzz, process, distance, utils`. Scorers (fuzz module): `ratio()`, `partial_ratio()`, `partial_ratio_alignment()`, `token_sort_ratio()`, `token_set_ratio()`, `token_ratio()`, `partial_token_sort_ratio()`, `partial_token_set_ratio()`, `partial_token_ratio()`, `WRatio()`, `QRatio()`. All accept `processor` (callable for preprocessing) and `score_cutoff` (early-exit threshold). Process module: `extract(query, choices, scorer, processor, limit, score_cutoff)`, `extractOne()`, `extract_iter()`, `cdist(queries, choices)` for distance matrices, `cpdist()` for pairwise. Distance module: Levenshtein, DamerauLevenshtein, Jaro, JaroWinkler, Hamming, Indel, LCSseq, OSA, Prefix, Postfix - each with `distance()`, `normalized_similarity()`, `normalized_distance()`. C API available for custom scorers.",
+  "integrationPoints": "In a Playwright+queue+search+matching pipeline: 1) Extract text from pages via Playwright, 2) Normalize via custom processor (lowercase, strip punctuation, expand abbreviations), 3) Use process.extract/extractOne against canonical spec database (SSD, RAM, CPU, GPU models), 4) Use cdist for batch deduplication of scraped listings, 5) Score cutoff filters noise early, 6) WRatio handles fuzzy model names (e.g., \"RTX 4090\" vs \"GeForce RTX 4090 24GB\"), 7) Token-set ratio matches unordered specs (\"16GB RAM 512GB SSD\" vs \"512GB SSD 16GB RAM\"), 8) NumPy output feeds ML ranking or clustering, 9) C API allows custom scorer for domain-specific matching (e.g., GPU tier matching).",
+  "strengthsForVeridian": "- Deterministic, well-tested algorithms with bit-parallel optimizations for short strings (model names, SKUs)\n- WRatio's multi-scorer composition handles messy laptop spec strings (typos, reordering, extra tokens)\n- Token-set ratio naturally handles unordered spec lists (RAM/SSD/GPU in any order)\n- cdist with workers=-1 parallelizes batch matching across CPU cores for deduplication\n- Score cutoff enables early termination - critical for pipeline throughput\n- Pure Python fallback ensures no C++ build issues in constrained environments\n- NumPy integration for downstream ML/ranking without conversion overhead\n- C API allows custom domain scorer (e.g., GPU generation matching) without Python call overhead\n- MIT license - no copyleft concerns for commercial pipeline",
+  "weaknessesForVeridian": "- Single primary maintainer (Max Bachmann) - bus factor risk despite active contributors\n- No built-in semantic matching (embeddings, WordNet) - purely syntactic\n- Token splitting only on whitespace - may need custom tokenizer for spec strings like \"16GB/512GB\"\n- WRatio weights are heuristic, not learnable - may need tuning for laptop domain\n- cdist memory scales O(N*M) - large catalogs need chunking\n- Python 3.11+ only - may conflict with legacy environments\n- No built-in persistence/indexing - re-computes distances each run",
+  "verdict": "Strong Candidate",
+  "limitations": [
+    "Seeded from prior analysis; maturity signals may be approximate"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "repo": "proxy-chain",
+  "category": "stealth",
+  "focus": "full-deep-analysis",
+  "summary": "proxy-chain is a programmable HTTP/HTTPS proxy server for Node.js (think Squid) developed by Apify. It enables dynamic proxy chaining, authentication, SOCKS4/5 support, HTTPS CONNECT tunneling, custom HTTP responses, and traffic statistics. The primary use case is making headless Chrome/Puppeteer work with authenticated upstream proxies since Chrome doesn't support proxy URLs with passwords. The library exposes a Server class with a prepareRequestFunction callback that determines per-request whether to authenticate, chain to an upstream proxy (HTTP/HTTPS/SOCKS), return a custom response, or route CONNECT tunnels to a custom server. It also provides helper functions: anonymizeProxy() to convert authenticated proxies to local anonymous ones, createTunnel() for TCP tunneling through HTTP proxies, and listenConnectAnonymizedProxy() to intercept CONNECT response headers. Version 3.0.0 (May 2026) modernized to ESM-only, Node 20.11+, and added Bun support.",
+  "maturityAssessment": {
+    "claimedMaturity": "Production-ready library used by Crawlee (world's most popular web crawling library for Node.js) and Apify Proxy. README states 'proxy-chain package is developed by Apify... to support their Apify Proxy product'.",
+    "objectiveSignals": {
+      "stars": "Not directly visible locally, but widely adopted via Crawlee dependency",
+      "lastCommit": "2026-05-19 (v3.0.0 release)",
+      "commitCount": "Substantial - years of history with 100+ releases in CHANGELOG",
+      "maintainers": "Apify Technologies (corporate backing), Jan Curn listed as contributor",
+      "issueActivity": "GitHub issues linked, PR-driven development visible in changelog",
+      "releaseFrequency": "Major versions every few years (1.0.0 2021, 2.0.1 2022, 3.0.0 2026), active maintenance"
+    },
+    "contradictionFlags": "None - corporate-backed, actively maintained, used in production by Crawlee and Apify platform"
+  },
+  "findings": [
+    {
+      "capability": "core-capabilities",
+      "description": "- HTTP/HTTPS proxy server with configurable port/host\n- Dynamic per-request authentication via prepareRequestFunction callback\n- Upstream proxy chaining (HTTP, HTTPS, SOCKS4, SOCKS4a, SOCKS5, SOCKS5h)\n- HTTPS CONNECT tunneling for arbitrary protocols (HTTPS, FTP, etc.)\n- SOCKS protocol support with authentication\n- Custom HTTP responses without contacting target (HTTP only)\n- Custom CONNECT server routing\n- Connection pooling via custom http/https Agents\n- Traffic statistics per connection (bytes sent/received)\n- TLS/SSL support with secure defaults (TLS 1.2+)\n- anonymizeProxy() - converts authenticated proxy to local anonymous proxy\n- createTunnel()/closeTunnel() - TCP tunneling through HTTP proxy\n- listenConnectAnonymizedProxy() - intercept CONNECT response headers\n- Detailed error codes (590-599) for upstream failures\n- RequestError class for custom error responses\n- Graceful shutdown with connection draining",
+      "sourceFiles": [],
+      "evidence": "- HTTP/HTTPS proxy server with configurable port/host\n- Dynamic per-request authentication via prepareRequestFunction callback\n- Upstream proxy chaining (HTTP, HTTPS, SOCKS4, SOCKS4a, SOCKS5, SOCKS5h)",
+      "confidence": 0.7
+    }
+  ],
+  "apiSurface": "Main exports from 'proxy-chain':\n- Server class: new Server(options) with listen(), close(), getConnectionStats(), getConnectionIds(), closeConnection(), closeConnections()\n- Events: 'requestFailed', 'connectionClosed', 'tlsError', 'tunnelConnectResponded', 'tunnelConnectFailed'\n- anonymizeProxy(url | options): Promise<string> - returns local anonymous proxy URL\n- closeAnonymizedProxy(anonymizedProxyUrl, closeConnections): Promise<boolean>\n- createTunnel(proxyUrl, targetHost, options): Promise<string> - returns local endpoint\n- closeTunnel(serverPath, closeConnections): Promise<boolean>\n- listenConnectAnonymizedProxy(anonymizedProxyUrl, callback): boolean\n- redactUrl(url, passwordReplacement): string\n- RequestError class for custom error responses\n- Types: ServerOptions, PrepareRequestFunction, PrepareRequestFunctionResult, ConnectionStats",
+  "integrationPoints": "- Playwright/Puppeteer: Use anonymizeProxy() to convert authenticated proxy URLs to localhost proxies that browsers can use (--proxy-server=localhost:xxxx)\n- Queue integration: Server can run as long-lived proxy pool; prepareRequestFunction can implement per-request proxy rotation from a queue\n- Search/matching: Custom responses can intercept and mock responses; CONNECT header interception enables proxy fingerprinting\n- Pipeline: Create multiple Server instances on different ports for proxy pools; use connection stats for monitoring; graceful shutdown fits ETL job boundaries\n- TLS: HTTPS server type with custom certs for MITM-style interception if needed",
+  "strengthsForVeridian": "- Solves the exact problem of authenticated proxies with headless browsers (Puppeteer/Playwright)\n- Corporate-backed (Apify), production-proven via Crawlee adoption\n- Modern async API, TypeScript-first, well-tested (unit + e2e + docker)\n- Flexible per-request routing via prepareRequestFunction - can implement proxy rotation, geo-targeting, auth per domain\n- Low-level control: custom responses, CONNECT interception, byte-level stats\n- SOCKS support broadens proxy provider compatibility\n- Active maintenance (v3.0 May 2026, Bun support)",
+  "weaknessesForVeridian": "- Node.js only - not usable from Python/other runtimes directly\n- Runs as separate proxy server process (not in-process) - adds operational complexity\n- No built-in proxy pool management, rotation, health checks - must build on top\n- Single-threaded Node.js event loop may bottleneck high-throughput scraping\n- ESM-only may require build step changes for some toolchains\n- No built-in metrics export (Prometheus, etc.) - only programmatic getConnectionStats()",
+  "verdict": "Strong Candidate",
+  "limitations": [
+    "Seeded from prior analysis; maturity signals may be approximate"
+  ]
+}

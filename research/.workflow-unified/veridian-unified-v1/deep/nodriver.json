@@ -1,0 +1,35 @@
+{
+  "repo": "nodriver",
+  "category": "stealth",
+  "focus": "full-deep-analysis",
+  "summary": "nodriver is a fully asynchronous Python browser automation library that communicates directly with Chromium-based browsers via the Chrome DevTools Protocol (CDP) over WebSockets, eliminating the Selenium/ChromeDriver dependency entirely. It positions itself as the official successor to undetected-chromedriver with built-in anti-bot evasion features including fresh profile creation per run, automatic cleanup, and configurable stealth defaults. The core architecture centers on a Browser class (managing the browser process) and Tab class (controlling individual targets \u2014 tabs, iframes, windows) both extending a Connection base that handles CDP message serialization, event loops, and WebSocket lifecycle. The API exposes the full CDP surface through generated domain modules (dom, network, page, runtime, etc.) while providing high-level conveniences like `tab.find()`, `tab.select()`, cookie persistence, and a one-line `await nodriver.start()` launcher. The codebase is actively maintained (166 commits, 5 contributors, last commit May 2026) with recent work on proxy auth, extension handling, and CDP protocol updates.",
+  "maturityAssessment": {
+    "claimedMaturity": "Positions itself as production-ready successor to undetected-chromedriver with 'bizarre performance gains' and 'best practice config by default'. README includes WARNING: 'results may vary due to many factors. No guarantees are given whatsoever.'",
+    "objectiveSignals": {
+      "stars": "Unknown (local clone only)",
+      "lastCommit": "2026-05-13",
+      "commitCount": "166",
+      "maintainers": "5 distinct authors (UltrafunkAmsterdam primary)",
+      "issueActivity": "Unable to assess (local clone)",
+      "releaseFrequency": "Active \u2014 81 commits since 2025-01-01, version 0.50.3"
+    },
+    "contradictionFlags": "Version 0.50.3 suggests pre-1.0 API instability despite marketing as 'official successor'. AGPL-3.0 license (per LICENSE.txt) may be problematic for commercial Veridian use. No guarantees disclaimer undermines 'production-ready' positioning."
+  },
+  "findings": [
+    {
+      "capability": "core-capabilities",
+      "description": "- Direct CDP WebSocket communication (no Selenium/ChromeDriver binary)\n- Fully async/await architecture with custom event loop management\n- Fresh temporary profile per session with automatic cleanup\n- Multi-browser support: Chromium, Chrome, Edge, Brave\n- Full CDP domain coverage (dom, network, page, runtime, debugger, emulation, etc.)\n- High-level element lookup: `tab.find()`, `tab.find_all()`, `tab.select()`, `tab.select_all()` with CSS/text/iframe support\n- Cookie persistence (save/load to file)\n- Proxy support including HTTP/HTTPS with authentication\n- Browser context isolation (BrowserContext manager)\n- Headless and headful modes\n- Window tiling/management utilities\n- Extension loading support (with workarounds)\n- Custom CDP command execution via generated domain classes",
+      "sourceFiles": [],
+      "evidence": "- Direct CDP WebSocket communication (no Selenium/ChromeDriver binary)\n- Fully async/await architecture with custom event loop management\n- Fresh temporary profile per session with automatic cleanup\n-",
+      "confidence": 0.7
+    }
+  ],
+  "apiSurface": "Primary entry: `await nodriver.start(**kwargs) -> Browser`\n- Browser: `.get(url, new_window=False) -> Tab`, `.tabs` (list), `.stop()`, `.close()`, context manager support\n- Tab: `.find(selector/text)`, `.find_all()`, `.select(css)`, `.select_all()`, `.get(url)`, `.reload()`, `.screenshot()`, `.evaluate(js)`, `.cookies` (get/set/save/load), `.wait()`, `.sleep()`, `.maximize()`, `.set_window_size()`\n- Config: `nodriver.Config(...)` with kwargs for user_data_dir, headless, browser_executable_path, browser_args, sandbox, lang, proxy, etc.\n- CDP domains: `nodriver.cdp.<domain>.<Method/Event/Type>` \u2014 full protocol surface\n- Element: `.click()`, `.send_keys()`, `.get_attribute()`, `.property`, `.text`, `.html`, `.select()`, `.find()`",
+  "integrationPoints": "- **Queue integration**: Browser/Tab objects are async-native \u2014 can be pooled in a worker process pool with asyncio queues\n- **Playwright interop**: No direct bridge, but both speak CDP \u2014 could share a browser instance via CDP endpoint if Playwright connects to nodriver's devtools port\n- **Search/matching**: `tab.find/select` with CSS/text provides DOM query layer; `tab.evaluate()` enables arbitrary JS for complex extraction\n- **Pipeline fit**: `start()` \u2192 `browser.get()` \u2192 `tab.find/select/evaluate` \u2192 `tab.cookies.save()` \u2192 `browser.stop()` maps cleanly to ETL stages\n- **Stealth value**: Fresh profile per run + configurable args + proxy support directly addresses fingerprint rotation needs",
+  "strengthsForVeridian": "- True async architecture eliminates thread-pool overhead \u2014 critical for high-concurrency scraping\n- Zero Selenium/ChromeDriver dependency reduces deployment complexity and version skew\n- Built-in stealth defaults (fresh profile, realistic args) require minimal config for anti-bot evasion\n- Full CDP access enables advanced scenarios (network interception, performance metrics, DevTools features)\n- Active maintenance with recent proxy/auth/extension fixes shows responsiveness to real-world blockers\n- Simple one-liner startup (`await nodriver.start()`) accelerates prototyping and testing",
+  "weaknessesForVeridian": "- **AGPL-3.0 license is a major blocker** for proprietary/commercial Veridian pipeline \u2014 requires open-sourcing entire derivative work\n- Pre-1.0 version (0.50.3) signals API instability; breaking changes likely\n- No TypeScript/JS bindings \u2014 Python-only limits polyglot pipeline options\n- Smaller ecosystem than Playwright/Puppeteer \u2014 fewer community extensions, less StackOverflow coverage\n- No built-in request/response interception middleware (must use raw CDP Network domain)\n- Single primary maintainer (UltrafunkAmsterdam) \u2014 bus factor risk\n- Documentation hosted externally (GitHub Pages) \u2014 may drift from code\n- Windows support less tested (primarily POSIX-focused code paths)",
+  "verdict": "Weak Fit",
+  "limitations": [
+    "Seeded from prior analysis; maturity signals may be approximate"
+  ]
+}

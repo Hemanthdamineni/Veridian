@@ -1,0 +1,23 @@
+{
+  "repo": "parse5",
+  "status": "PASS",
+  "spdx": "MIT",
+  "osiApproved": true,
+  "evidenceFiles": [
+    ".references/parsing/parse5/LICENSE",
+    ".references/parsing/parse5/packages/parse5/LICENSE",
+    ".references/parsing/parse5/packages/parse5/package.json",
+    ".references/parsing/parse5/package.json",
+    ".references/parsing/parse5/packages/parse5-html-rewriting-stream/LICENSE",
+    ".references/parsing/parse5/packages/parse5-htmlparser2-tree-adapter/LICENSE",
+    ".references/parsing/parse5/packages/parse5-parser-stream/LICENSE",
+    ".references/parsing/parse5/packages/parse5-plain-text-conversion-stream/LICENSE",
+    ".references/parsing/parse5/packages/parse5-sax-parser/LICENSE"
+  ],
+  "obligations": [
+    "Retain the copyright notice and the MIT permission notice verbatim in all copies or substantial portions of the software (LICENSE, lines 10-11: 'The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.').",
+    "No copyleft, patent-grant, or source-disclosure obligation is imposed by the MIT text.",
+    "Attribution is required via the notice; re-licensing of derived/new code is permitted without viral effect."
+  ],
+  "rationale": "Every LICENSE file in the repository (root and all six published workspace packages) is the canonical verbatim MIT license text with copyright line 'Copyright (c) 2013-2019 Ivan Nikulin'. Each published package package.json declares '\"license\": \"MIT\"' (packages/parse5/package.json line 35; identical in the other five workspace packages). The MIT license is an OSI-approved permissive license that permits use, copy, modify, merge, publish, distribute, sublicense, and sell, with the sole condition of preserving the copyright and permission notice. No NOTICE/COPYING files exist and no copyleft, proprietary, or incompatible constraint was found. PASS reflects a reviewed permissive and compatible license."
+}

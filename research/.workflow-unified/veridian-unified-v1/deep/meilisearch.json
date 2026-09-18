@@ -1,0 +1,35 @@
+{
+  "repo": "meilisearch",
+  "category": "search",
+  "focus": "full-deep-analysis",
+  "summary": "Meilisearch is a production-grade, open-source search engine written in Rust, built on LMDB with roaring bitmaps for candidate sets and grenad for external sorting. The core `milli` crate implements a full inverted index with position encoding, Levenshtein automata for typo tolerance (1-2 edits), FST-based term dictionaries, and a multi-criterion ranking pipeline (words, typo, proximity, attribute, sort, exactness). It supports hybrid search combining BM25 full-text with HNSW vector search (arroy/hannoy) via local (candle/tokenizers) or remote (OpenAI, HF Hub) embedders. The HTTP server (actix-web) exposes a RESTful API with 10+ official SDKs. Architecture is a monorepo of 24 crates with mimalloc for performance. Active development: 14,533 commits, ~10 core maintainers, monthly releases, 415 commits in last 2 months. Enterprise features (sharding, S3 snapshots) are source-available under BSL 1.1.",
+  "maturityAssessment": {
+    "claimedMaturity": "Production-ready search engine used by thousands of companies. README mentions 'lightning-fast search engine that fits effortlessly into your apps, websites, and workflow' with features that 'work out of the box'. Enterprise edition mentions 'sharding' and 'S3-streaming snapshots' for scale. MIT license for Community Edition.",
+    "objectiveSignals": {
+      "stars": "~45k+ (estimated from deps.rs badge)",
+      "lastCommit": "2026-07-30",
+      "commitCount": "14,533",
+      "maintainers": "~10 active core maintainers (Cl\u00e9ment Renault 2732, Louis Dureuil 1763, Kerollmops 1371, Tamo 1302, plus ManyTheFish, mpostma, Lo\u00efc Lecrenier, Mubelotix, etc.)",
+      "issueActivity": "High - dedicated workflows for flaky tests, fuzzing, benchmarks, SDK tests",
+      "releaseFrequency": "Monthly releases (v1.51.0 in Cargo.toml)"
+    },
+    "contradictionFlags": ""
+  },
+  "findings": [
+    {
+      "capability": "core-capabilities",
+      "description": "- Full-text search with <50ms latency target (search-as-you-type)\n- Typo tolerance (1-2 edits) via Levenshtein automata on FST\n- Faceted filtering & filtering with complex boolean expressions\n- Sorting by any field at query time\n- Hybrid search: BM25 + semantic vectors (HNSW via arroy/hannoy)\n- Multi-language tokenization (Latin, CJK, Hebrew, Arabic, Thai, Khmer, Vietnamese, etc.)\n- Synonyms, stop words, ranking rules customization\n- Distinct/deduplication on field\n- Geo-search (lat/lng filtering & sorting)\n- Multi-tenancy via signed tenant tokens (JWT)\n- Document relations (cross-index references)\n- Search rules (dynamic pinning/hiding via Rhai scripts)\n- Sharding & replication (Enterprise)\n- S3 streaming snapshots (Enterprise)\n- Conversational search (AI-generated answers grounded in results)\n- Personalization (learning-to-rank via user behavior)\n- RESTful API with OpenAPI spec; 10+ official SDKs\n- Prometheus metrics, structured logging, health checks",
+      "sourceFiles": [],
+      "evidence": "- Full-text search with <50ms latency target (search-as-you-type)\n- Typo tolerance (1-2 edits) via Levenshtein automata on FST\n- Faceted filtering & filtering with complex boolean expressions\n- Sortin",
+      "confidence": 0.7
+    }
+  ],
+  "apiSurface": "Meilisearch is primarily an HTTP server (actix-web based) exposing a RESTful API. Core SDK interaction is via language-specific clients (Rust, JS, Python, Go, PHP, Ruby, .NET, Swift) that wrap the HTTP API. The internal Rust crate `milli` is the search engine library with public API for:\n- `Index::create_or_open()` - LMDB-backed index creation\n- `Search` builder pattern - query, filter, offset/limit, sort, distinct, geo, semantic/hybrid search\n- `execute_search()` - full-text search with typo tolerance (Levenshtein automata), faceting, sorting\n- `execute_vector_search()` - semantic/hybrid search with embedders (candle, hf-hub, openai)\n- Document updates via `index.update_documents()` with JSON\n- Settings management: filterable attributes, sortable attributes, ranking rules, synonyms, stop words\n- Multi-tenancy via tenant tokens (JWT-based)\n- Sharding/replication (Enterprise only)\nThe HTTP API covers: indexes CRUD, documents CRUD (batch), search (POST /indexes/{uid}/search), settings, stats, tasks, snapshots, keys, health.",
+  "integrationPoints": "For Veridian pipeline:\n1. Playwright scraper \u2192 batch JSON documents \u2192 Meilisearch HTTP API (`/indexes/{uid}/documents` batch endpoint)\n2. Queue (Redis/RabbitMQ) \u2192 index-scheduler task queue for async indexing with progress tracking\n3. Search: HTTP API `/search` with filter (brand, price range, specs), sort (price, rating), facets (brand, category), hybrid search for semantic queries\n4. Matching: Use distinct on product_id for deduplication; filterable attributes for exact spec matching; geo-search for local availability\n5. Embeddings: Generate embeddings offline (sentence-transformers) \u2192 include in documents \u2192 hybrid search at query time\n6. Multi-tenancy: tenant tokens per retailer/source for isolation\n7. Snapshots for backup/restore of scraped corpus\n8. SDKs available for Python/JS/Go/Rust integration",
+  "strengthsForVeridian": "- Excellent fit for laptop spec search: faceted filtering (brand, CPU, GPU, RAM, storage), sorting (price, rating), geo-search (local availability), typo tolerance for user queries\n- Hybrid search enables semantic queries like \"laptop for video editing under $1500\" combining specs + natural language\n- Batch document API (200 docs/request) fits ETL pipeline from Playwright scrapers\n- Multi-tenancy via tenant tokens isolates data per retailer/source\n- Distinct on product_id handles duplicate listings across retailers\n- Search rules (Rhai) can pin promoted products or hide out-of-stock\n- High performance: <50ms p99, horizontal scaling via sharding (Enterprise)\n- Rich SDK ecosystem (Python/JS/Go/Rust) for pipeline integration\n- Active maintenance, strong community, production-proven at scale",
+  "weaknessesForVeridian": "- Enterprise features (sharding, S3 snapshots) require commercial license (BSL 1.1) - Community Edition limited to single node\n- Embedding generation not built-in; need separate pipeline (sentence-transformers, OpenAI API) for vectors\n- Rhai scripting for search rules adds complexity; learning curve for dynamic pinning\n- Large binary (~100MB) and memory usage (LMDB mapsize) - needs capacity planning\n- No native SQL/PostgreSQL integration; pure document store\n- Versioning: crates not on crates.io, internal crates don't follow SemVer\n- Telemetry enabled by default (opt-out) - may need compliance review\n- Minimum Rust 1.85+ (per rust-toolchain.toml) - relatively recent toolchain",
+  "verdict": "Strong Candidate",
+  "limitations": [
+    "Seeded from prior analysis; maturity signals may be approximate"
+  ]
+}

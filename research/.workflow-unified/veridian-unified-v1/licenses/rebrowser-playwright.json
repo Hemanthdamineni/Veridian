@@ -1,0 +1,18 @@
+{
+  "repo": "rebrowser-playwright",
+  "status": "PASS",
+  "spdx": "Apache-2.0",
+  "osiApproved": true,
+  "evidenceFiles": [
+    ".references/stealth/rebrowser-playwright/LICENSE",
+    ".references/stealth/rebrowser-playwright/NOTICE",
+    ".references/stealth/rebrowser-playwright/package.json"
+  ],
+  "obligations": [
+    "Retain copyright and license notices in source distributions",
+    "Include NOTICE file attribution when distributing derivative works",
+    "State changes to modified files",
+    "Provide a copy of the Apache-2.0 license with distributions"
+  ],
+  "rationale": "The repository contains a full Apache License 2.0 text in LICENSE (lines 1-203) with copyright headers for Microsoft Corporation and Google Inc. The NOTICE file confirms Playwright copyright (c) Microsoft Corporation and acknowledges derivation from Puppeteer under Apache 2.0. package.json declares license: \"Apache-2.0\" and author: Microsoft Corporation. Apache-2.0 is an OSI-approved permissive license compatible with most use cases; no copyleft or proprietary constraints were found."
+}

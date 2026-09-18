@@ -1,0 +1,15 @@
+{
+  "repo": "https://github.com/browser-use/browser-harness",
+  "status": "PASS",
+  "spdx": "MIT",
+  "osiApproved": true,
+  "evidenceFiles": [
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/frameworks/browser-harness/LICENSE",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/frameworks/browser-harness/pyproject.toml",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/frameworks/browser-harness-js/LICENSE"
+  ],
+  "obligations": [
+    "Preserve the MIT copyright and permission notice (Copyright (c) 2026 Browser Use) in all copies or substantial portions of the Software; no copyleft, no source-disclosure, no patent-grant obligations."
+  ],
+  "rationale": "Verified standard MIT License text (SPDX MIT, OSI-approved) in .references/frameworks/browser-harness/LICENSE, matching the `license = \"MIT\"` declaration in pyproject.toml (lines 11-12, 34-36 declaring Repository = github.com/browser-use/browser-harness). Git remote origin confirms the checkout is github.com/browser-use/browser-harness.git at commit 188383b (2026-08-02); the requested URL Browser-Harness/browser-harness resolves to the same repo (GitHub org casing is case-insensitive). Companion repo browser-harness-js has an identical LICENSE (diff-empty) and the same MIT header. No NOTICE, COPYING, or other license text exists in either checkout. MIT is permissive/compatible with integrating into a proprietary pipeline where Veridian authors do not redistribute third-party code; the only obligation is notice preservation. PASS for MIT."
+}

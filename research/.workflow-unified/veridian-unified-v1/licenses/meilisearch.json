@@ -1,0 +1,25 @@
+{
+  "repo": "meilisearch",
+  "status": "REVIEW",
+  "spdx": "MIT AND BUSL-1.1",
+  "osiApproved": false,
+  "evidenceFiles": [
+    "LICENSE",
+    "LICENSE-MIT",
+    "LICENSE-EE",
+    "Cargo.toml",
+    "README.md",
+    "crates/meilisearch-types/src/enterprise_edition/mod.rs",
+    "crates/index-scheduler/src/scheduler/enterprise_edition/mod.rs",
+    "crates/index-scheduler/src/scheduler/community_edition.rs"
+  ],
+  "obligations": [
+    "Community Edition (default build, no `enterprise` cargo feature): MIT — permissive. Must retain the MIT copyright notice and permission notice in all copies or substantial portions (LICENSE-MIT:12-13). Free for commercial use.",
+    "Enterprise Edition modules (files marked as EE, e.g. crates/meilisearch-types/src/enterprise_edition/* and crates/index-scheduler/src/scheduler/enterprise_edition/*) are governed by Business Source License 1.1 (BUSL-1.1), not MIT. NON-PRODUCTION use only (testing/development/evaluation); PRODUCTION use requires a commercial license agreement with Meili SAS (LICENSE-EE:8-13).",
+    "Any use of the BUSL-1.1 Licensed Work in violation of its terms automatically terminates rights under that license (LICENSE-EE:55-57).",
+    "Each original or modified copy of a BUSL-1.1 Licensed Work must conspicuously display this license; no trademark rights granted (LICENSE-EE:50-61).",
+    "BUSL-1.1-licensed EE works convert to MIT (Change License) four years from first public distribution of a given version (LICENSE-EE:15-17,36-38).",
+    "Workspace Cargo.toml declares `license = \"MIT\"` only (Cargo.toml:39), which understates the BUSL-1.1 component; a consumer should not rely on the manifest field alone and must confirm which crate features (`enterprise`) are enabled."
+  ],
+  "rationale": "Dual-licensed repository. The root LICENSE declares SPDX `MIT AND BUSL-1.1` (LICENSE:9) covering MEILI SAS 2019-2025. The Community Edition (default feature set, all standard crates: milli, meilisearch-types, index-scheduler community_edition, dump, file-store, etc.) is MIT-licensed and freely usable including commercial use (README.md:104-108, LICENSE-MIT full text). The Enterprise Edition modules — sharding, S3-streaming snapshots, network/index replication — are licensed under Business Source License 1.1 (LICENSE-EE), which permits only non-production use without a separate commercial agreement (LICENSE-EE:8-13) and is NOT an OSI-approved open-source license. These EE modules are plainly marked with BUSL-1.1 headers (crates/meilisearch-types/src/enterprise_edition/mod.rs:1-4, crates/index-scheduler/src/scheduler/enterprise_edition/mod.rs:1-4) and are gated behind the `enterprise` cargo feature; the community_edition.rs stubs return RequiresEnterpriseEdition errors (crates/index-scheduler/src/scheduler/community_edition.rs). Status is REVIEW, not PASS, because although the default community build is permissive MIT, the repository bundles BUSL-1.1-licensed code that prohibits production use of EE features without a commercial agreement, and the workspace Cargo.toml `license = \"MIT\"` field understates this. A human reviewer must confirm a consuming product compiles only the MIT Community Edition and never incorporates or enables the EE-gated modules (BUSL-1.1) without a commercial license."
+}

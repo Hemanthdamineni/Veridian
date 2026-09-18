@@ -1,0 +1,17 @@
+manufacturer:
+  acer:
+    brand: "Acer"
+    base_url: "https://www.acer.com"
+    regions:
+      - code: US
+        name: "United States"
+        base_url: "https://www.acer.com/us-en"
+        language: en-US
+        currency: USD
+        category_paths:
+          laptops: "/us-en/laptops"
+        selectors:
+          product_link: "a.product-link"
+          product_name: "h1.product-name"
+          specs_table: "table.specs-table"
+          next_page: "a.next-page"

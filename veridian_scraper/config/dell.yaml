@@ -1,0 +1,29 @@
+manufacturer:
+  dell:
+    brand: "Dell"
+    base_url: "https://www.dell.com"
+    regions:
+      - code: US
+        name: "United States"
+        base_url: "https://www.dell.com/en-us"
+        language: en-US
+        currency: USD
+        category_paths:
+          laptops: "/shop/dell-laptops/sr/laptops"
+        selectors:
+          product_link: "a.product-link"
+          product_name: "h1.product-name"
+          specs_table: "table.specs-table"
+          next_page: "a.next-page"
+      - code: IN
+        name: "India"
+        base_url: "https://www.dell.com/en-in"
+        language: en-IN
+        currency: INR
+        category_paths:
+          laptops: "/shop/dell-laptops/sr/laptops"
+        selectors:
+          product_link: "a.product-link"
+          product_name: "h1.product-name"
+          specs_table: "table.specs-table"
+          next_page: "a.next-page"

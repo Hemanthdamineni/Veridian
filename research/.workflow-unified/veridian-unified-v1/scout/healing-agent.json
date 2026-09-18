@@ -1,0 +1,56 @@
+{
+  "repo": "healing-agent",
+  "category": "healing",
+  "heritage": false,
+  "heritageBasis": "none",
+  "tier": "C",
+  "relevanceScore": 3,
+  "sourceFileCount": 22,
+  "directoryCount": 10,
+  "hasArchitectureDocs": false,
+  "hasTests": true,
+  "keyFiles": [
+    "healing_agent/healing_agent.py",
+    "healing_agent/ai_broker.py",
+    "healing_agent/ai_code_fixer.py",
+    "healing_agent/ai_hint_generator.py",
+    "healing_agent/exception_handler.py",
+    "healing_agent/redactor.py",
+    "healing_agent/code_replacer.py",
+    "healing_agent/code_backup.py",
+    "healing_agent/exception_saver.py",
+    "healing_agent/config_loader.py",
+    "healing_agent/config_template.py",
+    "tests/test_redactor.py",
+    "tests/test_json_decode_error.py",
+    "pyproject.toml",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "affectedConcerns": [
+    "self-healing"
+  ],
+  "rationale": "healing-agent is a general-purpose Python self-healing code library that catches exceptions at runtime, captures detailed context (stack traces, local/global variables, function arguments), sends context to an LLM (multi-provider: Azure OpenAI, OpenAI, Anthropic, Ollama, LiteLLM), receives a fix, validates syntax, creates a backup, and rewrites the function in-place via AST. It addresses the 'self-healing' pipeline concern directly. However, it is not a scraping pipeline component: no JSON-LD extraction, browser automation, script generation for scraping, stealth, queue, fuzzy matching, or full-text search. Its relevance to a laptop-specs scraping pipeline is indirect—it could heal broken scraper code but is not purpose-built for scraping. Architectural depth is moderate: decorator-based interception, multi-provider AI broker, context capture with secret redaction, AST-based code replacement, configurable persistence. No formal architecture docs exist beyond README/CHANGELOG. Tests cover redactor, JSON decode error handling, and integration examples. Tier C reflects niche relevance to one pipeline concern with decent implementation depth but no scraping-specific utility.",
+  "limitations": [
+    "Not a scraping pipeline component; relevance to Veridian is indirect (could heal scraper code at runtime)",
+    "No JSON-LD/Schema.org extraction, browser automation, script generation for scrapers, stealth, queue, fuzzy matching, or full-text search",
+    "No architecture/design documents beyond README and CHANGELOG",
+    "Experimental agent_tools (install_missing_module, check_env_variables, list_files_functions, json_fixer) are marked unused",
+    "Self-healing operates at Python function level, not at selector/DOM level for web scraping",
+    "AUTO_FIX mutates source files at runtime—risky for production scrapers",
+    "Single-author project (Máté Benyovszky), alpha status (Development Status :: 3 - Alpha)"
+  ],
+  "evidencePaths": [
+    "healing_agent/healing_agent.py:15-184",
+    "healing_agent/ai_broker.py:48-210",
+    "healing_agent/ai_code_fixer.py:28-174",
+    "healing_agent/exception_handler.py:56-281",
+    "healing_agent/redactor.py:28-113",
+    "healing_agent/code_replacer.py:102-160",
+    "healing_agent/config_loader.py:26-139",
+    "tests/test_redactor.py:16-127",
+    "README.md:1-169",
+    "CHANGELOG.md:1-92",
+    "pyproject.toml:1-58"
+  ]
+}

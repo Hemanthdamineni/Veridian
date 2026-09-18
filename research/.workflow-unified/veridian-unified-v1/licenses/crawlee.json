@@ -1,0 +1,37 @@
+{
+  "repo": "crawlee",
+  "status": "PASS",
+  "spdx": "Apache-2.0",
+  "osiApproved": true,
+  "evidenceFiles": [
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/LICENSE.md",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/README.md",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/packages/crawlee/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/packages/core/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/packages/basic-crawler/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/packages/browser-crawler/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/packages/browser-pool/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/packages/cheerio-crawler/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/packages/cli/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/packages/http-crawler/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/packages/impit-client/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/packages/jsdom-crawler/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/packages/linkedom-crawler/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/packages/memory-storage/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/packages/playwright-crawler/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/packages/puppeteer-crawler/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/packages/stagehand-crawler/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/packages/templates/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/packages/types/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/crawling/crawlee/packages/utils/package.json"
+  ],
+  "obligations": [
+    "Retain full Apache-2.0 license text in all distributions (LICENSE file or equivalent)",
+    "Include all original copyright notices (Copyright 2018 Apify Technologies s.r.o.)",
+    "If modified files are distributed, include prominent notice of changes",
+    "Retain attribution notices from any NOTICE file (none present in this repository)",
+    "No trademark grant: may not use Apify name/marks except for attribution"
+  ],
+  "rationale": "Crawlee is published by Apify Technologies s.r.o. under the Apache License, Version 2.0 (OSI-approved permissive license). The root LICENSE.md file contains the full standard Apache-2.0 text (202 lines) with copyright notice 'Copyright 2018 Apify Technologies s.r.o.' at line 189. The root package.json explicitly declares 'license': 'Apache-2.0', confirmed by the README.md license section, and by all 18 library packages under packages/ (grep verified). No NOTICE, PATENTS, COPYING, or copyleft files exist. CLI scaffolding templates (starter project boilerplates) use ISC license which is also permissive and OSI-approved, but these are generated user projects — not part of the library itself. Apache-2.0 is fully compatible with proprietary use provided the license notice is retained. Status: PASS."
+}

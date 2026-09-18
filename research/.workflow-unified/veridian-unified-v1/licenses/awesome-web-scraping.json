@@ -1,0 +1,20 @@
+{
+  "repo": "lorien/awesome-web-scraping (mirrored at .references/docs/awesome-web-scraping)",
+  "status": "PASS",
+  "spdx": "CC-BY-4.0",
+  "osiApproved": false,
+  "evidenceFiles": [
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/docs/awesome-web-scraping/LICENSE",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/docs/awesome-web-scraping/README.md",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/docs/awesome-web-scraping/CONTRIBUTING.md",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/docs/awesome-web-scraping/.git/config",
+    "https://raw.githubusercontent.com/lorien/awesome-web-scraping/master/LICENSE"
+  ],
+  "obligations": [
+    "Attribution required: CC BY 4.0 requires preserving credit to the licensor when the work is shared or adapted (see LICENSE naming 'Creative Commons Attribution 4.0 International License' and the canonical deed at http://creativecommons.org/licenses/by/4.0/)",
+    "If the curated list is adapted/transformed, the adapter must indicate the changes were made and any intended limitations (CC BY 4.0 particular requirements); no ShareAlike, NonCommercial, or copyleft obligations are imposed (license is attribution-only)",
+    "No warranties implied; CC BY 4.0 grants a royalty-free, worldwide, non-exclusive license to reproduce, distribute, and adapt the work for any lawful purpose, conditioned on attribution",
+    "This is reference/documentation material (an 'awesome list' of scraping packages/services/manuals), not shipped source code of a library; reuse in research/reference context only requires attribution"
+  ],
+  "rationale": "The repository ships an explicit LICENSE file at repo root declaring 'Creative Commons Attribution 4.0 International License (CC BY 4.0)' with the canonical URL http://creativecommons.org/licenses/by/4.0/ (LICENSE, full 3-line file, tracked in the initial commit a7015ca and unchanged in working tree at HEAD 457de0d). The git remote identifies the upstream as https://github.com/lorien/awesome-web-scraping.git, and the same LICENSE text was re-fetched and confirmed at the upstream master branch (raw.githubusercontent.com/lorien/awesome-web-scraping/master/LICENSE). The repository is a curated list of scraping packages/services/manuals (README.md), so the license governs the list/documentation content, not a software library. CC BY 4.0 is a permissive attribution-only Creative Commons license; it is NOT on the OSI approved-licenses list (osiApproved=false) and carries no copyleft/ShareAlike or proprietary constraint, so it is compatible for use as research/reference material with attribution. Status PASS. No COPYING, NOTICE, or package manifest (package.json/go.mod/Cargo.toml/pyproject.toml) exists in the repository; the minimal LICENSE is a reliable, explicit, self-identified license declaration, not an inference from repository popularity."
+}

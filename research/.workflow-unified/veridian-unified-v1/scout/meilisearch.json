@@ -1,0 +1,63 @@
+{
+  "repo": "meilisearch",
+  "category": "search",
+  "heritage": true,
+  "heritageBasis": "declared_prior",
+  "tier": "S",
+  "relevanceScore": 10,
+  "sourceFileCount": 706,
+  "directoryCount": 381,
+  "hasArchitectureDocs": true,
+  "hasTests": true,
+  "keyFiles": [
+    "crates/milli/src/search/mod.rs",
+    "crates/milli/src/search/hybrid.rs",
+    "crates/milli/src/vector/mod.rs",
+    "crates/milli/src/index.rs",
+    "crates/milli/src/update/settings.rs",
+    "crates/index-scheduler/src/queue/mod.rs",
+    "crates/index-scheduler/src/queue/tasks.rs",
+    "crates/index-scheduler/src/scheduler/mod.rs",
+    "crates/index-scheduler/src/scheduler/process_batch.rs",
+    "crates/filter-parser/src/mod.rs",
+    "crates/meilisearch/src/search/mod.rs",
+    "crates/meilisearch/src/search_queue.rs",
+    "crates/meilisearch/src/routes/indexes.rs",
+    "crates/meilisearch/src/routes/tasks.rs",
+    "workloads/tests/movies.json",
+    "workloads/tests/api-keys.json",
+    ".github/workflows/test-suite.yml",
+    "TESTING.md",
+    "BENCHMARKS.md",
+    "documentation/experimental-features.md"
+  ],
+  "affectedConcerns": [
+    "fulltext-search",
+    "fuzzy-matching",
+    "queue"
+  ],
+  "rationale": "Meilisearch is a production-grade, open-source full-text search engine written in Rust. It directly implements the 'fulltext-search' pipeline concern as its core capability, with 706 Rust source files across 381 directories. The milli crate provides the core search engine (indexing + search) with typo tolerance via Levenshtein automata (fuzzy-matching). The index-scheduler crate implements a sophisticated task queue and job scheduling system (queue concern) with autobatching, prioritization, and persistent task storage. The codebase features hybrid search (keyword + vector/semantic), multi-language tokenization (CJK, Hebrew, etc.), faceted filtering, geosearch, document relations, and personalization. Extensive test infrastructure includes unit tests, integration tests, declarative upgrade tests (workloads/tests/*.json), benchmarks with a dedicated dashboard, and fuzzing. CI runs on Linux/Windows/macOS with multiple feature combinations. Licensing is MIT for community edition, BUSL-1.1 for enterprise features.",
+  "limitations": [
+    "Dual licensing (MIT + BUSL-1.1) may restrict enterprise feature use in production without commercial agreement",
+    "Not a scraping pipeline component itself - would need integration as a downstream search index",
+    "Vector search requires external embedding models (Hugging Face, OpenAI, Ollama) - not self-contained",
+    "Rust-based; integration from Python/JS scrapers requires HTTP client or SDK",
+    "No built-in browser automation, script generation, self-healing selectors, stealth, or JSON-LD extraction"
+  ],
+  "evidencePaths": [
+    "crates/milli/src/search/mod.rs:1-766",
+    "crates/milli/src/search/hybrid.rs:1-440",
+    "crates/milli/src/vector/mod.rs:1-30",
+    "crates/index-scheduler/src/lib.rs:1-200",
+    "crates/index-scheduler/src/queue/mod.rs",
+    "crates/index-scheduler/src/scheduler/mod.rs",
+    "crates/filter-parser/src/mod.rs",
+    "crates/meilisearch/src/search_queue.rs:1-80",
+    ".github/workflows/test-suite.yml:1-263",
+    "workloads/tests/movies.json",
+    "TESTING.md:1-327",
+    "BENCHMARKS.md:1-394",
+    "LICENSE:1-9",
+    "README.md:51-70"
+  ]
+}

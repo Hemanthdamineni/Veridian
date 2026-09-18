@@ -1,0 +1,33 @@
+manufacturer: "lenovo"
+brand: "Lenovo"
+base_url: "https://www.lenovo.com"
+user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+output_dir: "./output"
+max_concurrent: 3
+retry_attempts: 3
+checkpoint_interval: 10
+
+regions:
+  - code: "us"
+    name: "United States"
+    base_url: "https://www.lenovo.com/us/en"
+    language: "en"
+    currency: "USD"
+    category_paths:
+      laptops: "/laptops/"
+      desktops: "/c/desktops/"
+      workstations: "/c/workstations/"
+      tablets: "/c/tablets/"
+      monitors: "/c/monitors/"
+      accessories: "/c/accessories/"
+    selectors:
+      product_grid: ".feature_product_list, .products-grid, .product-list"
+      product_card: ".skeleton_product_card, .dx-card, .product-tile, .product-card, .product-item"
+      product_link: 'a[href*="/p/"]'
+      techspec_link: 'a[href*="/techspecs"], a[href*="/specifications"], a[data-link="specs"]'
+      variant_names: '.model-name, .variant-title, [data-model]'
+      spec_rows: '.spec-row, .specification-row, tr'
+      spec_name: '.spec-label, .spec-name, th'
+      spec_values: '.spec-value, .spec-values, td'
+    rate_limit: 1.0
+    timeout: 30

@@ -1,0 +1,35 @@
+{
+  "repo": "browser-harness",
+  "category": "frameworks",
+  "focus": "full-deep-analysis",
+  "summary": "browser-harness is a thin (~1k lines across 4 core Python files) CDP-based browser automation framework from the browser-use team. It connects an LLM agent directly to a real Chrome/Chromium browser via the Chrome DevTools Protocol over WebSocket, with zero abstraction layers between the agent and CDP. The architecture centers on a daemon process that holds the CDP WebSocket connection and exposes a Unix socket (POSIX) or TCP loopback (Windows) IPC interface. Agents send raw CDP commands or use pre-built helpers (navigation, input, tabs, screenshots, JS evaluation) that execute directly in the browser. A key differentiator is the \"agent workspace\" pattern: when the agent encounters a missing helper, it writes the helper code to `agent_helpers.py` itself, so the harness improves every run. It supports both local browsers (with automatic Chrome launch, remote debugging toggle handling, and Snap Chromium workarounds) and Browser Use Cloud browsers (stealth, proxies, captcha solving). Domain skills allow site-specific automation knowledge to be captured and reused. The package is at v0.1.8 (alpha), with 628 commits since April 2026 and 60+ contributors.",
+  "maturityAssessment": {
+    "claimedMaturity": "Development Status :: 3 - Alpha (per pyproject.toml classifiers). README markets it as 'The simplest, thinnest, and most powerful harness' with 'complete freedom' but doesn't explicitly claim production readiness.",
+    "objectiveSignals": {
+      "stars": "Not directly visible (private fork), but parent org browser-use has significant GitHub presence",
+      "lastCommit": "2026-08-02 (1 day ago)",
+      "commitCount": "628",
+      "maintainers": "60+ distinct contributors",
+      "issueActivity": "Active - issue templates and release workflow present",
+      "releaseFrequency": "Active - multiple commits daily"
+    },
+    "contradictionFlags": ""
+  },
+  "findings": [
+    {
+      "capability": "core-capabilities",
+      "description": "Raw CDP command passthrough (`cdp(method, **params)`); high-level helpers: goto_url, page_info, click_at_xy, type_text, fill_input (framework-aware), press_key, scroll, capture_screenshot, list_tabs, current_tab, switch_tab, new_tab, close_tab, ensure_real_tab, wait_for_load, wait_for_element, wait_for_network_idle, js (eval in page/iframe), dispatch_key, upload_file, http_get (with fetch-use proxy fallback); daemon lifecycle: ensure_daemon (auto-starts, self-heals stale daemon/closed Chrome/permission popups), restart_daemon, start_remote_daemon/stop_remote_daemon for cloud browsers; cloud integration: profile sync (local\u2192cloud cookies), cloud browser provisioning with liveUrl; agent workspace: dynamic helper loading from `agent_helpers.py`, domain skills from `domain-skills/`; video recording pipeline; cross-platform (POSIX AF_UNIX sockets + Windows TCP loopback with token auth); Snap Chromium detection and workaround guidance; telemetry (opt-in); update mechanism (git pull or uv tool upgrade)",
+      "sourceFiles": [],
+      "evidence": "Raw CDP command passthrough (`cdp(method, **params)`); high-level helpers: goto_url, page_info, click_at_xy, type_text, fill_input (framework-aware), press_key, scroll, capture_screenshot, list_tabs, ",
+      "confidence": 0.7
+    }
+  ],
+  "apiSurface": "CLI: `browser-harness <<'PY' ... PY` (stdin Python execution), `--version`, `--doctor`, `--doctor --fix-snap`, `auth login/status/logout`, `skill`, `recordings [--latest|enable|disable]`, `video init/review/export`, `telemetry`, `--update [-y]`, `--reload`, `--debug-clicks`; Python API (pre-imported in stdin mode): cdp(), goto_url(), page_info(), click_at_xy(), type_text(), fill_input(), press_key(), scroll(), capture_screenshot(), list_tabs(), current_tab(), switch_tab(), new_tab(), close_tab(), ensure_real_tab(), wait(), wait_for_load(), wait_for_element(), wait_for_network_idle(), js(), dispatch_key(), upload_file(), http_get(), iframe_target(), start_recording(), stop_recording(), recording_dir(); daemon admin: ensure_daemon(), restart_daemon(), daemon_alive(), daemon_browser_kind(), browser_connections(), start_remote_daemon(), stop_remote_daemon(), list_cloud_profiles(), list_local_profiles(), sync_local_profile(), run_doctor(), run_update()",
+  "integrationPoints": "Playwright: Not directly compatible (different architecture - CDP vs Playwright's own protocol), but can coexist; browser-harness uses cdp-use which is a thin CDP client. Queue: The daemon is a long-running process; tasks submitted via stdin Python scripts. Could wrap in a job queue where workers call `browser-harness <<'PY' ... PY`. Search: http_get() with fetch-use proxy supports residential proxies for search scraping. Matching: js() enables arbitrary DOM querying; wait_for_element() with visible=True handles SPA rendering; domain skills capture site-specific selectors. Deterministic ETL: The self-healing daemon, explicit CDP exposure, and agent-written helpers make behavior auditable and repeatable. Cloud browsers provide consistent environments.",
+  "strengthsForVeridian": "Extremely thin abstraction (direct CDP) \u2014 no hidden behavior, full control; self-improving via agent-written helpers \u2014 adapts to new sites automatically; handles real-world Chrome complexities (Snap, permissions, profile detection, cloud fallback); daemon self-heals from common failure modes; cross-platform with proper IPC isolation; domain skills create reusable site knowledge; cloud browser option for stealth/proxy/captcha; video recording for debugging/audit; profile sync preserves logged-in state; small codebase (~1k core lines) \u2014 easy to audit and extend; active development with many contributors",
+  "weaknessesForVeridian": "Alpha maturity (v0.1.8) \u2014 API may change; tied to browser-use ecosystem (cloud, profile-use, fetch-use); requires running Chrome instance (not headless-only by default); learning curve for CDP methods if helpers insufficient; Windows TCP loopback less secure than Unix sockets (mitigated by token); no built-in queue/scheduler \u2014 must build orchestration layer; Snap Chromium on Linux is a known blocker requiring manual fix; telemetry enabled by default (opt-out); single-threaded daemon \u2014 one browser per BU_NAME; no built-in parallelization; agent workspace pattern assumes LLM agent writes code (not traditional scripting)",
+  "verdict": "Strong Candidate",
+  "limitations": [
+    "Seeded from prior analysis; maturity signals may be approximate"
+  ]
+}

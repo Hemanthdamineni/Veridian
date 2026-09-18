@@ -1,0 +1,52 @@
+{
+  "repo": "puppeteer-extra",
+  "category": "stealth",
+  "heritage": false,
+  "heritageBasis": "none",
+  "tier": "A",
+  "relevanceScore": 8,
+  "sourceFileCount": 159,
+  "directoryCount": 70,
+  "hasArchitectureDocs": false,
+  "hasTests": true,
+  "keyFiles": [
+    "packages/puppeteer-extra/src/index.ts",
+    "packages/puppeteer-extra-plugin/src/index.ts",
+    "packages/puppeteer-extra-plugin-stealth/index.js",
+    "packages/puppeteer-extra-plugin-stealth/evasions/navigator.webdriver/index.js",
+    "packages/puppeteer-extra-plugin-stealth/evasions/chrome.runtime/index.js",
+    "packages/puppeteer-extra-plugin-stealth/evasions/user-agent-override/index.js",
+    "packages/puppeteer-extra-plugin-stealth/evasions/navigator.plugins/index.js",
+    "packages/puppeteer-extra-plugin-stealth/evasions/_utils/index.js",
+    "packages/playwright-extra/package.json",
+    "packages/extract-stealth-evasions/index.js",
+    "packages/plugin-proxy-router/src/index.ts",
+    "packages/puppeteer-extra-plugin-adblocker/package.json",
+    "packages/puppeteer-extra-plugin-stealth/test/cat-and-mouse.test.js"
+  ],
+  "affectedConcerns": [
+    "stealth",
+    "browser-automation"
+  ],
+  "rationale": "puppeteer-extra is a mature modular plugin framework for Puppeteer (and Playwright via playwright-extra) with a dedicated stealth plugin that implements 16 evasion techniques covering navigator.webdriver, chrome.runtime, user-agent/platform spoofing, navigator.plugins/mimeTypes, webgl.vendor, iframe.contentWindow, and more. The stealth plugin passes public bot detection tests (bot.sannysoft.com, fpscanner, headless-cat-n-mouse). Architecture includes a clean plugin base class with lifecycle hooks (beforeLaunch, onPageCreated, onTargetCreated, etc.), dependency resolution, and a utility library for stealthy DOM manipulation via JS Proxies with error-stack sanitization. The extract-stealth-evasions package allows bundling evasions for CDP-only use. Proxy-router plugin adds dynamic proxy routing. Tier A due to strong relevance to stealth pipeline concern, proven test results against detection, modular architecture, and dual Puppeteer/Playwright support.",
+  "limitations": [
+    "Last significant commits appear to be from 2023; maintenance status uncertain",
+    "Some evasions require headful mode (user-preferences plugin)",
+    "No formal architecture documentation beyond README-generated API docs",
+    "Stealth is a plugin wrapper; core evasions are separate modules that could be used independently",
+    "Relies on Puppeteer/Playwright as peer dependencies; not a standalone browser automation engine"
+  ],
+  "evidencePaths": [
+    "packages/puppeteer-extra/src/index.ts:63-474",
+    "packages/puppeteer-extra-plugin/src/index.ts:65-580",
+    "packages/puppeteer-extra-plugin-stealth/index.js:72-172",
+    "packages/puppeteer-extra-plugin-stealth/evasions/navigator.webdriver/index.js:9-43",
+    "packages/puppeteer-extra-plugin-stealth/evasions/chrome.runtime/index.js:12-254",
+    "packages/puppeteer-extra-plugin-stealth/evasions/user-agent-override/index.js:42-208",
+    "packages/puppeteer-extra-plugin-stealth/evasions/navigator.plugins/index.js:26-101",
+    "packages/puppeteer-extra-plugin-stealth/evasions/_utils/index.js:12-583",
+    "packages/puppeteer-extra-plugin-stealth/test/cat-and-mouse.test.js:15-162",
+    "packages/extract-stealth-evasions/readme.md:1-44",
+    "packages/plugin-proxy-router/src/index.ts"
+  ]
+}

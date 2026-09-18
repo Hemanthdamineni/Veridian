@@ -1,0 +1,35 @@
+{
+  "repo": "XDriver",
+  "category": "stealth",
+  "focus": "full-deep-analysis",
+  "summary": "XDriver is a CLI tool that patches Playwright's internal Node.js driver package to enable stealth/anti-detection scraping. It works by backing up Playwright's `driver/package` and `driver/node` directories, then replacing them with pre-bundled patched versions containing anti-bot bypasses for Cloudflare, Kasada, Datadome, etc. The Python package is merely a thin wrapper (activator_script.py) that performs file copy/rename operations \u2014 all actual stealth logic lives in the bundled JavaScript/Node.js binaries. The tool pins to Playwright 1.52.0 exactly and requires running `x_driver activate` before scraping. The patched `node` binary is an 82MB Git LFS object, suggesting a modified Node.js runtime.",
+  "maturityAssessment": {
+    "claimedMaturity": "README claims production-ready: \"Scrape the Web Without Getting Blocked\", \"Effectively bypasses anti-bot systems such as Cloudflare WAF, Turnstile, Datadome, Kasada, and more\", shows 18 test badges all passing (CreepJS 100%, Cloudflare WAF, Turnstile, Kasada, etc.)",
+    "objectiveSignals": {
+      "stars": "Unknown (local copy, no GitHub API access)",
+      "lastCommit": "2024 (based on commit timestamps)",
+      "commitCount": "34 total commits",
+      "maintainers": "1 (Arjun Shankar)",
+      "issueActivity": "No issues/PRs visible in local clone",
+      "releaseFrequency": "Irregular - v1.0.0 tag exists but PyPI badge shows v0.0.1"
+    },
+    "contradictionFlags": "MAJOR FLAGS: 1) Only 34 commits and 1 maintainer but claims production-ready bypass of enterprise WAFs. 2) Hardcoded to Playwright 1.52.0 only - any Playwright update breaks it. 3) Version mismatch: PyPI badge says v0.0.1, setup.py says 1.0.0, git tag v1.0.1. 4) Examples directory contains empty files. 5) No tests in repo. 6) Pre-bundled binaries (82MB node binary via Git LFS) are opaque - cannot verify what patches actually do. 7) No source for the stealth patches - only the already-patched output."
+  },
+  "findings": [
+    {
+      "capability": "core-capabilities",
+      "description": "- CLI activation/deactivation of Playwright patches (`x_driver activate`, `x_driver deactivate`)\n- Version validation (blocks activation if Playwright != 1.52.0 unless --force)\n- Backup/restore of original Playwright driver package and node binary\n- Injects console marker into Playwright's __init__.py to confirm activation\n- Pre-bundled patched Playwright driver package (full lib/client, lib/server, dispatchers)\n- Pre-bundled patched Node.js binary (82MB, via Git LFS)",
+      "sourceFiles": [],
+      "evidence": "- CLI activation/deactivation of Playwright patches (`x_driver activate`, `x_driver deactivate`)\n- Version validation (blocks activation if Playwright != 1.52.0 unless --force)\n- Backup/restore of ori",
+      "confidence": 0.7
+    }
+  ],
+  "apiSurface": "CLI only:\n- `x_driver activate [--force]` - patches Playwright installation\n- `x_driver deactivate` - restores original Playwright\n- `x_driver` (no args) - shows help\n\nNo Python API - after activation, users import playwright normally and the patched driver is used transparently.",
+  "integrationPoints": "- Could wrap the CLI in a pipeline step: run `x_driver activate` before scraping jobs, `x_driver deactivate` after\n- Requires Playwright 1.52.0 pinned in environment - conflicts with version updates\n- The opaque Node binary (82MB) makes containerization heavy\n- No programmatic status check except parsing CLI output or checking backup dirs\n- Activation is global per Python environment - not per-process",
+  "strengthsForVeridian": "- Simple on/off switch for stealth mode\n- If the patches actually work, provides comprehensive anti-detection at the CDP/browser level\n- Zero code changes to existing Playwright scripts after activation\n- Covers many detection vectors mentioned (CDP, WebRTC, runtime, bindings)",
+  "weaknessesForVeridian": "- Hard dependency on Playwright 1.52.0 (released ~2024) - severely outdated, no security updates\n- Single maintainer, 34 commits, no tests, empty examples - abandonware signals\n- Opaque pre-built binaries - cannot audit, customize, or update patches\n- Global environment mutation - breaks other Playwright uses in same env\n- No programmatic API for pipeline integration\n- Git LFS 82MB node binary bloats repos/containers\n- Version pinning makes it incompatible with modern Playwright features\n- No evidence patches work against current anti-bot versions (tests claimed but not reproducible)",
+  "verdict": "Reject",
+  "limitations": [
+    "Seeded from prior analysis; maturity signals may be approximate"
+  ]
+}

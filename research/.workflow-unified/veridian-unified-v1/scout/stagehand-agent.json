@@ -1,0 +1,46 @@
+{
+  "repo": "stagehand-agent",
+  "category": "frameworks",
+  "heritage": false,
+  "heritageBasis": "none",
+  "tier": "D",
+  "relevanceScore": 2.0,
+  "sourceFileCount": 7,
+  "directoryCount": 1,
+  "hasArchitectureDocs": false,
+  "hasTests": false,
+  "keyFiles": [
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/frameworks/stagehand-agent/README.md",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/frameworks/stagehand-agent/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/frameworks/stagehand-agent/index.ts",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/frameworks/stagehand-agent/cli.ts",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/frameworks/stagehand-agent/tools.ts",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/frameworks/stagehand-agent/stagehand.config.ts",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/frameworks/stagehand-agent/.cursorrules"
+  ],
+  "affectedConcerns": [
+    "browser-automation",
+    "script-generation"
+  ],
+  "rationale": "stagehand-agent is a thin TypeScript CLI wrapper (7 source files, 0 tests, 0 docs, 1 flat directory) around the @browserbasehq/stagehand library. It exposes a repl-based CLI (cli.ts) that initializes a Stagehand instance configured against Browserbase cloud browsers, then runs an agent loop (index.ts) using Claude 3.7 Sonnet as the trajectory model and Gemini 2.0 Flash for actions/structured output. The agent exposes tools (tools.ts): navigate, act (atomic browser actions via page.act), extract (page text extraction with optional LLM post-processing), observe (Structured element observation for action planning), screenshot, scroll, back, iframe detection, wait, and plan-next-step (uses screenshot+LLM to suggest actions). The architecture is a single-pass LLM tool-calling loop (maxSteps=50) with no persistence, no queue, no caching beyond an optional cache.json (gitignored), no stealth features, no self-healing selectors, no fuzzy matching, no full-text search, and no JSON-LD/Schema.org extraction. Relevance to a scraping pipeline for structured laptop specs is limited: the browser-automation concern is confirmed via the @browserbasehq/stagehand dependency which provides Playwright-based act/extract/observe capabilities, and script-generation is confirmed via the LLM-driven trajectory loop where Claude decides which tools to call. However, the tooling itself is a minimal reference implementation (a single-agent loop with no production architecture) — it demonstrates how to wire Stagehand into an LLM agent but provides no reusable framework, no test coverage, and no pipeline components. Tier D assigned because this is a focused, single-file-agent demo with no tests, no architecture docs, no subdirectories, and no pipeline-relevant functionality beyond the basic use of Stagehand. The three-pipeline score of 2.0 reflects that only browser-automation and script-generation are tangentially addressed and only through an upstream library dependency, not through any original implementation in this repo.",
+  "limitations": [
+    "No test files exist anywhere in the repository — zero test coverage (confirmed by directory listing showing no test/, __tests__/, spec/, or *.test.ts files).",
+    "No architecture or design documents present — only a 19-line README with installation and usage notes.",
+    "No src/ directory, no lib/ directory, no subdirectories at all — 7 source files all live at the repository root.",
+    "No self-healing selectors, stealth/anti-bot measures, queue/job scheduling, fuzzy matching/deduplication, full-text search, or JSON-LD/Schema.org extraction are implemented in this repository.",
+    "No production-grade features: no error recovery strategy (onStepFinish is empty), no rate limiting, no concurrent execution, no session persistence beyond the .env-based API key prompting in the CLI.",
+    "The agent loop is a single-stream text generation (streamText) with no branching, no retry logic, and no fallback model.",
+    "The only extraction method is page.evaluate(() => document.body.innerText) with basic CSS/JSON line filtering — no DOM-based structural extraction, no XPath, no CSS selectors for targeted fields.",
+    "Structured output generation only happens via an optional Zod schema passed to main() and post-processes the entire conversation transcript — not incremental.",
+    "The repo has 1 directory (counting only non-.git entries) and is 7 source files plus pnpm-lock.yaml, tsconfig.json, agent.png, and .env.example (12 total items).",
+    "Dependency on @browserbasehq/stagehand means the core browser-automation logic is not in this repo — this is a thin usage example, not an independent implementation.",
+    "No CI configuration, no Dockerfile, no deployment manifests, no production readiness indicators."
+  ],
+  "evidencePaths": [
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/frameworks/stagehand-agent/README.md",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/frameworks/stagehand-agent/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/frameworks/stagehand-agent/index.ts",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/frameworks/stagehand-agent/tools.ts",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/frameworks/stagehand-agent/stagehand.config.ts"
+  ]
+}

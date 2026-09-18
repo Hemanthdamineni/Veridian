@@ -1,0 +1,324 @@
+// Veridian Database Schema
+// MVP + Community + Price Tracking + Platform extensions
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// CORE PRODUCT TABLES (MVP)
+// =============================================================================
+
+model Manufacturer {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  slug      String   @unique
+  country   String?
+  websiteUrl String? @map("website_url")
+  logoUrl   String?  @map("logo_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  series Series[]
+
+  @@map("manufacturers")
+}
+
+model Series {
+  id             String   @id @default(uuid()) @db.Uuid
+  manufacturerId String   @map("manufacturer_id") @db.Uuid
+  name           String
+  slug           String
+  description    String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  manufacturer Manufacturer @relation(fields: [manufacturerId], references: [id], onDelete: Cascade)
+  models       Model[]
+
+  @@unique([manufacturerId, slug])
+  @@map("series")
+}
+
+model Model {
+  id          String   @id @default(uuid()) @db.Uuid
+  seriesId    String   @map("series_id") @db.Uuid
+  name        String
+  slug        String
+  launchDate  DateTime? @map("launch_date") @db.Date
+  productUrl  String?  @map("official_product_page_url")
+  discontinued Boolean @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Self-referencing for successor/predecessor
+  successorId String?  @map("successor_model_id") @db.Uuid
+  predecessorId String? @map("predecessor_model_id") @db.Uuid
+
+  series Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  skus   Sku[]
+
+  @@unique([seriesId, slug])
+  @@map("models")
+}
+
+model Sku {
+  id                String   @id @default(uuid()) @db.Uuid
+  modelId           String   @map("model_id") @db.Uuid
+  skuCode           String   @unique @map("sku_code")
+  cpuBrand          String   @map("cpu_brand")
+  cpuModel          String   @map("cpu_model")
+  cpuCores          Int?     @map("cpu_cores")
+  gpuModel          String?  @map("gpu_model")
+  ramGb             Int      @map("ram_gb")
+  ramType           String   @map("ram_type")
+  ramSoldered       Boolean  @map("ram_soldered")
+  storageGb         Int      @map("storage_gb")
+  storageType       String   @map("storage_type")
+  storageSlots      Int?     @map("storage_slots")
+  displaySizeIn     Float    @map("display_size_in")
+  displayResolution String   @map("display_resolution")
+  displayType       String   @map("display_type")
+  displayRefreshHz  Int      @map("display_refresh_hz")
+  displayTouch      Boolean  @map("display_touch")
+  displayNits       Int?     @map("display_nits")
+  weightKg          Float    @map("weight_kg")
+  batteryWh         Float    @map("battery_wh")
+  batteryLifeHours  Float?   @map("battery_life_hours_claimed")
+  npuTops           Float?   @map("npu_tops")
+  os                String
+  buildMaterial     String   @map("build_material")
+  linuxCompat       String?  @map("linux_compatibility_score")
+  launchDate        DateTime? @map("launch_date") @db.Date
+  discontinued      Boolean  @default(false)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  model    Model              @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  pricing  SkuRegionalPricing[]
+  ports    SkuPort[]
+
+  // Price tracking relations
+  listings       RetailerListing[]
+  priceHistory   PriceHistory[]
+
+  // Community relations
+  contributions  Contribution[]
+  alerts         Alert[]
+
+  @@index([ramGb])
+  @@index([storageGb])
+  @@index([weightKg])
+  @@index([batteryWh])
+  @@index([displayRefreshHz])
+  @@index([cpuBrand])
+  @@index([displayType])
+  @@map("skus")
+}
+
+model SkuRegionalPricing {
+  id           String   @id @default(uuid()) @db.Uuid
+  skuId        String   @map("sku_id") @db.Uuid
+  region       String
+  currency     String
+  msrp         Float
+  available    Boolean  @default(true)
+  storeUrl     String?  @map("official_store_url")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
+
+  @@unique([skuId, region])
+  @@index([region])
+  @@map("sku_regional_pricing")
+}
+
+model SkuPort {
+  id       String @id @default(uuid()) @db.Uuid
+  skuId    String @map("sku_id") @db.Uuid
+  portType String @map("port_type")
+  count    Int
+
+  sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
+
+  @@map("sku_ports")
+}
+
+// =============================================================================
+// PRICE TRACKING TABLES (Epic 3)
+// =============================================================================
+
+model Seller {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  region      String
+  baseUrl     String   @map("base_url")
+  scrapeMethod String  @map("scrape_method") @default("scraper")
+  affiliateUrl String? @map("affiliate_program_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  listings RetailerListing[]
+
+  @@unique([name, region])
+  @@map("sellers")
+}
+
+model RetailerListing {
+  id                String   @id @default(uuid()) @db.Uuid
+  sellerId          String   @map("seller_id") @db.Uuid
+  skuId             String?  @map("sku_id") @db.Uuid
+  retailerSkuString String   @map("retailer_sku_string")
+  matchConfidence   Float?   @map("match_confidence")
+  verifiedByHuman   Boolean  @default(false) @map("verified_by_human")
+  lastScrapedAt     DateTime? @map("last_scraped_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  seller     Seller       @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  sku        Sku?         @relation(fields: [skuId], references: [id], onDelete: SetNull)
+  priceHistory PriceHistory[]
+
+  @@index([retailerSkuString])
+  @@map("retailer_listings")
+}
+
+model PriceHistory {
+  id            String   @id @default(uuid()) @db.Uuid
+  listingId     String   @map("retailer_listing_id") @db.Uuid
+  skuId         String   @map("sku_id") @db.Uuid
+  price         Float
+  currency      String
+  scrapedAt     DateTime @map("scraped_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  listing RetailerListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  sku     Sku             @relation(fields: [skuId], references: [id], onDelete: Cascade)
+
+  @@index([skuId, scrapedAt])
+  @@map("price_history")
+}
+
+// =============================================================================
+// USER & COMMUNITY TABLES (Epic 5)
+// =============================================================================
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  email         String   @unique
+  name          String?
+  passwordHash  String?  @map("password_hash")
+  role          String   @default("user") // user, curator, admin
+  reputation    Int      @default(0)
+  emailVerified Boolean  @default(false) @map("email_verified")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  contributions Contribution[]
+  alerts        Alert[]
+  sessions      Session[]
+  votes         Vote[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Contribution {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  skuId       String   @map("sku_id") @db.Uuid
+  type        String   // correction, gap_report, linux_report, benchmark_upload
+  field       String?  // Which field is being corrected
+  oldValue    String?  @map("old_value")
+  newValue    String   @map("new_value")
+  evidenceUrl String?  @map("evidence_url")
+  evidenceText String? @map("evidence_text")
+  status      String   @default("pending") // pending, approved, rejected
+  reviewedBy  String?  @map("reviewed_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sku  Sku   @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  votes Vote[]
+
+  @@index([status])
+  @@map("contributions")
+}
+
+model Vote {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  contributionId String   @map("contribution_id") @db.Uuid
+  value          Int      // 1 = confirmed, -1 = disputed, 0 = needs_verification
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contribution Contribution @relation(fields: [contributionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contributionId])
+  @@map("votes")
+}
+
+model Alert {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  skuId         String   @map("sku_id") @db.Uuid
+  region        String
+  conditionType String   @map("condition_type") // below_price, lowest_ever, pct_off_msrp
+  thresholdValue Float   @map("threshold_value")
+  channel       String   // email, telegram, discord, push
+  active        Boolean  @default(true)
+  lastTriggered DateTime? @map("last_triggered")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sku  Sku  @relation(fields: [skuId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([skuId])
+  @@map("alerts")
+}
+
+// =============================================================================
+// PLATFORM TABLES (Epic 6)
+// =============================================================================
+
+model Category {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  specSchema  Json?    @map("spec_schema") // JSON schema for category-specific specs
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("categories")
+}
+
+model ApiKey {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  name      String
+  keyHash   String   @unique @map("key_hash")
+  scopes    String[] // read, write, admin
+  rateLimit Int      @default(1000) @map("rate_limit") // requests per hour
+  lastUsedAt DateTime? @map("last_used_at")
+  expiresAt DateTime? @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("api_keys")
+}

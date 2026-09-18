@@ -1,0 +1,19 @@
+{
+  "repo": "typesense",
+  "status": "REVIEW",
+  "spdx": "GPL-3.0-only",
+  "osiApproved": true,
+  "evidenceFiles": [
+    ".references/search/typesense/LICENSE.txt",
+    ".references/search/typesense/README.md",
+    ".references/search/typesense/benchmark/package.json"
+  ],
+  "obligations": [
+    "Source code distribution required for any modified versions conveyed to others (GPL-3.0 §6)",
+    "License notice preservation in all copies (GPL-3.0 §4)",
+    "No additional restrictions beyond GPL terms may be imposed (GPL-3.0 §10)",
+    "Patent license grant to downstream recipients (GPL-3.0 §11)",
+    "Anti-Tivoization: installation information required for User Products (GPL-3.0 §6)"
+  ],
+  "rationale": "The repository contains LICENSE.txt with the full text of the GNU General Public License version 3 (GPL-3.0). The README FAQ explicitly addresses the GPL choice (lines 342-356), explaining that Typesense Server is intended to run as a separate daemon, not linked as a library, which GPL permits via 'mere aggregation' (GPL §5). The benchmark/package.json declares 'license': 'GPL'. No NOTICE, COPYING, or additional license files are present. Source files lack individual GPL headers. SPDX identifier assigned as GPL-3.0-only because no project-specific copyright notice states 'or any later version' (only the FSF's generic boilerplate suggests it). GPL-3.0 is OSI-approved but is a strong copyleft license; its compatibility with a given integration pattern (e.g., running as a separate service accessed via network API) requires human legal review to confirm no derivative work is created. Status REVIEW reflects this need for case-by-case assessment."
+}

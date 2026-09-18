@@ -1,0 +1,53 @@
+{
+  "repo": "temporal-typescript-sdk",
+  "category": "queue",
+  "heritage": true,
+  "heritageBasis": "declared_prior",
+  "tier": "S",
+  "relevanceScore": 9,
+  "sourceFileCount": 525,
+  "directoryCount": 184,
+  "hasArchitectureDocs": true,
+  "hasTests": true,
+  "keyFiles": [
+    "packages/worker/src/worker.ts",
+    "packages/client/src/client.ts",
+    "packages/client/src/schedule-client.ts",
+    "packages/client/src/workflow-client.ts",
+    "packages/client/src/interceptors.ts",
+    "packages/common/src/converter/data-converter.ts",
+    "packages/common/src/converter/extstore.ts",
+    "packages/common/src/interceptors.ts",
+    "packages/workflow/src/index.ts",
+    "packages/worker/src/workflow/bundler.ts",
+    "packages/worker/src/workflow/vm.ts",
+    "packages/worker/src/workflow/threaded-vm.ts",
+    "packages/worker/src/debug-replayer/index.ts",
+    "packages/worker/src/runtime.ts",
+    "packages/worker/src/worker-options.ts",
+    "docs/data-converter.md",
+    "docs/protobuf-libraries.md"
+  ],
+  "affectedConcerns": [
+    "queue",
+    "self-healing",
+    "browser-automation"
+  ],
+  "rationale": "Temporal TypeScript SDK is a production-grade durable execution platform (525 TS source files, 184 directories) that directly addresses the 'queue / job scheduling' pipeline concern. It provides: (1) Workflow orchestration with deterministic replay for fault tolerance, (2) ScheduleClient for cron-like scheduling with overlap policies, backfill, and timezone support, (3) Activity heartbeating and cancellation for long-running scraping tasks, (4) Interceptor pattern for cross-cutting concerns (logging, metrics, tracing via OpenTelemetry), (5) External storage (S3/GCS) for large payload handling, (6) Nexus for service-to-service operations, (7) Multiple isolation mechanisms (VM, threaded VM) for sandboxed workflow execution, (8) Comprehensive test suite (277 integration tests, stress/nightly CI). Architecture documented in data-converter.md and protobuf-libraries.md. MIT licensed. Used at scale by major companies. Directly relevant as the durable queue/orchestration backbone for a scraping pipeline.",
+  "limitations": [
+    "Not a scraper itself - provides orchestration layer only",
+    "Worker requires Node.js (native modules, worker_threads, vm, AsyncLocalStorage, async_hooks) - not compatible with Bun/Deno/Cloudflare Workers for worker-level features",
+    "Learning curve for workflow/activity patterns",
+    "Requires Temporal Server (self-hosted or Temporal Cloud) as backend",
+    "Protobuf-based wire protocol adds complexity for custom payloads"
+  ],
+  "evidencePaths": [
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/package.json",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/README.md",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/worker/src/worker.ts",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/client/src/schedule-client.ts",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/packages/client/src/interceptors.ts",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/docs/data-converter.md",
+    "/home/zorro-omarchy/Desktop/Projects/Personal/00_Active/Veridian/.references/queue/temporal/docs/protobuf-libraries.md"
+  ]
+}

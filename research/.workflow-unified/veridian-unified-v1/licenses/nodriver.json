@@ -1,0 +1,21 @@
+{
+  "repo": "nodriver",
+  "status": "BLOCK",
+  "spdx": "AGPL-3.0-only",
+  "osiApproved": true,
+  "evidenceFiles": [
+    ".references/stealth/nodriver/LICENSE.txt",
+    ".references/stealth/nodriver/pyproject.toml",
+    ".references/stealth/nodriver/setup.cfg",
+    ".references/stealth/nodriver/nodriver/__init__.py"
+  ],
+  "obligations": [
+    "Source code disclosure required for network-accessible deployments (AGPL Section 13)",
+    "Modified versions must offer Corresponding Source to remote users at no charge",
+    "Entire combined work must be licensed under AGPL-3.0",
+    "Preserve copyright and license notices in all distributions",
+    "Provide installation information for User Products (AGPL Section 6)",
+    "Patent license grant to downstream recipients (AGPL Section 11)"
+  ],
+  "rationale": "The nodriver repository is licensed under GNU Affero General Public License version 3 (AGPL-3.0-only). Evidence: LICENSE.txt contains the full AGPL-3.0 text (lines 1-619); pyproject.toml declares license = {file = \"LICENSE.txt\"} (line 41); setup.cfg specifies license_files = LICENSE.txt; nodriver/__init__.py explicitly states \"released under the 'GNU AFFERO GENERAL PUBLIC LICENSE'\" (line 4). AGPL-3.0 is OSI-approved but imposes strong copyleft with network deployment source disclosure obligations (Section 13), making it incompatible with proprietary/commercial distributions that cannot comply with remote source offering requirements. Status is BLOCK for any use case where AGPL network copyleft obligations cannot be satisfied."
+}

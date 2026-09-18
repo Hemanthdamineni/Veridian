@@ -1,0 +1,35 @@
+{
+  "repo": "awesome-browser-automation",
+  "category": "docs",
+  "focus": "full-deep-analysis",
+  "summary": "This is a curated awesome-list (not a library) documenting 80+ browser automation tools across categories: traditional tools (Playwright, Puppeteer, Selenium, Cypress), AI-powered automation (Browser-Use, Skyvern, Steel Browser, CamoFox), and related utilities (Cheerio, jsdom, node-crawler). The repo is a GitHub Pages-style markdown index with zero implementation code \u2014 it provides discovery and comparison value only. I verified the README is purely a categorized link directory with brief descriptions; CONTRIBUTING.md defines curation standards; there is no package.json, no source code, no API surface. The \"Sponsored by CoreClaw\" banner suggests commercial affiliation but doesn't affect list neutrality.",
+  "maturityAssessment": {
+    "claimedMaturity": "No maturity claims about the list itself \u2014 it's a living document. The sponsored CoreClaw claims 'Production-ready Web Data APIs' but that's an external service ad.",
+    "objectiveSignals": {
+      "stars": "Not available (local clone only)",
+      "lastCommit": "2026-08-03 (e5cf85a Merge CoreClaw sponsorship)",
+      "commitCount": "115 total commits",
+      "maintainers": "18 distinct contributors",
+      "issueActivity": "No issue data available locally",
+      "releaseFrequency": "N/A \u2014 not a released package"
+    },
+    "contradictionFlags": "None \u2014 the README makes no false claims about being a library or having an API. It accurately presents itself as a curated list."
+  },
+  "findings": [
+    {
+      "capability": "core-capabilities",
+      "description": "- Categorized discovery of 80+ browser automation tools\n- Covers traditional (Playwright, Puppeteer, Selenium, Cypress, WebdriverIO, TestCafe)\n- AI-powered section with 11 modern agent-based tools (Browser-Use, Skyvern, Steel, CamoFox, etc.)\n- Related tools for DOM parsing (Cheerio, jsdom) and crawling (node-crawler)\n- Alphabetical ordering within categories per CONTRIBUTING.md standards\n- Active maintenance with recent 2026 additions (CamoFox, Steel Browser, Libretto, onUI)",
+      "sourceFiles": [],
+      "evidence": "- Categorized discovery of 80+ browser automation tools\n- Covers traditional (Playwright, Puppeteer, Selenium, Cypress, WebdriverIO, TestCafe)\n- AI-powered section with 11 modern agent-based tools (Br",
+      "confidence": 0.7
+    }
+  ],
+  "apiSurface": "No API surface. This is a static reference document. Users consume by reading the README on GitHub or cloning the repo.",
+  "integrationPoints": "Useful as a research reference for Veridian to discover candidate tools (Playwright, Browser-Use, Steel Browser, CamoFox, Libretto, Skyvern) but cannot be integrated programmatically. The list itself provides zero pipeline connectivity \u2014 it's a decision-support artifact, not a component.",
+  "strengthsForVeridian": "Excellent discovery resource: consolidates the modern browser automation landscape including AI-agent tools that are directly relevant to Veridian's scraping pipeline (Browser-Use for AI-driven navigation, Steel Browser for sandboxed sessions, CamoFox for anti-bot evasion, Libretto for script generation). Actively maintained with 2026 additions. Unbiased categorization (AI vs traditional vs related).",
+  "weaknessesForVeridian": "Zero executable code, no API, no programmatic access, no versioning, no quality signals (stars, maintenance status) embedded in the list \u2014 requires manual vetting of each candidate. The CoreClaw sponsorship may bias visibility. Not a library; cannot be depended on in package.json.",
+  "verdict": "Weak Fit",
+  "limitations": [
+    "Seeded from prior analysis; maturity signals may be approximate"
+  ]
+}
