@@ -1,0 +1,36 @@
+# Dependencies and environments
+venv/
+**/venv/
+node_modules/
+**/node_modules/
+.pixi/
+
+# Runtime state, databases, and generated outputs
+*.db
+*.sqlite
+*.sqlite-*
+output/
+**/output/
+reports/
+logs/
+.sdlc/
+.opencode/
+.claude/
+
+# Large vendored/reference clones
+.references/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Caches and local tooling
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.commandcode/
+.DS_Store
+Thumbs.db
