@@ -1,5 +1,6 @@
 import { SkuForm } from "@/components/admin/SkuForm";
 import { SkuList } from "@/components/admin/SkuList";
+import { AdminStatsPanel } from "@/components/AdminStatsPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -103,6 +104,10 @@ export default async function AdminPage() {
       <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 mb-8">
         Admin — SKU Management
       </h1>
+
+      <div className="mb-8">
+        <AdminStatsPanel />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
