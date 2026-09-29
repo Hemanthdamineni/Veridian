@@ -1,10 +1,82 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import type { SkuDetail } from "@/types";
 
 interface SkuDetailPageProps {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const sku = await prisma.sku.findUnique({
+    where: { id },
+    include: {
+      model: {
+        include: {
+          series: {
+            include: { manufacturer: true },
+          },
+        },
+      },
+      pricing: true,
+    },
+  });
+  if (!sku) return { title: "SKU Not Found | Veridian" };
+  const mfr = sku.model.series.manufacturer.name;
+  const series = sku.model.series.name;
+  const model = sku.model.name;
+  const title = `${mfr} ${model} (${sku.skuCode}) Specs, Price & History | Veridian`;
+  const description = `Detailed specs, regional pricing, and price history for ${mfr} ${series} ${model} (${sku.skuCode}). ${sku.ramGb}GB RAM, ${sku.storageGb}GB ${sku.storageType}, ${sku.displaySizeIn}" ${sku.displayResolution} ${sku.displayType} display.`;
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+    },
+    alternates: {
+      canonical: `/skus/${id}`,
+    },
+    other: {
+      "json-ld": JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: `${mfr} ${model}`,
+        sku: sku.skuCode,
+        brand: { "@type": "Brand", name: mfr },
+        category: series,
+        additionalProperty: [
+          { "@type": "PropertyValue", name: "CPU", value: `${sku.cpuBrand} ${sku.cpuModel}` },
+          { "@type": "PropertyValue", name: "RAM", value: `${sku.ramGb}GB ${sku.ramType}` },
+          { "@type": "PropertyValue", name: "Storage", value: `${sku.storageGb}GB ${sku.storageType}` },
+          { "@type": "PropertyValue", name: "Display Size", value: `${sku.displaySizeIn} inch` },
+          { "@type": "PropertyValue", name: "Display Resolution", value: sku.displayResolution },
+          { "@type": "PropertyValue", name: "Display Refresh Rate", value: `${sku.displayRefreshHz} Hz` },
+          { "@type": "PropertyValue", name: "Weight", value: `${sku.weightKg} kg` },
+          { "@type": "PropertyValue", name: "Battery", value: `${sku.batteryWh} Wh` },
+        ],
+        offer:
+          sku.pricing[0]
+            ? {
+                "@type": "Offer",
+                price: sku.pricing[0].msrp,
+                priceCurrency: sku.pricing[0].currency,
+                availability: sku.pricing[0].available
+                  ? "https://schema.org/InStock"
+                  : "https://schema.org/OutOfStock",
+                url: sku.model.productUrl,
+              }
+            : undefined,
+      }),
+    },
+  };
 }
 
 async function getSku(id: string): Promise<SkuDetail | null> {
