@@ -78,3 +78,30 @@ if __name__ == "__main__":
     test_identity_resolution()
     test_price_rollup()
     print("All tests passed")
+
+def test_price_observation_validation():
+    """Validate price observations reject impossible values and unknown currencies."""
+    from veridian_scraper.validators.validator import (
+        validate_price_observation,
+        ValidationSeverity,
+    )
+
+    # Valid observation
+    report = validate_price_observation(899.99, "USD")
+    assert not report.has_errors
+
+    # Negative and absurd prices rejected
+    assert validate_price_observation(-1, "USD").has_errors
+    assert validate_price_observation(1e9, "USD").has_errors
+    assert validate_price_observation(float("nan"), "USD").has_errors
+
+    # Unsupported currency rejected; valid ones accepted
+    assert validate_price_observation(999, "XYZ").has_errors
+    for currency in ("usd", "EUR", "GBP", "inr"):
+        assert not validate_price_observation(999, currency).has_errors
+
+    # Non-numeric price rejected
+    report = validate_price_observation("free", "USD")
+    assert report.has_errors
+    assert any(r.severity == ValidationSeverity.ERROR for r in report.results)
+    print("✅ Price observation validation test passed")

@@ -58,6 +58,10 @@ class ValidationReport:
 # Values outside these ranges are flagged as errors or warnings.
 # =============================================================================
 
+# Price observations - reject impossible or unsafe values before persistence.
+PRICE_RANGE = (0.01, 1_000_000)
+SUPPORTED_CURRENCIES = {"USD", "EUR", "GBP", "INR", "CAD", "AUD", "JPY"}
+
 # Battery capacity (Wh) - ultrabooks typically 40-100 Wh
 BATTERY_WH_RANGE = (20, 200)  # Error if outside
 BATTERY_WH_WARNING = (30, 120)  # Warning if outside
@@ -313,6 +317,32 @@ class ProductValidator:
                         )
             except (ValueError, TypeError, ZeroDivisionError):
                 pass
+
+
+def validate_price_observation(price: Any, currency: Any = "USD") -> ValidationReport:
+    """Validate a price observation before writing it to history."""
+    report = ValidationReport()
+    try:
+        numeric_price = float(price)
+    except (TypeError, ValueError):
+        report.add("price", price, ValidationSeverity.ERROR, "Price must be numeric.")
+        return report
+
+    if numeric_price != numeric_price or numeric_price in (float("inf"), float("-inf")):
+        report.add("price", price, ValidationSeverity.ERROR, "Price must be finite.")
+    elif numeric_price < PRICE_RANGE[0] or numeric_price > PRICE_RANGE[1]:
+        report.add("price", price, ValidationSeverity.ERROR, "Price is outside the supported range.")
+
+    normalized_currency = str(currency or "").upper()
+    if normalized_currency not in SUPPORTED_CURRENCIES:
+        report.add(
+            "currency",
+            currency,
+            ValidationSeverity.ERROR,
+            f"Unsupported currency: {currency}",
+            f"Use one of: {', '.join(sorted(SUPPORTED_CURRENCIES))}",
+        )
+    return report
 
 
 # Convenience functions
