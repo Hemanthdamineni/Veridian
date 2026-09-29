@@ -628,6 +628,18 @@ class ASUSScraper:
                 all_categories.update(subcats)
             categories = sorted(all_categories)
             self.logger.info(f"Total categories to scrape: {len(categories)}")
+        else:
+            # Join relative categories with base URL
+            categories = [
+                urljoin(self.category_discoverer.base_url + "/", cat.lstrip("/"))
+                if not cat.startswith("http") else cat
+                for cat in categories
+            ]
+            # Remove duplicate region prefix if present
+            categories = [
+                cat.replace(f"/{self.config.get('region')}/{self.config.get('region')}/", f"/{self.config.get('region')}/")
+                for cat in categories
+            ]
 
         self.progress.discovered_categories = categories
 

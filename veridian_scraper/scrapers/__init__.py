@@ -8,14 +8,18 @@ from .base import BaseScraper, HTTPClient, ScrapingProgress
 from .generic import GenericScraper
 from .asus import AsusScraper
 from .lenovo import LenovoScraper
-from .hp import HpScraper
+from .hp import HPScraper
 from .dell import DellScraper
 from .acer import AcerScraper
 from .msi import MsiScraper
 from .apple import AppleScraper
 from .samsung import SamsungScraper
 from .microsoft import MicrosoftScraper
-from .lg import LgScraper
+from .lg import LGScraper
+
+# Backwards-compatible aliases (class names are HPScraper/LGScraper).
+HpScraper = HPScraper
+LgScraper = LGScraper
 from .razer import RazerScraper
 from .framework import FrameworkScraper
 from .gigabyte import GigabyteScraper

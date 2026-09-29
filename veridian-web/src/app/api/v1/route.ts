@@ -14,16 +14,6 @@ import { NextRequest, NextResponse } from "next/server";
  * - GET /api/v1/recommendations - Get recommendations
  */
 
-// Simple API key validation middleware
-async function validateApiKey(request: NextRequest): Promise<boolean> {
-  const apiKey = request.headers.get("x-api-key");
-  if (!apiKey) return false;
-
-  // In production, validate against ApiKey table
-  // For now, accept any non-empty key for demo
-  return apiKey.length > 0;
-}
-
 export async function GET(request: NextRequest) {
   const { pathname } = new URL(request.url);
 

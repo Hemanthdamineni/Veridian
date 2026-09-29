@@ -20,22 +20,6 @@ interface FilterState {
   sort: string;
 }
 
-const DEFAULT_FILTERS: FilterState = {
-  cpuBrand: [],
-  ramMin: "",
-  storageMin: "",
-  displayType: [],
-  refreshMin: "",
-  weightMax: "",
-  batteryMin: "",
-  touch: "",
-  region: "US",
-  priceMin: "",
-  priceMax: "",
-  q: "",
-  sort: "",
-};
-
 export function FilterPanel() {
   const router = useRouter();
   const searchParams = useSearchParams();

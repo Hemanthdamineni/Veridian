@@ -13,6 +13,7 @@ export interface SkuPrice {
   region: string;
   currency: string;
   msrp: number;
+  storeUrl?: string | null;
 }
 
 export interface SkuListItem {
@@ -36,6 +37,7 @@ export interface SkuListItem {
   os: string;
   buildMaterial: string;
   price: SkuPrice | null;
+  storeUrl: string | null;
 }
 
 export interface SkuDetail extends SkuListItem {

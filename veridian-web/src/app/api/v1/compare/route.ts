@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Compare API
  *
@@ -130,7 +132,18 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function generateComparisonAnalysis(skus: any[]) {
+interface ComparableSku {
+  id: string;
+  model: { name: string };
+  ramGb: number;
+  weightKg: number;
+  batteryWh: number;
+  displayType: string;
+  displayRefreshHz: number;
+  displayNits: number | null;
+}
+
+function generateComparisonAnalysis(skus: ComparableSku[]) {
   if (skus.length < 2) return null;
 
   const analysis: Record<string, { winner: string; explanation: string }> = {};

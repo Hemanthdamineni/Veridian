@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { scoreLaptopForRecommendation, type RecommendationInput } from "@/lib/ai";
 
+export const dynamic = "force-dynamic";
+
 /**
  * AI Recommendation API
  *

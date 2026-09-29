@@ -154,6 +154,7 @@ interface SkuWithRelations {
   buildMaterial: string;
   model: {
     name: string;
+    productUrl: string | null;
     series: {
       name: string;
       manufacturer: {
@@ -201,7 +202,9 @@ export function formatSkuListItem(sku: SkuWithRelations, region?: string | undef
           region: price.region,
           currency: price.currency,
           msrp: price.msrp,
+          storeUrl: sku.model.productUrl || null, // link shown next to the price
         }
       : null,
+    storeUrl: sku.model.productUrl || null, // also surfaced at top level for detail views
   };
 }

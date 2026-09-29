@@ -47,7 +47,7 @@ export function Pagination({ page, totalPages, totalResults }: PaginationProps) 
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
-      <p className="text-sm text-zinc-500">
+      <p className="text-sm text-slate-700">
         {totalResults} result{totalResults !== 1 ? "s" : ""}
       </p>
 
@@ -62,7 +62,7 @@ export function Pagination({ page, totalPages, totalResults }: PaginationProps) 
 
         {getPageNumbers().map((p, i) =>
           typeof p === "string" ? (
-            <span key={`ellipsis-${i}`} className="px-2 text-zinc-400">
+            <span key={`ellipsis-${i}`} className="px-2 text-slate-700">
               ...
             </span>
           ) : (

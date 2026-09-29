@@ -3,6 +3,7 @@ import { FilterPanel } from "@/components/FilterPanel";
 import { SkuCard } from "@/components/SkuCard";
 import { Pagination } from "@/components/Pagination";
 import { SortSelect } from "@/components/SortSelect";
+import { LiveCatalogRefresh } from "@/components/LiveCatalogRefresh";
 import { buildSkusQuery, buildOrderBy, parsePagination, formatSkuListItem } from "@/lib/api";
 
 interface HomePageProps {
@@ -124,32 +125,34 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-zinc-900">
+      <div className="mb-10">
+        <h1 className="text-4xl font-bold tracking-tight text-zinc-950">
           Find Your Laptop
         </h1>
-        <p className="mt-2 text-zinc-600">
+        <p className="mt-3 text-lg text-zinc-700">
           Verified specs. Smart filters. Better decisions.
         </p>
       </div>
+
+      <LiveCatalogRefresh />
 
       <div className="flex flex-col lg:flex-row gap-8">
         <FilterPanel />
 
         <div className="flex-1">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-zinc-500">
-              {pagination.totalResults} laptop{pagination.totalResults !== 1 ? "s" : ""}
-            </p>
-            <SortSelect />
-          </div>
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-sm text-zinc-700">
+            {pagination.totalResults} laptop{pagination.totalResults !== 1 ? "s" : ""}
+          </p>
+          <SortSelect />
+        </div>
 
           {results.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-zinc-500 text-lg">
+              <p className="text-slate-700 text-lg">
                 No laptops match your filters.
               </p>
-              <p className="text-zinc-400 mt-2">
+              <p className="text-slate-700 mt-2">
                 Try adjusting your criteria or clearing filters.
               </p>
             </div>

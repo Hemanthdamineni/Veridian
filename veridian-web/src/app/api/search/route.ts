@@ -4,6 +4,8 @@ import { buildSkusQuery, parsePagination, formatSkuListItem } from "@/lib/api";
 import { parseNaturalLanguageQuery } from "@/lib/ai";
 import type { SkusResponse } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Natural Language Search API
  *

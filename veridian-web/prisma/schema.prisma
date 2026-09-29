@@ -94,10 +94,11 @@ model Sku {
   updatedAt         DateTime @updatedAt
 
   model         Model              @relation(fields: [modelId], references: [id], onDelete: Cascade)
-  pricing       SkuRegionalPricing[]
-  ports         SkuPort[]
-  contributions Contribution[]
-  alerts        Alert[]
+  pricing           SkuRegionalPricing[]
+  priceObservations PriceObservation[]
+  ports             SkuPort[]
+  contributions     Contribution[]
+  alerts            Alert[]
 
   @@index([ramGb])
   @@index([storageGb])
@@ -130,6 +131,24 @@ model SkuPort {
   count    Int
 
   sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
+}
+
+model PriceObservation {
+  id         String   @id @default(cuid())
+  skuId      String
+  region     String
+  currency   String
+  price      Float
+  retailer   String?
+  sourceUrl  String?
+  timestamp  DateTime @default(now())
+  sourceName String?
+  confidence Float    @default(0.8)
+
+  sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
+
+  @@index([skuId, timestamp])
+  @@index([skuId, region])
 }
 
 // =============================================================================

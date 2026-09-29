@@ -1,1 +1,79 @@
 @import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased min-h-screen;
+  }
+}
+
+@layer components {
+  .surface-panel {
+    @apply bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow transition-shadow;
+  }
+
+  .text-muted-readable {
+    @apply text-slate-600;
+  }
+
+  .contrast-link {
+    @apply text-slate-700 hover:text-slate-950 transition-colors;
+  }
+}
+
+:root {
+  --ink: #102033;
+  --muted: #526579;
+  --surface: #ffffff;
+  --canvas: #f3f7f8;
+  --line: #d5e0e5;
+  --accent: #087f8c;
+  --accent-strong: #075e68;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--canvas);
+}
+
+body {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(8, 127, 140, 0.10), transparent 30rem),
+    linear-gradient(180deg, #f8fbfb 0%, var(--canvas) 55%, #edf3f4 100%);
+  color: var(--ink);
+}
+
+::selection {
+  background: #b9e7e8;
+  color: #073b43;
+}
+
+input,
+select,
+button {
+  color: var(--ink);
+}
+
+input::placeholder {
+  color: #66798a;
+  opacity: 1;
+}
+
+input:focus,
+select:focus,
+button:focus-visible {
+  outline: 3px solid rgba(8, 127, 140, 0.28);
+  outline-offset: 2px;
+}
+
+.surface-panel {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 32px rgba(25, 58, 70, 0.08);
+}
+
+.text-muted-readable {
+  color: var(--muted);
+}

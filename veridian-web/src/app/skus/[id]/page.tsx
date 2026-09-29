@@ -33,6 +33,7 @@ async function getSku(id: string): Promise<SkuDetail | null> {
     modelName: sku.model.name,
     seriesName: sku.model.series.name,
     manufacturerName: sku.model.series.manufacturer.name,
+    storeUrl: sku.model.productUrl,
     cpuBrand: sku.cpuBrand,
     cpuModel: sku.cpuModel,
     cpuCores: sku.cpuCores,
@@ -95,6 +96,15 @@ export default async function SkuDetailPage({ params }: SkuDetailPageProps) {
   if (!sku) {
     notFound();
   }
+
+  // Load price observation history for the primary region (server-side).
+  const primaryRegion = sku.pricing[0]?.region || "US";
+  const observations = await prisma.priceObservation.findMany({
+    where: { skuId: sku.id, region: primaryRegion },
+    orderBy: { timestamp: "desc" },
+    take: 24,
+    select: { price: true, timestamp: true, retailer: true, sourceName: true },
+  });
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -217,6 +227,34 @@ export default async function SkuDetailPage({ params }: SkuDetailPageProps) {
               </div>
             ) : (
               <p className="text-zinc-500 text-sm">No pricing available</p>
+            )}
+          </div>
+
+          <div className="bg-white border border-zinc-200 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-zinc-900 mb-4">
+              Price History
+            </h3>
+            {observations.length > 0 ? (
+              <div className="space-y-3 text-sm">
+                {observations.map((obs, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <span className="font-medium text-zinc-900">
+                      {formatPrice(obs.price, sku.pricing[0]?.currency || "USD")}
+                    </span>
+                    <span className="text-zinc-500">
+                      {new Date(obs.timestamp).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-zinc-500 text-sm">
+                No historical observations recorded yet
+              </p>
             )}
           </div>
 
