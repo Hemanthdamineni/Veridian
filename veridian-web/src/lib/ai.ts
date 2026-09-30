@@ -230,7 +230,7 @@ export interface RecommendationInput {
 export interface Recommendation {
   sku_id: string;
   name: string;
-  price: number;
+  price: number | null;
   currency: string;
   match_score: number;
   pros: string[];
@@ -246,13 +246,13 @@ export function scoreLaptopForRecommendation(
   laptop: {
     id: string;
     name: string;
-    price: number;
+    price: number | null;
     currency: string;
     ram_gb: number;
-    display_size_in: number;
-    display_type: string;
-    weight_kg: number;
-    battery_wh: number;
+    display_size_in: number | null;
+    display_type: string | null;
+    weight_kg: number | null;
+    battery_wh: number | null;
     cpu_brand: string;
     brand: string;
   },
@@ -262,17 +262,20 @@ export function scoreLaptopForRecommendation(
   const pros: string[] = [];
   const cons: string[] = [];
 
-  // Budget scoring
+  // Budget scoring (only when a real price is known)
+  const price = laptop.price;
   if (requirements.budget) {
-    if (laptop.price <= requirements.budget) {
+    if (price !== null && price <= requirements.budget) {
       score += 20;
-      pros.push(`Within budget (${requirements.currency || "$"}${laptop.price})`);
-    } else if (laptop.price <= requirements.budget * 1.1) {
+      pros.push(`Within budget (${requirements.currency || "$"}${price})`);
+    } else if (price !== null && price <= requirements.budget * 1.1) {
       score += 5;
-      cons.push(`Slightly over budget (${requirements.currency || "$"}${laptop.price})`);
+      cons.push(`Slightly over budget (${requirements.currency || "$"}${price})`);
+    } else if (price === null) {
+      cons.push(`No reported price to check against budget`);
     } else {
       score -= 30;
-      cons.push(`Over budget (${requirements.currency || "$"}${laptop.price} vs ${requirements.budget})`);
+      cons.push(`Over budget (${requirements.currency || "$"}${price} vs ${requirements.budget})`);
     }
   }
 
@@ -288,7 +291,7 @@ export function scoreLaptopForRecommendation(
   }
 
   // Display size scoring
-  if (requirements.preferred_size) {
+  if (requirements.preferred_size && laptop.display_size_in !== null) {
     const sizeDiff = Math.abs(laptop.display_size_in - requirements.preferred_size);
     if (sizeDiff < 0.5) {
       score += 10;
@@ -305,13 +308,13 @@ export function scoreLaptopForRecommendation(
     if (laptop.display_type === requirements.display_preference) {
       score += 10;
       pros.push(`${laptop.display_type} display as preferred`);
-    } else {
+    } else if (laptop.display_type !== null) {
       cons.push(`${laptop.display_type} display (preferred ${requirements.display_preference})`);
     }
   }
 
   // Weight scoring
-  if (requirements.max_weight) {
+  if (requirements.max_weight && laptop.weight_kg !== null) {
     if (laptop.weight_kg <= requirements.max_weight) {
       score += 10;
       pros.push(`Lightweight at ${laptop.weight_kg}kg`);
@@ -341,13 +344,13 @@ export function scoreLaptopForRecommendation(
   } else if (requirements.use_case === "gaming" && laptop.display_type === "IPS") {
     score += 5;
     pros.push("Good display for gaming");
-  } else if (requirements.use_case === "travel" && laptop.weight_kg < 1.3) {
+  } else if (requirements.use_case === "travel" && laptop.weight_kg !== null && laptop.weight_kg < 1.3) {
     score += 10;
     pros.push("Great for travel");
   }
 
   // Battery bonus
-  if (laptop.battery_wh >= 70) {
+  if (laptop.battery_wh !== null && laptop.battery_wh >= 70) {
     score += 5;
     pros.push("Excellent battery life");
   }
@@ -358,7 +361,7 @@ export function scoreLaptopForRecommendation(
   return {
     sku_id: laptop.id,
     name: laptop.name,
-    price: laptop.price,
+    price,
     currency: laptop.currency || "USD",
     match_score: score,
     pros: pros.slice(0, 4),
@@ -368,7 +371,7 @@ export function scoreLaptopForRecommendation(
 }
 
 function generateReason(
-  laptop: { name: string; brand: string; ram_gb: number; display_type: string; weight_kg: number },
+  laptop: { name: string; brand: string; ram_gb: number; display_type: string | null; weight_kg: number | null },
   requirements: RecommendationInput,
   score: number
 ): string {

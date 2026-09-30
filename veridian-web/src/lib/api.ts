@@ -1,7 +1,9 @@
 import type { SkusQueryParams, SortOption, SkuListItem } from "@/types";
 
 export function buildSkusQuery(params: SkusQueryParams): Record<string, unknown> {
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = {
+    catalogVisible: true,
+  };
 
   // CPU Brand filter (multi-select, comma-separated)
   if (params.cpuBrand) {
@@ -138,20 +140,20 @@ interface SkuWithRelations {
   cpuCores: number | null;
   gpuModel: string | null;
   ramGb: number;
-  ramType: string;
-  ramSoldered: boolean;
-  storageGb: number;
-  storageType: string;
-  displaySizeIn: number;
-  displayResolution: string;
-  displayType: string;
-  displayRefreshHz: number;
-  displayTouch: boolean;
+  ramType: string | null;
+  ramSoldered: boolean | null;
+  storageGb: number | null;
+  storageType: string | null;
+  displaySizeIn: number | null;
+  displayResolution: string | null;
+  displayType: string | null;
+  displayRefreshHz: number | null;
+  displayTouch: boolean | null;
   displayNits: number | null;
-  weightKg: number;
-  batteryWh: number;
+  weightKg: number | null;
+  batteryWh: number | null;
   os: string;
-  buildMaterial: string;
+  buildMaterial: string | null;
   model: {
     name: string;
     productUrl: string | null;

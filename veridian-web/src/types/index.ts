@@ -1,11 +1,11 @@
 // Veridian shared types
 
 export interface SkuDisplay {
-  sizeIn: number;
-  resolution: string;
-  type: string;
-  refreshHz: number;
-  touch: boolean;
+  sizeIn: number | null;
+  resolution: string | null;
+  type: string | null;
+  refreshHz: number | null;
+  touch: boolean | null;
   nits: number | null;
 }
 
@@ -27,17 +27,43 @@ export interface SkuListItem {
   cpuCores: number | null;
   gpuModel: string | null;
   ramGb: number;
-  ramType: string;
-  ramSoldered: boolean;
-  storageGb: number;
-  storageType: string;
+  ramType: string | null;
+  ramSoldered: boolean | null;
+  storageGb: number | null;
+  storageType: string | null;
   display: SkuDisplay;
-  weightKg: number;
-  batteryWh: number;
+  weightKg: number | null;
+  batteryWh: number | null;
   os: string;
-  buildMaterial: string;
+  buildMaterial: string | null;
   price: SkuPrice | null;
   storeUrl: string | null;
+  catalogVisible?: boolean;
+  certifiedSpecs?: Array<{
+    source: string;
+    sourceUrl: string | null;
+    observedAt: string;
+    certifiedAt: string | null;
+    marketDate: string | null;
+    energyStarId: string;
+    cpuBrand: string | null;
+    cpuModel: string | null;
+    cpuCores: number | null;
+    cpuBaseClockGHz: number | null;
+    cpuMaxClockGHz: number | null;
+    cpuPackages: number | null;
+    ramGb: number | null;
+    storageType: string | null;
+    storageDrives: number | null;
+    displaySizeIn: number | null;
+    displayResolutionMp: number | null;
+    displayAreaSqIn: number | null;
+    touchScreen: boolean | null;
+    batteryWh: number | null;
+    os: string | null;
+    npu: boolean | null;
+    markets: string | null;
+  }>;
 }
 
 export interface SkuDetail extends SkuListItem {

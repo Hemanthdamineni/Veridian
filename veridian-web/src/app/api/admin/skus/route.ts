@@ -82,12 +82,6 @@ function validateSkuInput(body: Record<string, unknown>): { valid: boolean; erro
     errors.push("batteryWh must be between 5 and 500");
   }
 
-  // Validate UUID format for modelId
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (!uuidRegex.test(body.modelId as string)) {
-    errors.push("modelId must be a valid UUID");
-  }
-
   return { valid: errors.length === 0, errors };
 }
 

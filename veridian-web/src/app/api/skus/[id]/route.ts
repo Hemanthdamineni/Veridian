@@ -27,8 +27,8 @@ export async function GET(
       );
     }
 
-    const sku = await prisma.sku.findUnique({
-      where: { id },
+    const sku = await prisma.sku.findFirst({
+      where: { id, catalogVisible: true },
       include: {
         model: {
           include: {
@@ -41,6 +41,7 @@ export async function GET(
         },
         pricing: true,
         ports: true,
+        certifiedSpecs: true,
       },
     });
 
@@ -99,6 +100,31 @@ export async function GET(
       ports: sku.ports.map((p) => ({
         portType: p.portType,
         count: p.count,
+      })),
+      certifiedSpecs: sku.certifiedSpecs.map((spec) => ({
+        source: spec.source,
+        sourceUrl: spec.sourceUrl,
+        observedAt: spec.observedAt.toISOString(),
+        certifiedAt: spec.certifiedAt?.toISOString() || null,
+        marketDate: spec.marketDate?.toISOString() || null,
+        energyStarId: spec.energyStarId,
+        cpuBrand: spec.cpuBrand,
+        cpuModel: spec.cpuModel,
+        cpuCores: spec.cpuCores,
+        cpuBaseClockGHz: spec.cpuBaseClockGHz,
+        cpuMaxClockGHz: spec.cpuMaxClockGHz,
+        cpuPackages: spec.cpuPackages,
+        ramGb: spec.ramGb,
+        storageType: spec.storageType,
+        storageDrives: spec.storageDrives,
+        displaySizeIn: spec.displaySizeIn,
+        displayResolutionMp: spec.displayResolutionMp,
+        displayAreaSqIn: spec.displayAreaSqIn,
+        touchScreen: spec.touchScreen,
+        batteryWh: spec.batteryWh,
+        os: spec.os,
+        npu: spec.npu,
+        markets: spec.markets,
       })),
     });
   } catch (error) {

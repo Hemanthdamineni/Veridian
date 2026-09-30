@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     }
 
     const skus = await prisma.sku.findMany({
-      where: { id: { in: ids } },
+      where: { id: { in: ids }, catalogVisible: true },
       include: {
         model: {
           include: {
@@ -136,10 +136,10 @@ interface ComparableSku {
   id: string;
   model: { name: string };
   ramGb: number;
-  weightKg: number;
-  batteryWh: number;
-  displayType: string;
-  displayRefreshHz: number;
+  weightKg: number | null;
+  batteryWh: number | null;
+  displayType: string | null;
+  displayRefreshHz: number | null;
   displayNits: number | null;
 }
 
@@ -158,36 +158,44 @@ function generateComparisonAnalysis(skus: ComparableSku[]) {
     };
   }
 
-  // Compare weight (lighter is better)
-  const minWeight = Math.min(...skus.map((s) => s.weightKg));
-  const weightWinners = skus.filter((s) => s.weightKg === minWeight);
-  if (weightWinners.length === 1) {
-    analysis.portability = {
-      winner: weightWinners[0].id,
-      explanation: `${weightWinners[0].model.name} is the lightest at ${minWeight}kg`,
-    };
+  // Compare weight (lighter is better) — only among SKUs that report weight
+  const withWeight = skus.filter((s) => s.weightKg !== null) as (ComparableSku & { weightKg: number })[];
+  if (withWeight.length > 0) {
+    const minWeight = Math.min(...withWeight.map((s) => s.weightKg));
+    const weightWinners = withWeight.filter((s) => s.weightKg === minWeight);
+    if (weightWinners.length === 1) {
+      analysis.portability = {
+        winner: weightWinners[0].id,
+        explanation: `${weightWinners[0].model.name} is the lightest at ${minWeight}kg`,
+      };
+    }
   }
 
-  // Compare battery
-  const maxBattery = Math.max(...skus.map((s) => s.batteryWh));
-  const batteryWinners = skus.filter((s) => s.batteryWh === maxBattery);
-  if (batteryWinners.length === 1) {
-    analysis.battery = {
-      winner: batteryWinners[0].id,
-      explanation: `${batteryWinners[0].model.name} has the largest battery at ${maxBattery}Wh`,
-    };
+  // Compare battery — only among SKUs that report capacity
+  const withBattery = skus.filter((s) => s.batteryWh !== null) as (ComparableSku & { batteryWh: number })[];
+  if (withBattery.length > 0) {
+    const maxBattery = Math.max(...withBattery.map((s) => s.batteryWh));
+    const batteryWinners = withBattery.filter((s) => s.batteryWh === maxBattery);
+    if (batteryWinners.length === 1) {
+      analysis.battery = {
+        winner: batteryWinners[0].id,
+        explanation: `${batteryWinners[0].model.name} has the largest battery at ${maxBattery}Wh`,
+      };
+    }
   }
 
-  // Compare display
-  const displayScores = skus.map((s) => {
-    let score = 0;
-    if (s.displayType === "OLED") score += 3;
-    else if (s.displayType === "Mini-LED") score += 2;
-    else if (s.displayType === "IPS") score += 1;
-    score += s.displayRefreshHz / 60;
-    score += (s.displayNits || 300) / 500;
-    return { sku: s, score };
-  });
+  // Compare display — only among SKUs with a measured refresh rate
+  const displayScores = skus
+    .filter((s) => s.displayRefreshHz !== null && s.displayType !== null)
+    .map((s) => {
+      let score = 0;
+      if (s.displayType === "OLED") score += 3;
+      else if (s.displayType === "Mini-LED") score += 2;
+      else if (s.displayType === "IPS") score += 1;
+      score += (s.displayRefreshHz as number) / 60;
+      score += (s.displayNits || 300) / 500;
+      return { sku: s, score };
+    });
   displayScores.sort((a, b) => b.score - a.score);
   if (displayScores.length > 1 && displayScores[0].score > displayScores[1].score) {
     analysis.display = {

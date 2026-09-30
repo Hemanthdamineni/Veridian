@@ -130,7 +130,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           Find Your Laptop
         </h1>
         <p className="mt-3 text-lg text-zinc-700">
-          Verified specs. Smart filters. Better decisions.
+          Search and filter laptop specs and pricing. Seed data shown for exploration; values are not independently verified.
         </p>
       </div>
 

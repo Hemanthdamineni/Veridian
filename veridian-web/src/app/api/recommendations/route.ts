@@ -38,7 +38,9 @@ export async function GET(request: NextRequest) {
     const region = searchParams.get("region") || "US";
 
     // Build initial filter query based on hard constraints
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = {
+      catalogVisible: true,
+    };
     if (requirements.budget) {
       where["pricing"] = {
         some: {
@@ -83,7 +85,7 @@ export async function GET(request: NextRequest) {
       const laptop = {
         id: sku.id,
         name: sku.model.name,
-        price: sku.pricing[0]?.msrp || 0,
+        price: sku.pricing[0]?.msrp ?? null,
         currency: sku.pricing[0]?.currency || "USD",
         ram_gb: sku.ramGb,
         display_size_in: sku.displaySizeIn,

@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 export const metadata: Metadata = {
   title: "Veridian — Laptop Decision Platform",
   description:
-    "Find the right laptop with verified specs, smart filters, and real-world data.",
+    "Filter laptop catalog by specs and pricing. Catalog is currently populated from local seed data and not independently verified.",
 };
 
 interface RootLayoutProps {
@@ -30,7 +30,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         </header>
         <main className="flex-1">{children}</main>
         <footer className="border-t border-[#cbd9df] bg-white/70 py-8 text-center text-sm font-medium text-[#526579]">
-          Veridian - Trusted laptop specs for better decisions.
+          Veridian — laptop specs and pricing catalog. Seed data is for exploration only; verify details before purchase.
         </footer>
       </body>
     </html>

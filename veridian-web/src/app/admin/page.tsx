@@ -22,7 +22,7 @@ interface Sku {
   skuCode: string;
   cpuModel: string;
   ramGb: number;
-  weightKg: number;
+  weightKg: number | null;
   createdAt: Date;
   model: {
     name: string;

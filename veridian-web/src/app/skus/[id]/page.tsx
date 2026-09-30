@@ -14,8 +14,8 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const sku = await prisma.sku.findUnique({
-    where: { id },
+  const sku = await prisma.sku.findFirst({
+    where: { id, catalogVisible: true },
     include: {
       model: {
         include: {
@@ -32,7 +32,12 @@ export async function generateMetadata({
   const series = sku.model.series.name;
   const model = sku.model.name;
   const title = `${mfr} ${model} (${sku.skuCode}) Specs, Price & History | Veridian`;
-  const description = `Detailed specs, regional pricing, and price history for ${mfr} ${series} ${model} (${sku.skuCode}). ${sku.ramGb}GB RAM, ${sku.storageGb}GB ${sku.storageType}, ${sku.displaySizeIn}" ${sku.displayResolution} ${sku.displayType} display.`;
+  const specBits = [
+    sku.ramGb !== null ? `${sku.ramGb}GB RAM` : null,
+    sku.storageGb !== null ? `${sku.storageGb}GB ${sku.storageType ?? "storage"}` : null,
+    sku.displaySizeIn !== null ? `${sku.displaySizeIn}" display` : null,
+  ].filter(Boolean).join(", ");
+  const description = `Detailed specs, regional pricing, and price history for ${mfr} ${series} ${model} (${sku.skuCode}).${specBits ? ` ${specBits}.` : ""}`;
   return {
     title,
     description,
@@ -54,13 +59,13 @@ export async function generateMetadata({
         category: series,
         additionalProperty: [
           { "@type": "PropertyValue", name: "CPU", value: `${sku.cpuBrand} ${sku.cpuModel}` },
-          { "@type": "PropertyValue", name: "RAM", value: `${sku.ramGb}GB ${sku.ramType}` },
-          { "@type": "PropertyValue", name: "Storage", value: `${sku.storageGb}GB ${sku.storageType}` },
-          { "@type": "PropertyValue", name: "Display Size", value: `${sku.displaySizeIn} inch` },
-          { "@type": "PropertyValue", name: "Display Resolution", value: sku.displayResolution },
-          { "@type": "PropertyValue", name: "Display Refresh Rate", value: `${sku.displayRefreshHz} Hz` },
-          { "@type": "PropertyValue", name: "Weight", value: `${sku.weightKg} kg` },
-          { "@type": "PropertyValue", name: "Battery", value: `${sku.batteryWh} Wh` },
+          ...(sku.ramGb !== null ? [{ "@type": "PropertyValue", name: "RAM", value: `${sku.ramGb}GB${sku.ramType ? ` ${sku.ramType}` : ""}` }] : []),
+          ...(sku.storageGb !== null ? [{ "@type": "PropertyValue", name: "Storage", value: `${sku.storageGb}GB${sku.storageType ? ` ${sku.storageType}` : ""}` }] : []),
+          ...(sku.displaySizeIn !== null ? [{ "@type": "PropertyValue", name: "Display Size", value: `${sku.displaySizeIn} inch` }] : []),
+          ...(sku.displayResolution ? [{ "@type": "PropertyValue", name: "Display Resolution", value: sku.displayResolution }] : []),
+          ...(sku.displayRefreshHz !== null ? [{ "@type": "PropertyValue", name: "Display Refresh Rate", value: `${sku.displayRefreshHz} Hz` }] : []),
+          ...(sku.weightKg !== null ? [{ "@type": "PropertyValue", name: "Weight", value: `${sku.weightKg} kg` }] : []),
+          ...(sku.batteryWh !== null ? [{ "@type": "PropertyValue", name: "Battery", value: `${sku.batteryWh} Wh` }] : []),
         ],
         offer:
           sku.pricing[0]
@@ -80,8 +85,8 @@ export async function generateMetadata({
 }
 
 async function getSku(id: string): Promise<SkuDetail | null> {
-  const sku = await prisma.sku.findUnique({
-    where: { id },
+  const sku = await prisma.sku.findFirst({
+    where: { id, catalogVisible: true },
     include: {
       model: {
         include: {
@@ -94,6 +99,7 @@ async function getSku(id: string): Promise<SkuDetail | null> {
       },
       pricing: true,
       ports: true,
+      certifiedSpecs: true,
     },
   });
 
@@ -150,6 +156,31 @@ async function getSku(id: string): Promise<SkuDetail | null> {
       portType: p.portType,
       count: p.count,
     })),
+    certifiedSpecs: sku.certifiedSpecs.map((spec) => ({
+      source: spec.source,
+      sourceUrl: spec.sourceUrl,
+      observedAt: spec.observedAt.toISOString(),
+      certifiedAt: spec.certifiedAt?.toISOString() || null,
+      marketDate: spec.marketDate?.toISOString() || null,
+      energyStarId: spec.energyStarId,
+      cpuBrand: spec.cpuBrand,
+      cpuModel: spec.cpuModel,
+      cpuCores: spec.cpuCores,
+      cpuBaseClockGHz: spec.cpuBaseClockGHz,
+      cpuMaxClockGHz: spec.cpuMaxClockGHz,
+      cpuPackages: spec.cpuPackages,
+      ramGb: spec.ramGb,
+      storageType: spec.storageType,
+      storageDrives: spec.storageDrives,
+      displaySizeIn: spec.displaySizeIn,
+      displayResolutionMp: spec.displayResolutionMp,
+      displayAreaSqIn: spec.displayAreaSqIn,
+      touchScreen: spec.touchScreen,
+      batteryWh: spec.batteryWh,
+      os: spec.os,
+      npu: spec.npu,
+      markets: spec.markets,
+    })),
   };
 }
 
@@ -175,8 +206,9 @@ export default async function SkuDetailPage({ params }: SkuDetailPageProps) {
     where: { skuId: sku.id, region: primaryRegion },
     orderBy: { timestamp: "desc" },
     take: 24,
-    select: { price: true, timestamp: true, retailer: true, sourceName: true },
+    select: { price: true, timestamp: true, retailer: true, sourceName: true, sourceUrl: true },
   });
+  const hasSynthetic = observations.some((o) => o.sourceName?.toLowerCase().includes("seed") || !o.sourceUrl);
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -214,44 +246,50 @@ export default async function SkuDetailPage({ params }: SkuDetailPageProps) {
         <div className="lg:col-span-2 space-y-6">
           <SpecSection title="Processor">
             <SpecRow label="CPU" value={`${sku.cpuBrand} ${sku.cpuModel}`} />
-            {sku.cpuCores && <SpecRow label="Cores" value={`${sku.cpuCores}`} />}
+            {sku.cpuCores !== null && <SpecRow label="Cores" value={`${sku.cpuCores}`} />}
             {sku.gpuModel && <SpecRow label="GPU" value={sku.gpuModel} />}
-            {sku.npuTops && <SpecRow label="NPU" value={`${sku.npuTops} TOPS`} />}
+            {sku.npuTops !== null && <SpecRow label="NPU" value={`${sku.npuTops} TOPS`} />}
           </SpecSection>
 
           <SpecSection title="Memory & Storage">
             <SpecRow
               label="RAM"
-              value={`${sku.ramGb} GB ${sku.ramType} ${sku.ramSoldered ? "(Soldered)" : "(Upgradeable)"}`}
+              value={`${sku.ramGb} GB${sku.ramType ? ` ${sku.ramType}` : ""}${
+                sku.ramSoldered === null ? " (not reported)" : sku.ramSoldered ? " (Soldered)" : " (Upgradeable)"
+              }`}
             />
             <SpecRow
               label="Storage"
-              value={`${sku.storageGb >= 1024 ? `${sku.storageGb / 1024} TB` : `${sku.storageGb} GB`} ${sku.storageType}`}
+              value={`${
+                sku.storageGb === null
+                  ? "Not reported"
+                  : `${sku.storageGb >= 1024 ? `${sku.storageGb / 1024} TB` : `${sku.storageGb} GB`}${sku.storageType ? ` ${sku.storageType}` : ""}`
+              }`}
             />
-            {sku.storageSlots && (
+            {sku.storageSlots !== null && (
               <SpecRow label="Storage Slots" value={`${sku.storageSlots}`} />
             )}
           </SpecSection>
 
           <SpecSection title="Display">
-            <SpecRow label="Size" value={`${sku.display.sizeIn}"`} />
-            <SpecRow label="Resolution" value={sku.display.resolution} />
-            <SpecRow label="Type" value={sku.display.type} />
-            <SpecRow label="Refresh Rate" value={`${sku.display.refreshHz} Hz`} />
-            <SpecRow label="Touch" value={sku.display.touch ? "Yes" : "No"} />
-            {sku.display.nits && (
+            <SpecRow label="Size" value={sku.display.sizeIn !== null ? `${sku.display.sizeIn}"` : "Not reported"} />
+            <SpecRow label="Resolution" value={sku.display.resolution ?? "Not reported"} />
+            <SpecRow label="Type" value={sku.display.type ?? "Not reported"} />
+            <SpecRow label="Refresh Rate" value={sku.display.refreshHz !== null ? `${sku.display.refreshHz} Hz` : "Not reported"} />
+            <SpecRow label="Touch" value={sku.display.touch === null ? "Not reported" : sku.display.touch ? "Yes" : "No"} />
+            {sku.display.nits !== null && (
               <SpecRow label="Brightness" value={`${sku.display.nits} nits`} />
             )}
           </SpecSection>
 
           <SpecSection title="Physical">
-            <SpecRow label="Weight" value={`${sku.weightKg.toFixed(2)} kg`} />
-            <SpecRow label="Build Material" value={sku.buildMaterial} />
+            <SpecRow label="Weight" value={sku.weightKg !== null ? `${sku.weightKg.toFixed(2)} kg` : "Not reported"} />
+            <SpecRow label="Build Material" value={sku.buildMaterial ?? "Not reported"} />
           </SpecSection>
 
           <SpecSection title="Battery">
-            <SpecRow label="Capacity" value={`${sku.batteryWh} Wh`} />
-            {sku.batteryLifeHours && (
+            <SpecRow label="Capacity" value={sku.batteryWh !== null ? `${sku.batteryWh} Wh` : "Not reported"} />
+            {sku.batteryLifeHours !== null && (
               <SpecRow
                 label="Claimed Battery Life"
                 value={`${sku.batteryLifeHours} hours`}
@@ -275,6 +313,81 @@ export default async function SkuDetailPage({ params }: SkuDetailPageProps) {
               <SpecRow label="Linux Compatibility" value={sku.linuxCompat} />
             )}
           </SpecSection>
+
+          {sku.certifiedSpecs && sku.certifiedSpecs.length > 0 && (
+            <SpecSection title="Certified Specifications & Provenance">
+              {sku.certifiedSpecs.map((spec) => (
+                <div key={spec.energyStarId} className="text-sm">
+                  <p className="text-zinc-500 mb-2">
+                    Source: {spec.source} ({spec.certifiedAt ?? "date n/a"}).
+                    Energy Star ID:{" "}
+                    <span className="font-mono text-zinc-700">{spec.energyStarId}</span>.
+                    {spec.sourceUrl ? (
+                      <> License: US Public Domain; verified at{" "}
+                      <a
+                        href={spec.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        source record
+                      </a>.
+                      </>
+                    ) : null}
+                  </p>
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
+                    <div>
+                      <dt className="text-zinc-500">Certified RAM</dt>
+                      <dd>
+                        {spec.ramGb !== null ? `${spec.ramGb} GB` : "Not reported"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">Storage Type</dt>
+                      <dd>{spec.storageType ?? "Not reported"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">Processor</dt>
+                      <dd>{[spec.cpuBrand, spec.cpuModel].filter(Boolean).join(" ") || "Not reported"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">CPU Cores</dt>
+                      <dd>{spec.cpuCores ?? "Not reported"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">Max Clock</dt>
+                      <dd>{spec.cpuMaxClockGHz !== null ? `${spec.cpuMaxClockGHz} GHz` : "Not reported"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">Display Diagonal</dt>
+                      <dd>{spec.displaySizeIn !== null ? `${spec.displaySizeIn}"` : "Not reported"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">Resolution (MP)</dt>
+                      <dd>{spec.displayResolutionMp ?? "Not reported"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">Battery</dt>
+                      <dd>{spec.batteryWh !== null ? `${spec.batteryWh} Wh` : "Not reported"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">Touch Screen</dt>
+                      <dd>{spec.touchScreen === null ? "Not reported" : spec.touchScreen ? "Yes" : "No"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-zinc-500">NPU</dt>
+                      <dd>{spec.npu === null ? "Not reported" : spec.npu ? "Yes" : "No"}</dd>
+                    </div>
+                  </dl>
+                </div>
+              ))}
+              <p className="text-xs text-zinc-500 mt-4">
+                Values reported here are the exact figures asserted by the ENERGY STAR
+                certification for this Energy Star ID. Fields marked &quot;Not reported&quot;
+                are not provided by this source and are intentionally not guessed.
+              </p>
+            </SpecSection>
+          )}
         </div>
 
         {/* Sidebar - Pricing */}
@@ -306,6 +419,12 @@ export default async function SkuDetailPage({ params }: SkuDetailPageProps) {
             <h3 className="text-lg font-semibold text-zinc-900 mb-4">
               Price History
             </h3>
+            {hasSynthetic && observations.length > 0 && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mb-3">
+                These values are synthetic seed reference data, not observed retailer prices.
+                No live or verified source URLs are available for this catalog entry.
+              </p>
+            )}
             {observations.length > 0 ? (
               <div className="space-y-3 text-sm">
                 {observations.map((obs, i) => (
@@ -319,6 +438,13 @@ export default async function SkuDetailPage({ params }: SkuDetailPageProps) {
                         month: "short",
                         day: "numeric",
                       })}
+                      {obs.sourceUrl ? (
+                        <a href={obs.sourceUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-600 hover:underline text-xs">
+                          {obs.sourceName || "source"}
+                        </a>
+                      ) : (
+                        obs.sourceName && <span className="ml-2 text-zinc-400 text-xs">({obs.sourceName})</span>
+                      )}
                     </span>
                   </div>
                 ))}

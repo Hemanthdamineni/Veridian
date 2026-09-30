@@ -8,10 +8,30 @@ import type { NextRequest } from "next/server";
  * 1. Bearer token (for API access): Authorization: Bearer <token>
  * 2. Session cookie (for browser access): admin_session=<token>
  *
- * The token is validated against ADMIN_TOKEN environment variable.
+ * The token is validated against ADMIN_TOKEN environment variable using a
+ * constant-time comparison.
  */
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+
+/**
+ * Constant-time string comparison without Node built-ins.
+ *
+ * Middleware compiles for the Edge runtime, which does not provide
+ * `node:crypto` (timingSafeEqual). This implementation walks both strings
+ * in full and accumulates a mismatch flag, so its runtime does not depend
+ * on where the first difference occurs. It still performs an early length
+ * check, which leaks only the length (acceptable for a fixed-format token).
+ */
+function safeEqual(a: string, b: string): boolean {
+  if (!ADMIN_TOKEN || !a || !b) return false;
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
 
 function isAuthenticated(request: NextRequest): boolean {
   if (!ADMIN_TOKEN) {
@@ -23,13 +43,13 @@ function isAuthenticated(request: NextRequest): boolean {
   const authHeader = request.headers.get("authorization");
   if (authHeader) {
     const token = authHeader.replace("Bearer ", "").trim();
-    return token === ADMIN_TOKEN;
+    return safeEqual(ADMIN_TOKEN, token);
   }
 
   // Check session cookie (for browser-based access)
   const sessionCookie = request.cookies.get("admin_session")?.value;
   if (sessionCookie) {
-    return sessionCookie === ADMIN_TOKEN;
+    return safeEqual(ADMIN_TOKEN, sessionCookie);
   }
 
   return false;

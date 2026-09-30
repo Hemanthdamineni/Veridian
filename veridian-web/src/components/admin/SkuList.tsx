@@ -3,7 +3,7 @@ interface Sku {
   skuCode: string;
   cpuModel: string;
   ramGb: number;
-  weightKg: number;
+  weightKg: number | null;
   createdAt: Date;
   model: {
     name: string;
@@ -60,7 +60,7 @@ export function SkuList({ skus }: SkuListProps) {
           </div>
           <p className="text-xs text-zinc-400 mt-1">
             {sku.model.series.manufacturer.name} • {sku.cpuModel} •{" "}
-            {sku.ramGb} GB • {sku.weightKg} kg
+            {sku.ramGb} GB • {sku.weightKg !== null ? `${sku.weightKg} kg` : "weight n/a"}
           </p>
         </div>
       ))}

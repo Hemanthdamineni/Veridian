@@ -14,9 +14,9 @@ export async function GET(
       return NextResponse.json({ error: "Invalid SKU ID" }, { status: 400 });
     }
 
-    // Verify SKU exists
-    const sku = await prisma.sku.findUnique({
-      where: { id },
+    // Verify SKU exists and is visible in the public catalog
+    const sku = await prisma.sku.findFirst({
+      where: { id, catalogVisible: true },
       select: { id: true },
     });
 
@@ -43,20 +43,24 @@ export async function GET(
         timestamp: true,
         retailer: true,
         sourceName: true,
+        sourceUrl: true,
         confidence: true,
       },
     });
 
     // Compute summary statistics
     const prices = observations.map((o) => o.price);
+    const isSynthetic = observations.some((observation) =>
+      observation.sourceName?.toLowerCase().includes("seed") || !observation.sourceUrl
+    );
     const summary = prices.length > 0
       ? {
           min: Math.min(...prices),
           max: Math.max(...prices),
           avg: prices.reduce((a, b) => a + b, 0) / prices.length,
           count: prices.length,
-          latest: prices[prices.length - 1],
-          earliest: prices[0],
+          latest: prices[0],
+          earliest: prices[prices.length - 1],
         }
       : null;
 
@@ -78,6 +82,7 @@ export async function GET(
       currency: regionalPricing?.currency || "",
       msrp: regionalPricing?.msrp || null,
       msrpAvailable: regionalPricing?.available ?? true,
+      isSynthetic,
       summary,
       observations,
     });

@@ -70,26 +70,27 @@ model Sku {
   cpuCores          Int?
   gpuModel          String?
   ramGb             Int
-  ramType           String
-  ramSoldered       Boolean
-  storageGb         Int
-  storageType       String
+  ramType           String?
+  ramSoldered       Boolean?
+  storageGb         Int?
+  storageType       String?
   storageSlots      Int?
-  displaySizeIn     Float
-  displayResolution String
-  displayType       String
-  displayRefreshHz  Int
-  displayTouch      Boolean
+  displaySizeIn     Float?
+  displayResolution String?
+  displayType       String?
+  displayRefreshHz  Int?
+  displayTouch      Boolean?
   displayNits       Int?
-  weightKg          Float
-  batteryWh         Float
+  weightKg          Float?
+  batteryWh         Float?
   batteryLifeHours  Float?
   npuTops           Float?
   os                String
-  buildMaterial     String
+  buildMaterial     String?
   linuxCompat       String?
   launchDate        DateTime?
   discontinued      Boolean  @default(false)
+  catalogVisible    Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -99,6 +100,8 @@ model Sku {
   ports             SkuPort[]
   contributions     Contribution[]
   alerts            Alert[]
+  certifiedSpecs    CertifiedSkuSpec[]
+  observations      RawObservation[]
 
   @@index([ramGb])
   @@index([storageGb])
@@ -107,6 +110,64 @@ model Sku {
   @@index([displayRefreshHz])
   @@index([cpuBrand])
   @@index([displayType])
+}
+
+// Certified specs lifted from an audited official certification (ENERGY STAR).
+// These values are observed and cited — they are not inferred or guessed.
+model CertifiedSkuSpec {
+  id          String   @id @default(cuid())
+  skuId       String
+  source      String
+  sourceUrl   String?
+  observedAt  DateTime @default(now())
+  certifiedAt DateTime?
+  marketDate  DateTime?
+  energyStarId String
+  cpuBrand    String?
+  cpuModel    String?
+  cpuCores    Int?
+  cpuBaseClockGHz Float?
+  cpuMaxClockGHz Float?
+  cpuPackages Int?
+  ramGb       Float?
+  storageType String?
+  storageDrives Int?
+  displaySizeIn Float?
+  displayResolutionMp Float?
+  displayAreaSqIn Float?
+  touchScreen Boolean?
+  batteryWh   Float?
+  os          String?
+  npu         Boolean?
+  markets     String?
+  createdAt   DateTime @default(now())
+
+  sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
+
+  @@index([skuId])
+  @@index([energyStarId])
+}
+
+// Immutable raw observation captured verbatim from the source. Per ADR-003 raw
+// observations are immutable; the payload hash lets us detect source drift.
+model RawObservation {
+  id        String   @id @default(cuid())
+  source    String
+  sourceUrl String?
+  observedAt DateTime @default(now())
+  payloadHash String
+  payload   String
+  status    String   @default("new") // new | accepted | rejected
+  errors    String?
+  rawRecordId String?
+  skuId     String?
+  createdAt DateTime @default(now())
+
+  sku Sku? @relation(fields: [skuId], references: [id], onDelete: SetNull)
+
+  @@index([source])
+  @@index([payloadHash])
+  @@index([status])
 }
 
 model SkuRegionalPricing {

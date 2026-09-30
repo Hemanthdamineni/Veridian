@@ -12,8 +12,13 @@ function formatPrice(msrp: number, currency: string): string {
   return formatter.format(msrp);
 }
 
-function formatWeight(kg: number): string {
-  return `${kg.toFixed(2)} kg`;
+function formatWeight(kg: number | null): string {
+  return kg === null ? "Not reported" : `${kg.toFixed(2)} kg`;
+}
+
+function formatStorage(gb: number | null): string {
+  if (gb === null) return "Not reported";
+  return gb >= 1024 ? `${gb / 1024} TB` : `${gb} GB`;
 }
 
 export function SkuCard({ sku }: { sku: SkuListItem }) {
@@ -65,13 +70,15 @@ export function SkuCard({ sku }: { sku: SkuListItem }) {
         <div className="flex items-center gap-1.5">
           <span className="text-slate-700">RAM:</span>
           <span className="text-zinc-700 dark:text-slate-800">
-            {sku.ramGb} GB {sku.ramType}
+            {sku.ramGb} GB{sku.ramType ? ` ${sku.ramType}` : ""}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-slate-700">Display:</span>
           <span className="text-zinc-700 dark:text-slate-800">
-            {sku.display.sizeIn}&quot; {sku.display.type}
+            {sku.display.sizeIn !== null
+              ? `${sku.display.sizeIn}"${sku.display.type ? ` ${sku.display.type}` : ""}`
+              : "Not reported"}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -83,16 +90,14 @@ export function SkuCard({ sku }: { sku: SkuListItem }) {
         <div className="flex items-center gap-1.5">
           <span className="text-slate-700">Storage:</span>
           <span className="text-zinc-700 dark:text-slate-800">
-            {sku.storageGb >= 1024
-              ? `${sku.storageGb / 1024} TB`
-              : `${sku.storageGb} GB`}{" "}
-            {sku.storageType}
+            {formatStorage(sku.storageGb)}
+            {sku.storageType ? ` ${sku.storageType}` : ""}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-slate-700">Battery:</span>
           <span className="text-zinc-700 dark:text-slate-800">
-            {sku.batteryWh} Wh
+            {sku.batteryWh !== null ? `${sku.batteryWh} Wh` : "Not reported"}
           </span>
         </div>
       </div>
@@ -107,10 +112,12 @@ export function SkuCard({ sku }: { sku: SkuListItem }) {
         <span className="px-2 py-0.5 text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-slate-700 rounded">
           {sku.os}
         </span>
-        <span className="px-2 py-0.5 text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-slate-700 rounded">
-          {sku.buildMaterial}
-        </span>
-        {!sku.ramSoldered && (
+        {sku.buildMaterial && (
+          <span className="px-2 py-0.5 text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-slate-700 rounded">
+            {sku.buildMaterial}
+          </span>
+        )}
+        {sku.ramSoldered === false && (
           <span className="px-2 py-0.5 text-xs bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded">
             Upgradeable RAM
           </span>
