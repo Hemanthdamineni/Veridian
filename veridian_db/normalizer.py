@@ -37,7 +37,7 @@ class SpecNormalizer:
     # Unit conversion patterns - search patterns for finding values within text
     UNIT_PATTERNS = {
         # Display size
-        r'(\d+(?:\.\d+)?)\s*(?:inch|"|in)\b': ('mm', lambda x: float(x) * 25.4),
+        r'(\d+(?:\.\d+)?)\s*(?:inch\b|in\b|")': ('mm', lambda x: float(x) * 25.4),
         r'(\d+(?:\.\d+)?)\s*cm\b': ('mm', lambda x: float(x) * 10),
         # Weight
         r'(\d+(?:\.\d+)?)\s*(?:kg|kilogram)\b': ('kg', lambda x: float(x)),

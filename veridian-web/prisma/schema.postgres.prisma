@@ -76,26 +76,27 @@ model Sku {
   cpuCores          Int?     @map("cpu_cores")
   gpuModel          String?  @map("gpu_model")
   ramGb             Int      @map("ram_gb")
-  ramType           String   @map("ram_type")
-  ramSoldered       Boolean  @map("ram_soldered")
-  storageGb         Int      @map("storage_gb")
-  storageType       String   @map("storage_type")
+  ramType           String?  @map("ram_type")
+  ramSoldered       Boolean? @map("ram_soldered")
+  storageGb         Int?     @map("storage_gb")
+  storageType       String?  @map("storage_type")
   storageSlots      Int?     @map("storage_slots")
-  displaySizeIn     Float    @map("display_size_in")
-  displayResolution String   @map("display_resolution")
-  displayType       String   @map("display_type")
-  displayRefreshHz  Int      @map("display_refresh_hz")
-  displayTouch      Boolean  @map("display_touch")
+  displaySizeIn     Float?   @map("display_size_in")
+  displayResolution String?  @map("display_resolution")
+  displayType       String?  @map("display_type")
+  displayRefreshHz  Int?     @map("display_refresh_hz")
+  displayTouch      Boolean? @map("display_touch")
   displayNits       Int?     @map("display_nits")
-  weightKg          Float    @map("weight_kg")
-  batteryWh         Float    @map("battery_wh")
+  weightKg          Float?   @map("weight_kg")
+  batteryWh         Float?   @map("battery_wh")
   batteryLifeHours  Float?   @map("battery_life_hours_claimed")
   npuTops           Float?   @map("npu_tops")
   os                String
-  buildMaterial     String   @map("build_material")
+  buildMaterial     String?  @map("build_material")
   linuxCompat       String?  @map("linux_compatibility_score")
   launchDate        DateTime? @map("launch_date") @db.Date
   discontinued      Boolean  @default(false)
+  catalogVisible    Boolean  @default(true) @map("catalog_visible")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
@@ -103,9 +104,14 @@ model Sku {
   pricing  SkuRegionalPricing[]
   ports    SkuPort[]
 
+  // Certified specs & raw observation relations
+  certifiedSpecs CertifiedSkuSpec[]
+  observations   RawObservation[]
+
   // Price tracking relations
-  listings       RetailerListing[]
-  priceHistory   PriceHistory[]
+  listings          RetailerListing[]
+  priceHistory      PriceHistory[]
+  priceObservations PriceObservation[]
 
   // Community relations
   contributions  Contribution[]
@@ -147,6 +153,66 @@ model SkuPort {
   sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
 
   @@map("sku_ports")
+}
+
+// Certified specs lifted from an audited official certification (ENERGY STAR).
+// These values are observed and cited — they are not inferred or guessed.
+model CertifiedSkuSpec {
+  id                  String    @id @default(uuid()) @db.Uuid
+  skuId               String    @map("sku_id") @db.Uuid
+  source              String
+  sourceUrl           String?   @map("source_url")
+  observedAt          DateTime  @default(now()) @map("observed_at")
+  certifiedAt         DateTime? @map("certified_at")
+  marketDate          DateTime? @map("market_date")
+  energyStarId        String    @map("energy_star_id")
+  cpuBrand            String?   @map("cpu_brand")
+  cpuModel            String?   @map("cpu_model")
+  cpuCores            Int?      @map("cpu_cores")
+  cpuBaseClockGHz     Float?    @map("cpu_base_clock_ghz")
+  cpuMaxClockGHz      Float?    @map("cpu_max_clock_ghz")
+  cpuPackages         Int?      @map("cpu_packages")
+  ramGb               Float?    @map("ram_gb")
+  storageType         String?   @map("storage_type")
+  storageDrives       Int?      @map("storage_drives")
+  displaySizeIn       Float?    @map("display_size_in")
+  displayResolutionMp Float?    @map("display_resolution_mp")
+  displayAreaSqIn     Float?    @map("display_area_sq_in")
+  touchScreen         Boolean?  @map("touch_screen")
+  batteryWh           Float?    @map("battery_wh")
+  os                  String?
+  npu                 Boolean?
+  markets             String?
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
+
+  @@index([skuId])
+  @@index([energyStarId])
+  @@map("certified_sku_specs")
+}
+
+// Immutable raw observation captured verbatim from the source. Per ADR-003 raw
+// observations are immutable; the payload hash lets us detect source drift.
+model RawObservation {
+  id          String   @id @default(uuid()) @db.Uuid
+  source      String
+  sourceUrl   String?  @map("source_url")
+  observedAt  DateTime @default(now()) @map("observed_at")
+  payloadHash String   @map("payload_hash")
+  payload     String
+  status      String   @default("new") // new | accepted | rejected
+  errors      String?
+  rawRecordId String?  @map("raw_record_id")
+  skuId       String?  @map("sku_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  sku Sku? @relation(fields: [skuId], references: [id], onDelete: SetNull)
+
+  @@index([source])
+  @@index([payloadHash])
+  @@index([status])
+  @@map("raw_observations")
 }
 
 // =============================================================================
@@ -200,6 +266,25 @@ model PriceHistory {
 
   @@index([skuId, scrapedAt])
   @@map("price_history")
+}
+
+model PriceObservation {
+  id         String   @id @default(uuid()) @db.Uuid
+  skuId      String   @map("sku_id") @db.Uuid
+  region     String
+  currency   String
+  price      Float
+  retailer   String?
+  sourceUrl  String?  @map("source_url")
+  timestamp  DateTime @default(now())
+  sourceName String?  @map("source_name")
+  confidence Float    @default(0.8)
+
+  sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
+
+  @@index([skuId, timestamp])
+  @@index([skuId, region])
+  @@map("price_observations")
 }
 
 // =============================================================================
