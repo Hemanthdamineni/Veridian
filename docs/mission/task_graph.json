@@ -1,74 +1,306 @@
 {
-  "mission": "VERIDIAN — autonomous research, build & verification",
-  "asOf": "2026-10-01",
-  "summary": "Cleared source (US EPA ENERGY STAR V9.0); EnergyStarAdapter + audited write path; 100 notebook records fetched, 99 accepted, 1 visibly rejected, 99 certified-spec rows, 99 visible ES SKUs; 22 adversarial/integration tests pass; mission remains OPEN pending Postgres variant validation and Python-domain wiring.",
+  "mission": "VERIDIAN \u2014 autonomous research, build & verification",
+  "asOf": "2026-10-21",
+  "summary": "Trust-and-usability remediation cycle complete. Region semantics corrected (region selects the displayed price, never which rows exist) so all 99 certified Energy Star SKUs are reachable in browse and search; SSR/currency mismatch eliminated; priceless rows no longer lead a price-descending list; homepage stats and methodology page now derive from the database instead of hardcoded claims; certified vs reference provenance is disclosed in the UI and filterable; price filters, region coverage and CI are live. 56 web tests, 13 Python tests, clean lint/types, 16/16 build routes. Also removed a per-filter-change storm of 24 background detail-page renders and the duplicate server round trip behind the URL sync.",
   "phases": [
     {
       "id": "A",
       "name": "Repository exploration & research consolidation",
       "tasks": [
-        { "id": "A1", "name": "Explore repository layout", "state": "DONE", "notes": "docs/repo-analysis.md" },
-        { "id": "A2", "name": "Consolidate research under docs/research/", "state": "DONE", "notes": "docs/research/mission-current-state.md" },
-        { "id": "A3", "name": "Record engineering analysis", "state": "DONE", "notes": "docs/engineering/{schema,architecture}.md" }
+        {
+          "id": "A1",
+          "name": "Explore repository layout",
+          "state": "DONE",
+          "notes": "docs/repo-analysis.md"
+        },
+        {
+          "id": "A2",
+          "name": "Consolidate research under docs/research/",
+          "state": "DONE",
+          "notes": "docs/research/mission-current-state.md"
+        },
+        {
+          "id": "A3",
+          "name": "Record engineering analysis",
+          "state": "DONE",
+          "notes": "docs/engineering/{schema,architecture}.md"
+        }
       ]
     },
     {
       "id": "B",
       "name": "ADRs, source register, task graph",
       "tasks": [
-        { "id": "B1", "name": "ADR-001 system architecture / tech stack", "state": "DONE" },
-        { "id": "B2", "name": "ADR-002 domain model / entity resolution", "state": "DONE" },
-        { "id": "B3", "name": "ADR-003 ingestion / adapter contract", "state": "DONE" },
-        { "id": "B4", "name": "ADR-004 normalization spec hierarchy", "state": "DONE" },
-        { "id": "B5", "name": "ADR-005 price tracking / provenance", "state": "DONE" },
-        { "id": "B6", "name": "Source register gate", "state": "DONE", "notes": "docs/DATA_SOURCES.md; US EPA ENERGY STAR V9.0 cleared 2026-09-30" },
-        { "id": "B7", "name": "Task graph", "state": "DONE", "notes": "TASK_GRAPH.md + task_graph.json" }
+        {
+          "id": "B1",
+          "name": "ADR-001 system architecture / tech stack",
+          "state": "DONE"
+        },
+        {
+          "id": "B2",
+          "name": "ADR-002 domain model / entity resolution",
+          "state": "DONE"
+        },
+        {
+          "id": "B3",
+          "name": "ADR-003 ingestion / adapter contract",
+          "state": "DONE"
+        },
+        {
+          "id": "B4",
+          "name": "ADR-004 normalization spec hierarchy",
+          "state": "DONE"
+        },
+        {
+          "id": "B5",
+          "name": "ADR-005 price tracking / provenance",
+          "state": "DONE"
+        },
+        {
+          "id": "B6",
+          "name": "Source register gate",
+          "state": "DONE",
+          "notes": "docs/DATA_SOURCES.md; US EPA ENERGY STAR V9.0 cleared 2026-09-30"
+        },
+        {
+          "id": "B7",
+          "name": "Task graph",
+          "state": "DONE",
+          "notes": "TASK_GRAPH.md + task_graph.json"
+        }
       ]
     },
     {
       "id": "C",
       "name": "Domain model & schema",
       "tasks": [
-        { "id": "C1", "name": "Prisma domain model", "state": "DONE" },
-        { "id": "C2", "name": "PostgreSQL schema variant", "state": "BLOCKED", "notes": "unvalidated against live Postgres" },
-        { "id": "C3", "name": "SQLAlchemy knowledge graph", "state": "EXISTING", "notes": "veridian_db/, separate from web DB" }
+        {
+          "id": "C1",
+          "name": "Prisma domain model",
+          "state": "DONE"
+        },
+        {
+          "id": "C2",
+          "name": "PostgreSQL schema variant",
+          "state": "BLOCKED",
+          "notes": "unvalidated against live Postgres"
+        },
+        {
+          "id": "C3",
+          "name": "SQLAlchemy knowledge graph",
+          "state": "EXISTING",
+          "notes": "veridian_db/, separate from web DB"
+        }
       ]
     },
     {
       "id": "D",
       "name": "Core engine, backend, frontend, real-data ingestion",
       "tasks": [
-        { "id": "D1", "name": "Normalization engine", "state": "PARTIAL", "notes": "Python prototypes only" },
-        { "id": "D2", "name": "Entity resolution", "state": "PARTIAL", "notes": "prototype only" },
-        { "id": "D3", "name": "Price tracking", "state": "PARTIAL", "notes": "model + history API; synthetic seed rows only" },
-        { "id": "D4", "name": "Search / filter / comparison backend", "state": "DONE" },
-        { "id": "D5", "name": "Frontend catalog + SKU detail", "state": "DONE", "notes": "synthetic seed disclosed" },
-        { "id": "D6", "name": "Real-data ingestion + validation", "state": "DONE", "notes": "EnergyStarAdapter (ADR-003) + audited write path; 100 fetched, 99 accepted, 1 visibly rejected; 99 certified-spec rows; 99 visible ES SKUs" }
+        {
+          "id": "D1",
+          "name": "Normalization engine",
+          "state": "PARTIAL",
+          "notes": "Python prototypes only"
+        },
+        {
+          "id": "D2",
+          "name": "Entity resolution",
+          "state": "PARTIAL",
+          "notes": "prototype only"
+        },
+        {
+          "id": "D3",
+          "name": "Price tracking",
+          "state": "PARTIAL",
+          "notes": "model + history API; synthetic seed rows only"
+        },
+        {
+          "id": "D4",
+          "name": "Search / filter / comparison backend",
+          "state": "DONE"
+        },
+        {
+          "id": "D5",
+          "name": "Frontend catalog + SKU detail",
+          "state": "DONE",
+          "notes": "synthetic seed disclosed"
+        },
+        {
+          "id": "D6",
+          "name": "Real-data ingestion + validation",
+          "state": "DONE",
+          "notes": "EnergyStarAdapter (ADR-003) + audited write path; 100 fetched, 99 accepted, 1 visibly rejected; 99 certified-spec rows; 99 visible ES SKUs"
+        }
       ]
     },
     {
       "id": "E",
       "name": "Rigorous testing",
       "tasks": [
-        { "id": "E1", "name": "Python test suite", "state": "DONE", "notes": "6 passed" },
-        { "id": "E2", "name": "Next.js build/lint", "state": "DONE" },
-        { "id": "E3", "name": "Adversarial/negative tests", "state": "DONE", "notes": "22 vitest tests incl. 2 temp-DB integration tests" }
+        {
+          "id": "E1",
+          "name": "Python test suite",
+          "state": "DONE",
+          "notes": "6 passed"
+        },
+        {
+          "id": "E2",
+          "name": "Next.js build/lint",
+          "state": "DONE"
+        },
+        {
+          "id": "E3",
+          "name": "Adversarial/negative tests",
+          "state": "DONE",
+          "notes": "22 vitest tests incl. 2 temp-DB integration tests"
+        }
       ]
     },
     {
       "id": "F",
       "name": "Final audit, docs, verification report",
       "tasks": [
-        { "id": "F1", "name": "Security/provenance remediation", "state": "DONE", "notes": "constant-time auth; 503 writes; seed disclosure" },
-        { "id": "F2", "name": "Final audit", "state": "DONE" },
-        { "id": "F3", "name": "Comprehensive verification report", "state": "DONE", "notes": "docs/mission/VERIFICATION_REPORT.md — 2026-10-01" }
+        {
+          "id": "F1",
+          "name": "Security/provenance remediation",
+          "state": "DONE",
+          "notes": "constant-time auth; 503 writes; seed disclosure"
+        },
+        {
+          "id": "F2",
+          "name": "Final audit",
+          "state": "DONE"
+        },
+        {
+          "id": "F3",
+          "name": "Comprehensive verification report",
+          "state": "DONE",
+          "notes": "docs/mission/VERIFICATION_REPORT.md \u2014 2026-10-01"
+        }
+      ]
+    },
+    {
+      "id": "G",
+      "name": "Trust & usability remediation",
+      "tasks": [
+        {
+          "id": "G1",
+          "name": "Region semantics: region selects the displayed price, not row existence",
+          "state": "DONE",
+          "notes": "buildSkusQuery no longer requires a regional price row; price bounds alone require one"
+        },
+        {
+          "id": "G2",
+          "name": "Certified configurations reachable in the catalog",
+          "state": "DONE",
+          "notes": "99 Energy Star SKUs now visible; were filtered out by the old region predicate"
+        },
+        {
+          "id": "G3",
+          "name": "SSR/client currency mismatch eliminated",
+          "state": "DONE",
+          "notes": "server resolves region=US like the client; first paint no longer shows INR then swaps to USD"
+        },
+        {
+          "id": "G4",
+          "name": "Price sort keeps unpriced rows last in both directions",
+          "state": "DONE",
+          "notes": "shared sortSkusByPrice helper; previously Infinity pushed priceless rows to the top of price_desc"
+        },
+        {
+          "id": "G5",
+          "name": "Homepage statistics computed from the database",
+          "state": "DONE",
+          "notes": "replaced hardcoded '5 regions' and '24 spec fields' with real counts"
+        },
+        {
+          "id": "G6",
+          "name": "Methodology page discloses actual provenance",
+          "state": "DONE",
+          "notes": "removed the false claim of manufacturer-page curation; documents the certified vs reference tiers"
+        },
+        {
+          "id": "G7",
+          "name": "Provenance tier exposed and filterable",
+          "state": "DONE",
+          "notes": "Certified/Reference badge on every card and detail page; source-tier filter; tier counts in results"
+        },
+        {
+          "id": "G8",
+          "name": "MSRP price filters enabled with a caveat",
+          "state": "DONE",
+          "notes": "min/max inputs, URL-synced, labelled as seed reference values"
+        },
+        {
+          "id": "G9",
+          "name": "Region control offers only regions with recorded prices",
+          "state": "DONE",
+          "notes": "UK/EU/CA removed from the picker; they guaranteed empty results"
+        },
+        {
+          "id": "G10",
+          "name": "Price display added to cards and comparison table",
+          "state": "DONE",
+          "notes": "previously hardcoded 'No verified price' regardless of data"
+        },
+        {
+          "id": "G11",
+          "name": "Admin login reports an unconfigured deployment",
+          "state": "DONE",
+          "notes": "server component reads ADMIN_TOKEN and explains how to set it"
+        },
+        {
+          "id": "G12",
+          "name": "Vitest ingestion timeout fixed",
+          "state": "DONE",
+          "notes": "suite provisions a database via the Prisma CLI; 5s default killed a healthy run"
+        },
+        {
+          "id": "G13",
+          "name": "Continuous integration added",
+          "state": "DONE",
+          "notes": ".github/workflows/ci.yml \u2014 lint, types, vitest, build, pytest"
+        },
+        {
+          "id": "G14",
+          "name": "Repository hygiene",
+          "state": "DONE",
+          "notes": "removed the orphan root src/ route and the duplicate schema.sqlite.prisma; replaced deprecated datetime.utcnow()"
+        },
+        {
+          "id": "G15",
+          "name": "Documentation reconciled with the code",
+          "state": "DONE",
+          "notes": "TODO.md, ROADMAP.md, TASK_GRAPH.md rewritten against verified state"
+        },
+        {
+          "id": "G16",
+          "name": "Regression tests for the new semantics",
+          "state": "DONE",
+          "notes": "tests/catalog-filters.test.ts \u2014 17 tests covering region, provenance and price ordering"
+        },
+        {
+          "id": "G17",
+          "name": "Link prefetch storm removed from catalog cards",
+          "state": "DONE",
+          "notes": "each filter change fired 24 background RSC renders of SKU detail pages; prefetch={false} on the card link eliminated them"
+        },
+        {
+          "id": "G18",
+          "name": "Catalog URL sync no longer re-renders the server page",
+          "state": "DONE",
+          "notes": "router.replace awaited an RSC round trip that duplicated the client's own /api/skus fetch; native history.replaceState keeps the URL in sync without it"
+        }
       ]
     }
   ],
   "blockingItems": [
+    "No live retailer price source exists \u2014 every displayed price is manufacturer suggested price from the seed dataset",
     "PostgreSQL schema variant unvalidated against a live instance",
     "Normalization and entity resolution remain Python prototypes, not wired through a verified ingestion contract",
-    "Only one source cleared; retail price sourcing requires a source-specific legal gate"
+    "Only one source cleared; retail price sourcing requires a source-specific legal gate",
+    "Natural-language search and recommendations exist as APIs but are not surfaced in the catalog UI"
   ],
   "overallState": "OPEN"
 }
