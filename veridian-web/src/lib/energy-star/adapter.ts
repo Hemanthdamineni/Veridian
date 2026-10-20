@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { ADAPTER_VERSION, ENERGY_STAR_SOURCE, VERIDIAN_USER_AGENT, type IngestionReport, type NormalizedRecord, type RawPayloadRow, type RejectedRecord } from "./types";
-import { validateEnergyStarRecord } from "./validate";
+import { LAPTOP_PRODUCT_TYPES, validateEnergyStarRecord } from "./validate";
 
+const LAPTOP_PRODUCT_TYPE_SET = new Set<string>(LAPTOP_PRODUCT_TYPES);
 const API_URL = new URL(ENERGY_STAR_SOURCE.url);
 
 /** The only host/origin this adapter may contact (SSRF guard, ADR-003). */
@@ -22,14 +23,26 @@ export function assertSsrf(url: string): void {
 export class EnergyStarAdapter {
   constructor(private readonly fetchImpl: typeof fetch = fetch) {}
 
-  async fetch(offset = 0, limit = 100): Promise<unknown> {
+  /**
+   * Fetch one page of a single product type.
+   *
+   * The Socrata endpoint caps a single page at 1000 rows, so the full
+   * dataset is walked with `$offset`. The registered host and path are
+   * re-checked on every call; a redirect is refused rather than followed.
+   */
+  async fetch(
+    offset = 0,
+    limit = 100,
+    type: string = LAPTOP_PRODUCT_TYPES[0]
+  ): Promise<unknown> {
     if (!Number.isInteger(offset) || offset < 0) throw new Error("offset must be a non-negative integer");
     if (!Number.isInteger(limit) || limit < 1 || limit > 1000) throw new Error("limit must be between 1 and 1000");
+    if (!LAPTOP_PRODUCT_TYPE_SET.has(type)) throw new Error(`Unregistered product type '${type}'`);
     const url = new URL(ENERGY_STAR_SOURCE.url);
     if (url.origin !== API_URL.origin || url.pathname !== API_URL.pathname) {
       throw new Error("Unregistered Energy Star API endpoint");
     }
-    url.searchParams.set("type", "Notebook");
+    url.searchParams.set("type", type);
     url.searchParams.set("$limit", String(limit));
     url.searchParams.set("$offset", String(offset));
     assertSsrf(url.toString());
@@ -47,6 +60,31 @@ export class EnergyStarAdapter {
     const payload: unknown = await response.json();
     if (!Array.isArray(payload)) throw new Error("Energy Star API payload must be a JSON array");
     return payload;
+  }
+
+  /**
+   * Walk every page of every laptop product type and return the combined
+   * raw rows. Pagination is driven by the source's own row counts; the
+   * adapter never assumes a fixed number of pages.
+   */
+  async fetchAll(
+    types: readonly string[] = LAPTOP_PRODUCT_TYPES,
+    pageSize = 1000
+  ): Promise<{ rows: unknown[]; pages: number }> {
+    const rows: unknown[] = [];
+    let pages = 0;
+    for (const type of types) {
+      let offset = 0;
+      for (;;) {
+        const page = await this.fetch(offset, pageSize, type);
+        const items = page as unknown[];
+        pages += 1;
+        rows.push(...items);
+        if (items.length < pageSize) break;
+        offset += items.length;
+      }
+    }
+    return { rows, pages };
   }
 
   extract(payload: unknown): { records: NormalizedRecord[]; rejected: RejectedRecord[]; raw: RawPayloadRow[] } {
@@ -81,6 +119,30 @@ export class EnergyStarAdapter {
       adapterVersion: ADAPTER_VERSION,
       observedAt: new Date().toISOString(),
       requested: Array.isArray(payload) ? payload.length : 0,
+      accepted: extracted.records.length,
+      rejected: extracted.rejected.length,
+      rejectedRecords: extracted.rejected,
+      records: extracted.records,
+      rawPayloads: extracted.raw,
+    };
+  }
+
+  /**
+   * Run the adapter across the complete laptop dataset: every page of every
+   * laptop product type.
+   */
+  async runAll(
+    types: readonly string[] = LAPTOP_PRODUCT_TYPES,
+    pageSize = 1000
+  ): Promise<IngestionReport> {
+    const { rows, pages } = await this.fetchAll(types, pageSize);
+    const extracted = this.extract(rows);
+    return {
+      source: ENERGY_STAR_SOURCE.name,
+      adapterVersion: ADAPTER_VERSION,
+      observedAt: new Date().toISOString(),
+      requested: rows.length,
+      pages,
       accepted: extracted.records.length,
       rejected: extracted.rejected.length,
       rejectedRecords: extracted.rejected,

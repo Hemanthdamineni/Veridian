@@ -4,6 +4,33 @@
  */
 
 import type { NormalizedRecord } from "./types";
+import {
+  canonicalBrand,
+  canonicalSkuCode,
+  configurationSignature,
+  deriveSeriesName,
+  isPlaceholderNote,
+  parseAdditionalModelInfo,
+  stripEnumerationPrefix,
+  type AdditionalModelInfo,
+} from "./canonical";
+
+/**
+ * Resolve the canonical part number for a record.
+ *
+ * `model_number` is the source's primary identifier and is used as reported.
+ * A small number of records put a wildcard legend there instead of an
+ * identifier ("NC.**.##.##**** (*= A-Z or a-z or blank, #= 0-9)"); for those
+ * the first additional part number is used, and failing that the model name.
+ */
+export function resolvePartNumber(
+  modelNumber: string | null,
+  additional: AdditionalModelInfo
+): string | null {
+  if (modelNumber && !isPlaceholderNote(modelNumber)) return modelNumber;
+  if (additional.partNumbers.length > 0) return additional.partNumbers[0];
+  return modelNumber;
+}
 
 export type FieldError = string;
 
@@ -52,6 +79,21 @@ function cleanIdentity(value: string, key: string, errors: string[]): void {
   if (value.length > 200) errors.push(`${key} exceeds 200 characters`);
 }
 
+/**
+ * Product types the source reports that are laptops.
+ *
+ * The dataset also carries desktops, integrated desktops, tablets, thin
+ * clients and workstations. Those are out of scope for a laptop catalog, so
+ * they are rejected with a reason rather than silently mis-filed.
+ */
+export const LAPTOP_PRODUCT_TYPES = [
+  "Notebook",
+  "Two-In-One Notebook",
+  "Ruggedized Notebook",
+] as const;
+
+const LAPTOP_PRODUCT_TYPE_SET = new Set<string>(LAPTOP_PRODUCT_TYPES);
+
 export function validateEnergyStarRecord(raw: unknown): { record: NormalizedRecord | null; errors: string[] } {
   const errors: string[] = [];
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
@@ -72,7 +114,11 @@ export function validateEnergyStarRecord(raw: unknown): { record: NormalizedReco
     if (value) cleanIdentity(value, key, errors);
   }
   const type = text(row, "type");
-  if (type !== "Notebook") errors.push("type must be Notebook");
+  if (!type) {
+    errors.push("type is required");
+  } else if (!LAPTOP_PRODUCT_TYPE_SET.has(type)) {
+    errors.push(`type '${type}' is not a laptop product type`);
+  }
 
   const cpuCores = number(row, "physical_cpu_cores_count", 1, 512, errors);
   const cpuBaseClock = number(row, "cpu_base_clock_speed_ghz", 0.5, 6.5, errors);
@@ -100,6 +146,36 @@ export function validateEnergyStarRecord(raw: unknown): { record: NormalizedReco
   const markets = text(row, "markets");
   if (os && os.length > 200) errors.push("operating_system_name exceeds 200 characters");
 
+  // Identity fields. `model_number` is the source's own identifier for the
+  // product; it is not always a part number (Microsoft uses a marketing
+  // number shared across generations, Dell uses a platform code), so it is
+  // kept as reported and the configuration signature disambiguates. For a
+  // handful of records the source puts a wildcard legend in `model_number`
+  // instead of an identifier; those fall back to the additional part number.
+  const additionalRaw = text(row, "additional_model_information");
+  const additional = parseAdditionalModelInfo(additionalRaw);
+  const partNumber = resolvePartNumber(modelNumber, additional);
+  const upc = text(row, "upc");
+
+  const brandCanonical = canonicalBrand(brand);
+  const canonicalModelName = stripEnumerationPrefix(model);
+  const seriesName = deriveSeriesName(brandCanonical, canonicalModelName, additional);
+
+  const signature = configurationSignature({
+    cpuModel,
+    cpuCores,
+    cpuPackages,
+    ramGb,
+    storageType,
+    storageDrives,
+    displaySizeIn,
+    displayResolutionMp: resolutionMp,
+    touchScreen,
+    batteryWh,
+    os,
+  });
+  const skuCode = canonicalSkuCode(partNumber, canonicalModelName, signature);
+
   if (errors.length || !id || !brand || !model || !modelNumber || !energyStarId) {
     return { record: null, errors };
   }
@@ -108,13 +184,18 @@ export function validateEnergyStarRecord(raw: unknown): { record: NormalizedReco
     errors,
     record: {
       sourceRecordId: id,
-      skuCode: `ES-${id}`,
-      brand,
-      modelName: model,
-      seriesName: model,
+      skuCode,
+      brand: brandCanonical,
+      modelName: canonicalModelName,
+      seriesName,
       os: os ?? "Not reported",
       launchDate: marketDate,
       dateCertified: certifiedAt,
+      partNumber: modelNumber,
+      partNumbers: additional.partNumbers,
+      upc,
+      productType: type,
+      markets,
       certifiedSpecs: {
         source: "US EPA ENERGY STAR Certified Computers V9.0",
         sourceUrl: `https://data.energystar.gov/resource/rxdj-2c88.json?pd_id=${encodeURIComponent(id)}`,

@@ -1,5 +1,10 @@
-// Veridian Database Schema
-// MVP + Community + Price Tracking + Platform extensions
+// Veridian Database Schema — PostgreSQL edition.
+//
+// GENERATED FILE — do not edit by hand.
+// Run `npm run db:schema:pg` to regenerate it from prisma/schema.prisma.
+// The SQLite schema is the single source of truth; this file is its
+// physical projection (UUID ids, snake_case columns). The parity test
+// enforces that both engines expose the same models and fields.
 
 generator client {
   provider = "prisma-client-js"
@@ -10,113 +15,117 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// =============================================================================
-// CORE PRODUCT TABLES (MVP)
-// =============================================================================
+model Category {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  specSchema  String? @map("spec_schema")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  series Series[]
+  @@map("categories")
+}
 
 model Manufacturer {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String   @unique
-  slug      String   @unique
-  country   String?
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String   @unique
+  slug       String   @unique
+  country    String?
   websiteUrl String? @map("website_url")
-  logoUrl   String?  @map("logo_url")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
+  logoUrl    String? @map("logo_url")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
   series Series[]
-
   @@map("manufacturers")
 }
 
 model Series {
   id             String   @id @default(uuid()) @db.Uuid
-  manufacturerId String   @map("manufacturer_id") @db.Uuid
+  manufacturerId String @db.Uuid @map("manufacturer_id")
+  categoryId     String? @db.Uuid @map("category_id")
   name           String
   slug           String
   description    String?
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
-
   manufacturer Manufacturer @relation(fields: [manufacturerId], references: [id], onDelete: Cascade)
+  category     Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   models       Model[]
-
   @@unique([manufacturerId, slug])
-  @@map("series")
+  @@index([categoryId])
+  @@map("serieses")
 }
 
 model Model {
-  id          String   @id @default(uuid()) @db.Uuid
-  seriesId    String   @map("series_id") @db.Uuid
-  name        String
-  slug        String
-  launchDate  DateTime? @map("launch_date") @db.Date
-  productUrl  String?  @map("official_product_page_url")
-  discontinued Boolean @default(false)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // Self-referencing for successor/predecessor
-  successorId String?  @map("successor_model_id") @db.Uuid
-  predecessorId String? @map("predecessor_model_id") @db.Uuid
-
-  series Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
-  skus   Sku[]
-
+  id            String   @id @default(uuid()) @db.Uuid
+  seriesId      String @db.Uuid @map("series_id")
+  name          String
+  slug          String
+  launchDate    DateTime? @map("launch_date")
+  productUrl    String? @map("product_url")
+  discontinued  Boolean  @default(false)
+  successorId   String? @map("successor_id")
+  predecessorId String? @map("predecessor_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  series      Series            @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  skus        Sku[]
+  listings    RetailerListing[]
   @@unique([seriesId, slug])
+  @@index([launchDate])
   @@map("models")
 }
 
 model Sku {
   id                String   @id @default(uuid()) @db.Uuid
-  modelId           String   @map("model_id") @db.Uuid
+  modelId           String @db.Uuid @map("model_id")
   skuCode           String   @unique @map("sku_code")
-  cpuBrand          String   @map("cpu_brand")
-  cpuModel          String   @map("cpu_model")
-  cpuCores          Int?     @map("cpu_cores")
-  gpuModel          String?  @map("gpu_model")
-  ramGb             Int      @map("ram_gb")
-  ramType           String?  @map("ram_type")
+  mpn               String?
+  upc               String?
+  productType       String? @map("product_type")
+  provenance        String   @default("unverified")
+  cpuBrand          String @map("cpu_brand")
+  cpuModel          String @map("cpu_model")
+  cpuCores          Int? @map("cpu_cores")
+  gpuModel          String? @map("gpu_model")
+  ramGb             Int @map("ram_gb")
+  ramType           String? @map("ram_type")
   ramSoldered       Boolean? @map("ram_soldered")
-  storageGb         Int?     @map("storage_gb")
-  storageType       String?  @map("storage_type")
-  storageSlots      Int?     @map("storage_slots")
-  displaySizeIn     Float?   @map("display_size_in")
-  displayResolution String?  @map("display_resolution")
-  displayType       String?  @map("display_type")
-  displayRefreshHz  Int?     @map("display_refresh_hz")
+  storageGb         Int? @map("storage_gb")
+  storageType       String? @map("storage_type")
+  storageSlots      Int? @map("storage_slots")
+  displaySizeIn     Float? @map("display_size_in")
+  displayResolution String? @map("display_resolution")
+  displayType       String? @map("display_type")
+  displayRefreshHz  Int? @map("display_refresh_hz")
   displayTouch      Boolean? @map("display_touch")
-  displayNits       Int?     @map("display_nits")
-  weightKg          Float?   @map("weight_kg")
-  batteryWh         Float?   @map("battery_wh")
-  batteryLifeHours  Float?   @map("battery_life_hours_claimed")
-  npuTops           Float?   @map("npu_tops")
+  displayNits       Int? @map("display_nits")
+  weightKg          Float? @map("weight_kg")
+  batteryWh         Float? @map("battery_wh")
+  batteryLifeHours  Float? @map("battery_life_hours")
+  npuTops           Float? @map("npu_tops")
   os                String
-  buildMaterial     String?  @map("build_material")
-  linuxCompat       String?  @map("linux_compatibility_score")
-  launchDate        DateTime? @map("launch_date") @db.Date
+  buildMaterial     String? @map("build_material")
+  linuxCompat       String? @map("linux_compat")
+  launchDate        DateTime? @map("launch_date")
   discontinued      Boolean  @default(false)
   catalogVisible    Boolean  @default(true) @map("catalog_visible")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
-
-  model    Model              @relation(fields: [modelId], references: [id], onDelete: Cascade)
-  pricing  SkuRegionalPricing[]
-  ports    SkuPort[]
-
-  // Certified specs & raw observation relations
-  certifiedSpecs CertifiedSkuSpec[]
-  observations   RawObservation[]
-
-  // Price tracking relations
-  listings          RetailerListing[]
-  priceHistory      PriceHistory[]
+  model             Model               @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  pricing           SkuRegionalPricing[]
   priceObservations PriceObservation[]
-
-  // Community relations
-  contributions  Contribution[]
-  alerts         Alert[]
-
+  priceHistory      PriceHistory[]
+  ports             SkuPort[]
+  contributions     Contribution[]
+  alerts            Alert[]
+  certifiedSpecs    CertifiedSkuSpec[]
+  observations      RawObservation[]
+  sources           SkuSource[]
+  components        SkuComponent[]
+  listings          RetailerListing[]
   @@index([ramGb])
   @@index([storageGb])
   @@index([weightKg])
@@ -124,286 +133,342 @@ model Sku {
   @@index([displayRefreshHz])
   @@index([cpuBrand])
   @@index([displayType])
+  @@index([provenance])
+  @@index([mpn])
+  @@index([modelId])
   @@map("skus")
 }
 
-model SkuRegionalPricing {
-  id           String   @id @default(uuid()) @db.Uuid
-  skuId        String   @map("sku_id") @db.Uuid
-  region       String
-  currency     String
-  msrp         Float
-  available    Boolean  @default(true)
-  storeUrl     String?  @map("official_store_url")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
+model SkuSource {
+  id         String   @id @default(uuid()) @db.Uuid
+  skuId      String @db.Uuid @map("sku_id")
+  source     String
+  kind       String
+  sourceUrl  String? @map("source_url")
+  observedAt DateTime @default(now()) @map("observed_at")
+  confidence Float    @default(0.8)
+  note       String?
   sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
-
-  @@unique([skuId, region])
-  @@index([region])
-  @@map("sku_regional_pricing")
+  @@unique([skuId, source])
+  @@index([kind])
+  @@index([source])
+  @@map("sku_sources")
 }
 
-model SkuPort {
-  id       String @id @default(uuid()) @db.Uuid
-  skuId    String @map("sku_id") @db.Uuid
-  portType String @map("port_type")
-  count    Int
-
-  sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
-
-  @@map("sku_ports")
-}
-
-// Certified specs lifted from an audited official certification (ENERGY STAR).
-// These values are observed and cited — they are not inferred or guessed.
 model CertifiedSkuSpec {
-  id                  String    @id @default(uuid()) @db.Uuid
-  skuId               String    @map("sku_id") @db.Uuid
-  source              String
-  sourceUrl           String?   @map("source_url")
-  observedAt          DateTime  @default(now()) @map("observed_at")
-  certifiedAt         DateTime? @map("certified_at")
-  marketDate          DateTime? @map("market_date")
-  energyStarId        String    @map("energy_star_id")
-  cpuBrand            String?   @map("cpu_brand")
-  cpuModel            String?   @map("cpu_model")
-  cpuCores            Int?      @map("cpu_cores")
-  cpuBaseClockGHz     Float?    @map("cpu_base_clock_ghz")
-  cpuMaxClockGHz      Float?    @map("cpu_max_clock_ghz")
-  cpuPackages         Int?      @map("cpu_packages")
-  ramGb               Float?    @map("ram_gb")
-  storageType         String?   @map("storage_type")
-  storageDrives       Int?      @map("storage_drives")
-  displaySizeIn       Float?    @map("display_size_in")
-  displayResolutionMp Float?    @map("display_resolution_mp")
-  displayAreaSqIn     Float?    @map("display_area_sq_in")
-  touchScreen         Boolean?  @map("touch_screen")
-  batteryWh           Float?    @map("battery_wh")
-  os                  String?
-  npu                 Boolean?
-  markets             String?
-  createdAt           DateTime  @default(now()) @map("created_at")
-
+  id          String   @id @default(uuid()) @db.Uuid
+  skuId       String @db.Uuid @map("sku_id")
+  source      String
+  sourceUrl   String? @map("source_url")
+  observedAt  DateTime @default(now()) @map("observed_at")
+  certifiedAt DateTime? @map("certified_at")
+  marketDate  DateTime? @map("market_date")
+  energyStarId String @map("energy_star_id")
+  cpuBrand    String? @map("cpu_brand")
+  cpuModel    String? @map("cpu_model")
+  cpuCores    Int? @map("cpu_cores")
+  cpuBaseClockGHz Float? @map("cpu_base_clock_g_hz")
+  cpuMaxClockGHz Float? @map("cpu_max_clock_g_hz")
+  cpuPackages Int? @map("cpu_packages")
+  ramGb       Float? @map("ram_gb")
+  storageType String? @map("storage_type")
+  storageDrives Int? @map("storage_drives")
+  displaySizeIn Float? @map("display_size_in")
+  displayResolutionMp Float? @map("display_resolution_mp")
+  displayAreaSqIn Float? @map("display_area_sq_in")
+  touchScreen Boolean? @map("touch_screen")
+  batteryWh   Float? @map("battery_wh")
+  os          String?
+  npu         Boolean?
+  markets     String?
+  createdAt   DateTime @default(now()) @map("created_at")
   sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
-
   @@index([skuId])
   @@index([energyStarId])
   @@map("certified_sku_specs")
 }
 
-// Immutable raw observation captured verbatim from the source. Per ADR-003 raw
-// observations are immutable; the payload hash lets us detect source drift.
 model RawObservation {
-  id          String   @id @default(uuid()) @db.Uuid
-  source      String
-  sourceUrl   String?  @map("source_url")
-  observedAt  DateTime @default(now()) @map("observed_at")
-  payloadHash String   @map("payload_hash")
-  payload     String
-  status      String   @default("new") // new | accepted | rejected
-  errors      String?
-  rawRecordId String?  @map("raw_record_id")
-  skuId       String?  @map("sku_id") @db.Uuid
-  createdAt   DateTime @default(now()) @map("created_at")
-
+  id        String   @id @default(uuid()) @db.Uuid
+  source    String
+  sourceUrl String? @map("source_url")
+  observedAt DateTime @default(now()) @map("observed_at")
+  payloadHash String @map("payload_hash")
+  payload   String
+  status    String   @default("new") // new | accepted | rejected
+  errors    String?
+  rawRecordId String? @map("raw_record_id")
+  skuId     String? @db.Uuid @map("sku_id")
+  createdAt DateTime @default(now()) @map("created_at")
   sku Sku? @relation(fields: [skuId], references: [id], onDelete: SetNull)
-
   @@index([source])
   @@index([payloadHash])
   @@index([status])
+  @@index([rawRecordId])
   @@map("raw_observations")
 }
 
-// =============================================================================
-// PRICE TRACKING TABLES (Epic 3)
-// =============================================================================
+model SkuRegionalPricing {
+  id        String   @id @default(uuid()) @db.Uuid
+  skuId     String @db.Uuid @map("sku_id")
+  region    String
+  currency  String
+  msrp      Float
+  available Boolean  @default(true)
+  storeUrl  String? @map("store_url")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  @@unique([skuId, region])
+  @@map("sku_regional_pricing")
+}
+
+model SkuPort {
+  id       String @id @default(uuid()) @db.Uuid
+  skuId    String @db.Uuid @map("sku_id")
+  portType String @map("port_type")
+  count    Int
+  sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  @@index([skuId])
+  @@map("sku_ports")
+}
+
+model Component {
+  id            String   @id @default(uuid()) @db.Uuid
+  kind          String
+  canonicalName String @map("canonical_name")
+  slug          String   @unique
+  brand         String?
+  model         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  aliases ComponentAlias[]
+  specs   ComponentSpec[]
+  skus    SkuComponent[]
+  @@index([kind])
+  @@index([canonicalName])
+  @@map("components")
+}
+
+model ComponentAlias {
+  id          String   @id @default(uuid()) @db.Uuid
+  componentId String @db.Uuid @map("component_id")
+  alias       String
+  normalized  String
+  source      String?
+  sourceUrl   String? @map("source_url")
+  observedAt  DateTime @default(now()) @map("observed_at")
+  confidence  Float    @default(0.8)
+  component Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  @@unique([componentId, normalized])
+  @@index([normalized])
+  @@map("component_aliases")
+}
+
+model ComponentSpec {
+  id          String   @id @default(uuid()) @db.Uuid
+  componentId String @db.Uuid @map("component_id")
+  key         String
+  value       String
+  unit        String?
+  source      String?
+  sourceUrl   String? @map("source_url")
+  observedAt  DateTime @default(now()) @map("observed_at")
+  confidence  Float    @default(0.8)
+  component Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  @@unique([componentId, key])
+  @@map("component_specs")
+}
+
+model SkuComponent {
+  id          String   @id @default(uuid()) @db.Uuid
+  skuId       String @db.Uuid @map("sku_id")
+  componentId String @db.Uuid @map("component_id")
+  role        String   @default("primary")
+  confidence  Float    @default(0.9)
+  source      String?
+  sourceUrl   String? @map("source_url")
+  observedAt  DateTime @default(now()) @map("observed_at")
+  sku       Sku       @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  component Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  @@unique([skuId, componentId, role])
+  @@index([componentId])
+  @@map("sku_components")
+}
 
 model Seller {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String
-  region      String
-  baseUrl     String   @map("base_url")
-  scrapeMethod String  @map("scrape_method") @default("scraper")
-  affiliateUrl String? @map("affiliate_program_url")
-  createdAt   DateTime @default(now()) @map("created_at")
-
+  id            String   @id @default(uuid()) @db.Uuid
+  name          String
+  slug          String   @unique
+  region        String
+  baseUrl       String @map("base_url")
+  scrapeMethod  String   @default("scraper") @map("scrape_method")
+  affiliateUrl  String? @map("affiliate_url")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
   listings RetailerListing[]
-
   @@unique([name, region])
   @@map("sellers")
 }
 
 model RetailerListing {
   id                String   @id @default(uuid()) @db.Uuid
-  sellerId          String   @map("seller_id") @db.Uuid
-  skuId             String?  @map("sku_id") @db.Uuid
-  retailerSkuString String   @map("retailer_sku_string")
-  matchConfidence   Float?   @map("match_confidence")
+  sellerId          String @db.Uuid @map("seller_id")
+  skuId             String? @db.Uuid @map("sku_id")
+  modelId           String? @db.Uuid @map("model_id")
+  retailerSkuString String @map("retailer_sku_string")
+  title             String?
+  url               String?
+  region            String
+  currency          String
+  matchConfidence   Float? @map("match_confidence")
+  matchMethod       String? @map("match_method")
   verifiedByHuman   Boolean  @default(false) @map("verified_by_human")
-  lastScrapedAt     DateTime? @map("last_scraped_at")
+  inStock           Boolean  @default(true) @map("in_stock")
+  firstSeenAt       DateTime @default(now()) @map("first_seen_at")
+  lastSeenAt        DateTime @default(now()) @map("last_seen_at")
   createdAt         DateTime @default(now()) @map("created_at")
-
-  seller     Seller       @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  sku        Sku?         @relation(fields: [skuId], references: [id], onDelete: SetNull)
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  seller     Seller            @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  sku        Sku?              @relation(fields: [skuId], references: [id], onDelete: SetNull)
+  model      Model?            @relation(fields: [modelId], references: [id], onDelete: SetNull)
   priceHistory PriceHistory[]
-
-  @@index([retailerSkuString])
+  observations  PriceObservation[]
+  @@unique([sellerId, retailerSkuString])
+  @@index([skuId])
+  @@index([modelId])
   @@map("retailer_listings")
 }
 
 model PriceHistory {
-  id            String   @id @default(uuid()) @db.Uuid
-  listingId     String   @map("retailer_listing_id") @db.Uuid
-  skuId         String   @map("sku_id") @db.Uuid
-  price         Float
-  currency      String
-  scrapedAt     DateTime @map("scraped_at")
-  createdAt     DateTime @default(now()) @map("created_at")
-
+  id        String   @id @default(uuid()) @db.Uuid
+  listingId String @db.Uuid @map("listing_id")
+  skuId     String @db.Uuid @map("sku_id")
+  price     Float
+  currency  String
+  scrapedAt DateTime @default(now()) @map("scraped_at")
+  createdAt DateTime @default(now()) @map("created_at")
   listing RetailerListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
   sku     Sku             @relation(fields: [skuId], references: [id], onDelete: Cascade)
-
   @@index([skuId, scrapedAt])
+  @@index([listingId])
   @@map("price_history")
 }
 
 model PriceObservation {
   id         String   @id @default(uuid()) @db.Uuid
-  skuId      String   @map("sku_id") @db.Uuid
+  skuId      String @db.Uuid @map("sku_id")
+  listingId  String? @db.Uuid @map("listing_id")
   region     String
   currency   String
   price      Float
   retailer   String?
-  sourceUrl  String?  @map("source_url")
+  sourceUrl  String? @map("source_url")
   timestamp  DateTime @default(now())
-  sourceName String?  @map("source_name")
+  sourceName String? @map("source_name")
+  kind       String   @default("retail")
+  inStock    Boolean  @default(true) @map("in_stock")
+  shipping   Float?
   confidence Float    @default(0.8)
-
-  sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
-
+  sku     Sku              @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  listing RetailerListing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
   @@index([skuId, timestamp])
   @@index([skuId, region])
+  @@index([listingId])
+  @@index([kind])
   @@map("price_observations")
 }
-
-// =============================================================================
-// USER & COMMUNITY TABLES (Epic 5)
-// =============================================================================
 
 model User {
   id            String   @id @default(uuid()) @db.Uuid
   email         String   @unique
   name          String?
-  passwordHash  String?  @map("password_hash")
-  role          String   @default("user") // user, curator, admin
+  passwordHash  String? @map("password_hash")
+  role          String   @default("user")
   reputation    Int      @default(0)
   emailVerified Boolean  @default(false) @map("email_verified")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
-
   contributions Contribution[]
   alerts        Alert[]
   sessions      Session[]
   votes         Vote[]
-
+  apiKeys       ApiKey[]
   @@map("users")
 }
 
 model Session {
   id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
+  userId    String @db.Uuid @map("user_id")
   token     String   @unique
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
-
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   @@map("sessions")
 }
 
 model Contribution {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @map("user_id") @db.Uuid
-  skuId       String   @map("sku_id") @db.Uuid
-  type        String   // correction, gap_report, linux_report, benchmark_upload
-  field       String?  // Which field is being corrected
-  oldValue    String?  @map("old_value")
-  newValue    String   @map("new_value")
-  evidenceUrl String?  @map("evidence_url")
-  evidenceText String? @map("evidence_text")
-  status      String   @default("pending") // pending, approved, rejected
-  reviewedBy  String?  @map("reviewed_by") @db.Uuid
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sku  Sku   @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String @db.Uuid @map("user_id")
+  skuId          String @db.Uuid @map("sku_id")
+  type           String
+  field          String?
+  oldValue       String? @map("old_value")
+  newValue       String @map("new_value")
+  evidenceUrl    String? @map("evidence_url")
+  evidenceText   String? @map("evidence_text")
+  status         String   @default("pending")
+  reviewedBy     String? @map("reviewed_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sku   Sku         @relation(fields: [skuId], references: [id], onDelete: Cascade)
   votes Vote[]
-
   @@index([status])
+  @@index([skuId])
   @@map("contributions")
 }
 
 model Vote {
   id             String   @id @default(uuid()) @db.Uuid
-  userId         String   @map("user_id") @db.Uuid
-  contributionId String   @map("contribution_id") @db.Uuid
-  value          Int      // 1 = confirmed, -1 = disputed, 0 = needs_verification
+  userId         String @db.Uuid @map("user_id")
+  contributionId String @db.Uuid @map("contribution_id")
+  value          Int
   createdAt      DateTime @default(now()) @map("created_at")
-
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   contribution Contribution @relation(fields: [contributionId], references: [id], onDelete: Cascade)
-
   @@unique([userId, contributionId])
   @@map("votes")
 }
 
 model Alert {
   id            String   @id @default(uuid()) @db.Uuid
-  userId        String   @map("user_id") @db.Uuid
-  skuId         String   @map("sku_id") @db.Uuid
+  userId        String @db.Uuid @map("user_id")
+  skuId         String @db.Uuid @map("sku_id")
   region        String
-  conditionType String   @map("condition_type") // below_price, lowest_ever, pct_off_msrp
-  thresholdValue Float   @map("threshold_value")
-  channel       String   // email, telegram, discord, push
+  conditionType String @map("condition_type")
+  thresholdValue Float @map("threshold_value")
+  channel       String
   active        Boolean  @default(true)
   lastTriggered DateTime? @map("last_triggered")
   createdAt     DateTime @default(now()) @map("created_at")
-
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   sku  Sku  @relation(fields: [skuId], references: [id], onDelete: Cascade)
-
   @@index([userId])
   @@index([skuId])
   @@map("alerts")
 }
 
-// =============================================================================
-// PLATFORM TABLES (Epic 6)
-// =============================================================================
-
-model Category {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String   @unique
-  slug        String   @unique
-  description String?
-  specSchema  Json?    @map("spec_schema") // JSON schema for category-specific specs
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  @@map("categories")
-}
-
 model ApiKey {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  name      String
-  keyHash   String   @unique @map("key_hash")
-  scopes    String[] // read, write, admin
-  rateLimit Int      @default(1000) @map("rate_limit") // requests per hour
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String? @db.Uuid @map("user_id")
+  name       String
+  keyHash    String   @unique @map("key_hash")
+  scopes     String   @default("read")
+  rateLimit  Int      @default(1000) @map("rate_limit")
   lastUsedAt DateTime? @map("last_used_at")
-  expiresAt DateTime? @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
-
+  expiresAt  DateTime? @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
   @@map("api_keys")
 }

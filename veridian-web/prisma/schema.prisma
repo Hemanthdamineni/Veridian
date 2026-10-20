@@ -1,5 +1,16 @@
-// Veridian Database Schema - SQLite version for local development/testing
-// This is a simplified schema compatible with SQLite
+// Veridian Database Schema — SQLite edition (local development and tests).
+//
+// The PostgreSQL edition (prisma/schema.postgres.prisma) carries exactly the
+// same models and fields. Only the physical representation differs: id
+// columns are UUIDs and every column is mapped to snake_case. The parity test
+// (tests/schema-parity.test.ts) enforces that the two files agree in both
+// directions, so the catalog cannot drift between engines.
+//
+// Portability rules for this file:
+//   * No `Json` and no scalar lists — the SQLite connector supports neither.
+//     Structured values are stored as JSON text in a String column and are
+//     parsed by the application.
+//   * Every model and field in the PostgreSQL edition must exist here too.
 
 generator client {
   provider = "prisma-client-js"
@@ -8,6 +19,28 @@ generator client {
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// CATEGORY — the top-level product taxonomy (Epic 6)
+// =============================================================================
+
+/// A product category the platform can host. The catalog is laptop-first, but
+/// the schema is deliberately category-aware so that adding phones, monitors
+/// or components does not require rewriting the platform.
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  /// JSON text describing the category's specification shape. Stored as text
+  /// so the schema stays identical on SQLite and PostgreSQL.
+  specSchema  String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  series Series[]
 }
 
 // =============================================================================
@@ -30,6 +63,7 @@ model Manufacturer {
 model Series {
   id             String   @id @default(cuid())
   manufacturerId String
+  categoryId     String?
   name           String
   slug           String
   description    String?
@@ -37,9 +71,11 @@ model Series {
   updatedAt      DateTime @updatedAt
 
   manufacturer Manufacturer @relation(fields: [manufacturerId], references: [id], onDelete: Cascade)
+  category     Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   models       Model[]
 
   @@unique([manufacturerId, slug])
+  @@index([categoryId])
 }
 
 model Model {
@@ -55,16 +91,27 @@ model Model {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  series Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
-  skus   Sku[]
+  series      Series            @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  skus        Sku[]
+  listings    RetailerListing[]
 
   @@unique([seriesId, slug])
+  @@index([launchDate])
 }
 
 model Sku {
   id                String   @id @default(cuid())
   modelId           String
   skuCode           String   @unique
+  /// Manufacturer part number as reported by the source, when one is known.
+  mpn               String?
+  /// Universal Product Code, when the source published one.
+  upc               String?
+  /// Product type as reported by the source (Notebook, Two-In-One Notebook…).
+  productType       String?
+  /// Provenance tier, written explicitly at ingestion time (ADR-005).
+  /// One of: certified | manufacturer | retailer | unverified.
+  provenance        String   @default("unverified")
   cpuBrand          String
   cpuModel          String
   cpuCores          Int?
@@ -94,14 +141,18 @@ model Sku {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  model         Model              @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  model             Model               @relation(fields: [modelId], references: [id], onDelete: Cascade)
   pricing           SkuRegionalPricing[]
   priceObservations PriceObservation[]
+  priceHistory      PriceHistory[]
   ports             SkuPort[]
   contributions     Contribution[]
   alerts            Alert[]
   certifiedSpecs    CertifiedSkuSpec[]
   observations      RawObservation[]
+  sources           SkuSource[]
+  components        SkuComponent[]
+  listings          RetailerListing[]
 
   @@index([ramGb])
   @@index([storageGb])
@@ -110,10 +161,34 @@ model Sku {
   @@index([displayRefreshHz])
   @@index([cpuBrand])
   @@index([displayType])
+  @@index([provenance])
+  @@index([mpn])
+  @@index([modelId])
 }
 
-// Certified specs lifted from an audited official certification (ENERGY STAR).
-// These values are observed and cited — they are not inferred or guessed.
+/// One evidence row per source that describes a SKU. Provenance is recorded
+/// here rather than inferred from a free-text field name (ADR-005).
+model SkuSource {
+  id         String   @id @default(cuid())
+  skuId      String
+  /// Human-readable name of the source, e.g. "US EPA ENERGY STAR Certified Computers V9.0".
+  source     String
+  /// Evidence class: certified | manufacturer | retailer | review | unverified.
+  kind       String
+  sourceUrl  String?
+  observedAt DateTime @default(now())
+  confidence Float    @default(0.8)
+  note       String?
+
+  sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
+
+  @@unique([skuId, source])
+  @@index([kind])
+  @@index([source])
+}
+
+/// Certified specs lifted from an audited official certification (ENERGY STAR).
+/// These values are observed and cited — they are not inferred or guessed.
 model CertifiedSkuSpec {
   id          String   @id @default(cuid())
   skuId       String
@@ -148,8 +223,8 @@ model CertifiedSkuSpec {
   @@index([energyStarId])
 }
 
-// Immutable raw observation captured verbatim from the source. Per ADR-003 raw
-// observations are immutable; the payload hash lets us detect source drift.
+/// Immutable raw observation captured verbatim from the source. Per ADR-003 raw
+/// observations are immutable; the payload hash lets us detect source drift.
 model RawObservation {
   id        String   @id @default(cuid())
   source    String
@@ -168,6 +243,7 @@ model RawObservation {
   @@index([source])
   @@index([payloadHash])
   @@index([status])
+  @@index([rawRecordId])
 }
 
 model SkuRegionalPricing {
@@ -192,11 +268,170 @@ model SkuPort {
   count    Int
 
   sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
+
+  @@index([skuId])
 }
 
+// =============================================================================
+// COMPONENT KNOWLEDGE GRAPH
+//
+// Shared components (CPUs, GPUs, panels, SSDs) are first-class entities so the
+// catalog can answer "which laptops use this display panel?" and "which
+// machines share this CPU?". Plain relational tables are sufficient; no graph
+// database is required.
+// =============================================================================
+
+model Component {
+  id            String   @id @default(cuid())
+  /// Component class: cpu | gpu | display | storage | memory | connectivity | battery | os.
+  kind          String
+  canonicalName String
+  slug          String   @unique
+  brand         String?
+  model         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  aliases ComponentAlias[]
+  specs   ComponentSpec[]
+  skus    SkuComponent[]
+
+  @@index([kind])
+  @@index([canonicalName])
+}
+
+/// An observed spelling of a component. Aliases are retained so that future
+/// observations can be matched without re-deriving the canonical identity.
+model ComponentAlias {
+  id          String   @id @default(cuid())
+  componentId String
+  alias       String
+  normalized  String
+  source      String?
+  sourceUrl   String?
+  observedAt  DateTime @default(now())
+  confidence  Float    @default(0.8)
+
+  component Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+
+  @@unique([componentId, normalized])
+  @@index([normalized])
+}
+
+/// A structured attribute of a component, e.g. `cores = 12`, `tdp_w = 45`.
+model ComponentSpec {
+  id          String   @id @default(cuid())
+  componentId String
+  key         String
+  value       String
+  unit        String?
+  source      String?
+  sourceUrl   String?
+  observedAt  DateTime @default(now())
+  confidence  Float    @default(0.8)
+
+  component Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+
+  @@unique([componentId, key])
+}
+
+/// The link between a canonical configuration and a shared component.
+model SkuComponent {
+  id          String   @id @default(cuid())
+  skuId       String
+  componentId String
+  /// Relationship to the configuration: primary | secondary.
+  role        String   @default("primary")
+  confidence  Float    @default(0.9)
+  source      String?
+  sourceUrl   String?
+  observedAt  DateTime @default(now())
+
+  sku       Sku       @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  component Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+
+  @@unique([skuId, componentId, role])
+  @@index([componentId])
+}
+
+// =============================================================================
+// PRICE TRACKING
+// =============================================================================
+
+/// A retailer or marketplace whose listings Veridian tracks.
+model Seller {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  region        String
+  baseUrl       String
+  /// How listings are obtained: api | feed | scraper | manual.
+  scrapeMethod  String   @default("scraper")
+  affiliateUrl  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  listings RetailerListing[]
+
+  @@unique([name, region])
+}
+
+/// A single product page at a seller. A listing is the thing that is priced;
+/// a configuration is the thing that a listing is matched to.
+model RetailerListing {
+  id                String   @id @default(cuid())
+  sellerId          String
+  skuId             String?
+  modelId           String?
+  retailerSkuString String
+  title             String?
+  url               String?
+  region            String
+  currency          String
+  /// Confidence that this listing is the same product as `skuId` (0..1).
+  matchConfidence   Float?
+  /// How the match was made: mpn | upc | name+spec | manual.
+  matchMethod       String?
+  verifiedByHuman   Boolean  @default(false)
+  inStock           Boolean  @default(true)
+  firstSeenAt       DateTime @default(now())
+  lastSeenAt        DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  seller     Seller            @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  sku        Sku?              @relation(fields: [skuId], references: [id], onDelete: SetNull)
+  model      Model?            @relation(fields: [modelId], references: [id], onDelete: SetNull)
+  priceHistory PriceHistory[]
+  observations  PriceObservation[]
+
+  @@unique([sellerId, retailerSkuString])
+  @@index([skuId])
+  @@index([modelId])
+}
+
+/// Append-only price history for a retail listing.
+model PriceHistory {
+  id        String   @id @default(cuid())
+  listingId String
+  skuId     String
+  price     Float
+  currency  String
+  scrapedAt DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  listing RetailerListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  sku     Sku             @relation(fields: [skuId], references: [id], onDelete: Cascade)
+
+  @@index([skuId, scrapedAt])
+  @@index([listingId])
+}
+
+/// Append-only price observation. Historical values are never overwritten.
 model PriceObservation {
   id         String   @id @default(cuid())
   skuId      String
+  listingId  String?
   region     String
   currency   String
   price      Float
@@ -204,12 +439,19 @@ model PriceObservation {
   sourceUrl  String?
   timestamp  DateTime @default(now())
   sourceName String?
+  /// Evidence class: retail | manufacturer | review.
+  kind       String   @default("retail")
+  inStock    Boolean  @default(true)
+  shipping   Float?
   confidence Float    @default(0.8)
 
-  sku Sku @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  sku     Sku              @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  listing RetailerListing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
 
   @@index([skuId, timestamp])
   @@index([skuId, region])
+  @@index([listingId])
+  @@index([kind])
 }
 
 // =============================================================================
@@ -230,6 +472,8 @@ model User {
   contributions Contribution[]
   alerts        Alert[]
   sessions      Session[]
+  votes         Vote[]
+  apiKeys       ApiKey[]
 }
 
 model Session {
@@ -253,11 +497,30 @@ model Contribution {
   evidenceUrl    String?
   evidenceText   String?
   status         String   @default("pending")
+  reviewedBy     String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sku  Sku  @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sku   Sku         @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  votes Vote[]
+
+  @@index([status])
+  @@index([skuId])
+}
+
+model Vote {
+  id             String   @id @default(cuid())
+  userId         String
+  contributionId String
+  /// 1 = confirmed, -1 = disputed, 0 = needs_verification.
+  value          Int
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contribution Contribution @relation(fields: [contributionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contributionId])
 }
 
 model Alert {
@@ -277,4 +540,27 @@ model Alert {
 
   @@index([userId])
   @@index([skuId])
+}
+
+// =============================================================================
+// PLATFORM TABLES
+// =============================================================================
+
+/// An API key for the public developer API. Only the hash is stored.
+model ApiKey {
+  id         String   @id @default(cuid())
+  userId     String?
+  name       String
+  keyHash    String   @unique
+  /// Comma-separated scopes: read, write, admin.
+  scopes     String   @default("read")
+  /// Requests allowed per hour.
+  rateLimit  Int      @default(1000)
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { ENERGY_STAR_SOURCE } from "./types";
 import type { IngestionReport, NormalizedRecord, RejectedRecord } from "./types";
+import { canonicalBrand } from "./canonical";
 
 function slugify(value: string): string {
   return value
@@ -8,13 +9,6 @@ function slugify(value: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 80);
-}
-
-function parseDateIso(value: string | null): Date | null {
-  if (!value) return null;
-  const iso = /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : value.slice(0, 10);
-  const d = new Date(`${iso}T00:00:00.000Z`);
-  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 /** Map ENERGY STAR processor_brand to the catalog enum. */
@@ -25,6 +19,13 @@ function normalizeCpuBrand(raw: string | null): string {
   if (/apple/i.test(raw)) return "Apple";
   if (/qualcomm|snapdragon/i.test(raw)) return "Qualcomm";
   return "Other";
+}
+
+function parseDateIso(value: string | null): Date | null {
+  if (!value) return null;
+  const iso = /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : value.slice(0, 10);
+  const d = new Date(`${iso}T00:00:00.000Z`);
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 /** Round a certified RAM figure to whole GB (the source reports exact values). */
@@ -38,26 +39,38 @@ function normalizeRamGb(raw: number | null): number | null {
 /**
  * Persist one accepted record: Manufacturer -> Series -> Model -> Sku ->
  * CertifiedSkuSpec, plus an immutable RawObservation linking the canonical
- * entity to its verbatim source payload. Idempotent per source record id.
+ * entity to its verbatim source payload.
+ *
+ * Identity rules (ADR-002):
+ *   * The canonical SKU code is derived from the part number and the
+ *     configuration signature, so two certifications of the *same*
+ *     configuration collapse onto one SKU while two *different*
+ *     configurations of the same part number stay separate.
+ *   * Every source record still produces its own immutable RawObservation, so
+ *     nothing is lost when records merge.
+ *   * Provenance is written explicitly, not inferred.
  */
+export type IngestOutcome = "created" | "merged" | "unchanged";
+
 export async function ingestRecord(
   prisma: PrismaClient,
   record: NormalizedRecord,
   { rawPayload, payloadHash }: { rawPayload: string; payloadHash: string }
-): Promise<{ created: boolean; skuId: string }> {
+): Promise<{ outcome: IngestOutcome; skuId: string }> {
   const existingRaw = await prisma.rawObservation.findFirst({
     where: { source: ENERGY_STAR_SOURCE.name, rawRecordId: record.sourceRecordId },
     select: { id: true, payloadHash: true, skuId: true },
   });
 
   if (existingRaw?.payloadHash === payloadHash && existingRaw.skuId) {
-    return { created: false, skuId: existingRaw.skuId };
+    return { outcome: "unchanged", skuId: existingRaw.skuId };
   }
 
+  const brand = canonicalBrand(record.brand);
   const manufacturer = await prisma.manufacturer.upsert({
-    where: { slug: slugify(record.brand) },
-    update: {},
-    create: { name: record.brand, slug: slugify(record.brand) },
+    where: { slug: slugify(brand) },
+    update: { name: brand },
+    create: { name: brand, slug: slugify(brand) },
   });
 
   const series = await prisma.series.upsert({
@@ -70,24 +83,37 @@ export async function ingestRecord(
     },
   });
 
-  const model = await prisma.model.upsert({
-    where: { seriesId_slug: { seriesId: series.id, slug: slugify(record.modelName) } },
-    update: { launchDate: parseDateIso(record.launchDate) ?? undefined },
-    create: {
-      seriesId: series.id,
-      name: record.modelName,
-      slug: slugify(record.modelName),
-      launchDate: parseDateIso(record.launchDate),
-    },
+  // A SKU that already exists for this canonical code is a re-certification
+  // of the same configuration. It keeps the model it was first filed under;
+  // creating a second model row for the same configuration would leave an
+  // empty, unreachable model behind.
+  const existingSku = await prisma.sku.findUnique({
+    where: { skuCode: record.skuCode },
+    select: { id: true, modelId: true },
   });
+
+  const model = existingSku
+    ? { id: existingSku.modelId }
+    : await prisma.model.upsert({
+        where: { seriesId_slug: { seriesId: series.id, slug: slugify(record.modelName) } },
+        update: { launchDate: parseDateIso(record.launchDate) ?? undefined },
+        create: {
+          seriesId: series.id,
+          name: record.modelName,
+          slug: slugify(record.modelName),
+          launchDate: parseDateIso(record.launchDate),
+        },
+      });
 
   const specs = record.certifiedSpecs;
   const ramGb = normalizeRamGb(specs.ramGb);
   if (ramGb === null) throw new Error(`Missing or invalid validated RAM for ${record.sourceRecordId}`);
+  const cpuBrand = normalizeCpuBrand(specs.cpuBrand);
+
   const sku = await prisma.sku.upsert({
     where: { skuCode: record.skuCode },
     update: {
-      cpuBrand: normalizeCpuBrand(specs.cpuBrand),
+      cpuBrand,
       cpuModel: specs.cpuModel ?? record.modelName,
       cpuCores: specs.cpuCores,
       ramGb,
@@ -97,11 +123,16 @@ export async function ingestRecord(
       batteryWh: specs.batteryWh,
       os: record.os,
       launchDate: parseDateIso(record.launchDate),
+      // Provenance is asserted by the write path, never inferred downstream.
+      provenance: "certified",
+      mpn: record.partNumber,
+      upc: record.upc,
+      productType: record.productType,
     },
     create: {
       modelId: model.id,
       skuCode: record.skuCode,
-      cpuBrand: normalizeCpuBrand(specs.cpuBrand),
+      cpuBrand,
       cpuModel: specs.cpuModel ?? record.modelName,
       cpuCores: specs.cpuCores,
       ramGb,
@@ -112,6 +143,10 @@ export async function ingestRecord(
       os: record.os,
       launchDate: parseDateIso(record.launchDate),
       catalogVisible: true,
+      provenance: "certified",
+      mpn: record.partNumber,
+      upc: record.upc,
+      productType: record.productType,
     },
   });
 
@@ -122,33 +157,53 @@ export async function ingestRecord(
   if (!existingSpec) {
     await prisma.certifiedSkuSpec.create({
       data: {
-      skuId: sku.id,
-      source: ENERGY_STAR_SOURCE.name,
-      sourceUrl: specs.sourceUrl,
-      observedAt: new Date(specs.observedAt),
-      certifiedAt: parseDateIso(specs.certifiedAt),
-      marketDate: parseDateIso(specs.marketDate),
-      energyStarId: specs.energyStarId,
-      cpuBrand: specs.cpuBrand,
-      cpuModel: specs.cpuModel,
-      cpuCores: specs.cpuCores,
-      cpuBaseClockGHz: specs.cpuBaseClockGHz,
-      cpuMaxClockGHz: specs.cpuMaxClockGHz,
-      cpuPackages: specs.cpuPackages,
-      ramGb: specs.ramGb,
-      storageType: specs.storageType,
-      storageDrives: specs.storageDrives,
-      displaySizeIn: specs.displaySizeIn,
-      displayResolutionMp: specs.displayResolutionMp,
-      displayAreaSqIn: specs.displayAreaSqIn,
-      touchScreen: specs.touchScreen,
-      batteryWh: specs.batteryWh,
-      os: specs.os,
-      npu: specs.npu,
-      markets: specs.markets,
+        skuId: sku.id,
+        source: ENERGY_STAR_SOURCE.name,
+        sourceUrl: specs.sourceUrl,
+        observedAt: new Date(specs.observedAt),
+        certifiedAt: parseDateIso(specs.certifiedAt),
+        marketDate: parseDateIso(specs.marketDate),
+        energyStarId: specs.energyStarId,
+        cpuBrand: specs.cpuBrand,
+        cpuModel: specs.cpuModel,
+        cpuCores: specs.cpuCores,
+        cpuBaseClockGHz: specs.cpuBaseClockGHz,
+        cpuMaxClockGHz: specs.cpuMaxClockGHz,
+        cpuPackages: specs.cpuPackages,
+        ramGb: specs.ramGb,
+        storageType: specs.storageType,
+        storageDrives: specs.storageDrives,
+        displaySizeIn: specs.displaySizeIn,
+        displayResolutionMp: specs.displayResolutionMp,
+        displayAreaSqIn: specs.displayAreaSqIn,
+        touchScreen: specs.touchScreen,
+        batteryWh: specs.batteryWh,
+        os: specs.os,
+        npu: specs.npu,
+        markets: specs.markets,
       },
     });
   }
+
+  // Explicit provenance row (ADR-005): one per source per configuration.
+  await prisma.skuSource.upsert({
+    where: { skuId_source: { skuId: sku.id, source: ENERGY_STAR_SOURCE.name } },
+    update: {
+      kind: "certified",
+      sourceUrl: specs.sourceUrl,
+      observedAt: new Date(specs.observedAt),
+      confidence: 1,
+    },
+    create: {
+      skuId: sku.id,
+      source: ENERGY_STAR_SOURCE.name,
+      kind: "certified",
+      sourceUrl: specs.sourceUrl,
+      observedAt: new Date(specs.observedAt),
+      confidence: 1,
+      note: `Certification ${specs.energyStarId}`,
+    },
+  });
 
   await prisma.rawObservation.create({
     data: {
@@ -163,7 +218,7 @@ export async function ingestRecord(
     },
   });
 
-  return { created: !existingRaw, skuId: sku.id };
+  return { outcome: existingSku ? "merged" : "created", skuId: sku.id };
 }
 
 export async function ingestRejected(
@@ -207,7 +262,8 @@ async function sha256(input: string): Promise<string> {
 /** Run a full fetched report through the audited write path. */
 export async function ingestReport(prisma: PrismaClient, report: IngestionReport) {
   let created = 0;
-  let skipped = 0;
+  let merged = 0;
+  let unchanged = 0;
   for (const record of report.records) {
     const rawRow = report.rawPayloads.find((row) => row.sourceRecordId === record.sourceRecordId);
     if (!rawRow) throw new Error(`Missing raw payload for source record ${record.sourceRecordId}`);
@@ -215,9 +271,10 @@ export async function ingestReport(prisma: PrismaClient, report: IngestionReport
       rawPayload: rawRow.payload,
       payloadHash: rawRow.payloadHash,
     });
-    if (result.created) created++;
-    else skipped++;
+    if (result.outcome === "created") created++;
+    else if (result.outcome === "merged") merged++;
+    else unchanged++;
   }
   const rejectedStored = await ingestRejected(prisma, report.rejectedRecords, report.rawPayloads);
-  return { accepted: report.records.length, created, skipped, rejectedStored };
+  return { accepted: report.records.length, created, merged, unchanged, rejectedStored };
 }

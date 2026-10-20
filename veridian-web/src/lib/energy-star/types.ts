@@ -38,6 +38,16 @@ export interface NormalizedRecord {
   os: string;
   launchDate: string | null;
   dateCertified: string | null;
+  /** Manufacturer part number as reported by the source, when present. */
+  partNumber: string | null;
+  /** Every part number the source attached to this record. */
+  partNumbers: string[];
+  /** Universal Product Code, when the source published one. */
+  upc: string | null;
+  /** Product type as reported (Notebook, Two-In-One Notebook, ...). */
+  productType: string | null;
+  /** The market region the certification was granted for, as reported. */
+  markets: string | null;
   /** Certified specs lifted directly from the source (observed, not guessed). */
   certifiedSpecs: {
     source: string;
@@ -86,6 +96,8 @@ export interface IngestionReport {
   adapterVersion: string;
   observedAt: string;
   requested: number;
+  /** Number of source pages read (only set by full-dataset runs). */
+  pages?: number;
   accepted: number;
   rejected: number;
   rejectedRecords: RejectedRecord[];
