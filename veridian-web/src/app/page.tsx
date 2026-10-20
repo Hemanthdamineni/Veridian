@@ -1,178 +1,114 @@
 import { prisma } from "@/lib/db";
-import { FilterPanel } from "@/components/FilterPanel";
-import { SkuCard } from "@/components/SkuCard";
-import { Pagination } from "@/components/Pagination";
-import { SortSelect } from "@/components/SortSelect";
-import { LiveCatalogRefresh } from "@/components/LiveCatalogRefresh";
-import { buildSkusQuery, buildOrderBy, parsePagination, formatSkuListItem } from "@/lib/api";
+import { buildSkusQuery, buildOrderBy, parsePagination, formatSkuListItem, sortSkusByPrice } from "@/lib/api";
+import { CatalogApp } from "@/components/CatalogApp";
 
-interface HomePageProps {
-  searchParams: Promise<{
-    cpu_brand?: string;
-    ram_min?: string;
-    storage_min?: string;
-    display_type?: string;
-    refresh_min?: string;
-    weight_max?: string;
-    battery_min?: string;
-    touch?: string;
-    region?: string;
-    price_min?: string;
-    price_max?: string;
-    q?: string;
-    sort?: string;
-    page?: string;
-    limit?: string;
-  }>;
+interface SearchParams {
+  cpu_brand?: string; ram_min?: string; storage_min?: string; display_type?: string;
+  refresh_min?: string; weight_max?: string; battery_min?: string; touch?: string;
+  region?: string; price_min?: string; price_max?: string; provenance?: string;
+  q?: string; sort?: string; page?: string; limit?: string;
 }
 
-async function getSkus(searchParams: Awaited<HomePageProps["searchParams"]>) {
-  const params = {
-    cpuBrand: searchParams.cpu_brand,
-    ramMin: searchParams.ram_min,
-    storageMin: searchParams.storage_min,
-    displayType: searchParams.display_type,
-    refreshMin: searchParams.refresh_min,
-    weightMax: searchParams.weight_max,
-    batteryMin: searchParams.battery_min,
-    touch: searchParams.touch,
-    region: searchParams.region,
-    priceMin: searchParams.price_min,
-    priceMax: searchParams.price_max,
-    q: searchParams.q,
-    sort: searchParams.sort,
-    page: searchParams.page,
-    limit: searchParams.limit,
+async function getInitial(params: SearchParams) {
+  // Resolve the price-display region once. The client always sends a region
+  // (defaulting to US), so the server must use the same default — otherwise the
+  // first paint renders a different currency than the first client fetch and
+  // the prices visibly swap.
+  const region = params.region || "US";
+
+  const query = {
+    cpuBrand: params.cpu_brand, ramMin: params.ram_min, storageMin: params.storage_min,
+    displayType: params.display_type, refreshMin: params.refresh_min, weightMax: params.weight_max,
+    batteryMin: params.battery_min, touch: params.touch, region, priceMin: params.price_min,
+    priceMax: params.price_max, provenance: params.provenance, q: params.q, sort: params.sort,
+    page: params.page, limit: "24",
+  };
+  const where = buildSkusQuery(query);
+  const { page, limit, skip } = parsePagination(query);
+
+  const [
+    totalResults,
+    manufacturerCount,
+    catalogTotal,
+    certifiedTotal,
+    certifiedInResults,
+    regionRows,
+  ] = await Promise.all([
+    prisma.sku.count({ where }),
+    prisma.manufacturer.count(),
+    prisma.sku.count({ where: { catalogVisible: true } }),
+    prisma.sku.count({ where: { catalogVisible: true, certifiedSpecs: { some: {} } } }),
+    prisma.sku.count({ where: { AND: [where, { certifiedSpecs: { some: {} } }] } }),
+    prisma.skuRegionalPricing.findMany({
+      distinct: ["region"],
+      select: { region: true },
+      orderBy: { region: "asc" },
+    }),
+  ]);
+  const availableRegions = regionRows.map((r) => r.region);
+
+  const include = {
+    model: { include: { series: { include: { manufacturer: true } } } },
+    pricing: { where: { region } },
+    certifiedSpecs: { select: { id: true }, take: 1 },
   };
 
-  const where = buildSkusQuery(params);
-  const orderBy = buildOrderBy(params.sort);
-  const { page, limit } = parsePagination(params);
-
-  const totalResults = await prisma.sku.count({ where });
-
-  let skus;
-
+  let rows;
   if (params.sort === "price_asc" || params.sort === "price_desc") {
-    const region = params.region || "US";
-    const allSkus = await prisma.sku.findMany({
-      where,
-      orderBy: [{ createdAt: "desc" }],
-      include: {
-        model: {
-          include: {
-            series: {
-              include: {
-                manufacturer: true,
-              },
-            },
-          },
-        },
-        pricing: { where: { region } },
-      },
-    });
-
-    const sorted = [...allSkus].sort((a, b) => {
-      const priceA = a.pricing[0]?.msrp ?? Infinity;
-      const priceB = b.pricing[0]?.msrp ?? Infinity;
-      return params.sort === "price_asc" ? priceA - priceB : priceB - priceA;
-    });
-
-    const skip = (page - 1) * limit;
-    skus = sorted.slice(skip, skip + limit);
+    const all = await prisma.sku.findMany({ where, orderBy: [{ createdAt: "desc" }], include });
+    const sorted = sortSkusByPrice(all, region, params.sort === "price_asc" ? "asc" : "desc");
+    rows = sorted.slice(skip, skip + limit);
   } else {
-    const skip = (page - 1) * limit;
-    skus = await prisma.sku.findMany({
-      where,
-      orderBy,
-      skip,
-      take: limit,
-      include: {
-        model: {
-          include: {
-            series: {
-              include: {
-                manufacturer: true,
-              },
-            },
-          },
-        },
-        pricing: params.region
-          ? { where: { region: params.region } }
-          : true,
-      },
-    });
+    rows = await prisma.sku.findMany({ where, orderBy: buildOrderBy(params.sort), skip, take: limit, include });
   }
 
-  const results = skus.map((sku) =>
-    formatSkuListItem(sku as Parameters<typeof formatSkuListItem>[0], params.region)
-  );
+  const results = rows.map((sku) => formatSkuListItem(sku as Parameters<typeof formatSkuListItem>[0], region));
 
   return {
     results,
-    pagination: {
-      page,
-      limit,
-      totalResults,
-      totalPages: Math.ceil(totalResults / limit),
+    availableRegions,
+    pagination: { page, limit, totalResults, totalPages: Math.ceil(totalResults / limit) },
+    tiers: { certified: certifiedInResults, reference: totalResults - certifiedInResults },
+    stats: {
+      catalogTotal,
+      certifiedTotal,
+      manufacturerCount,
+      regionCount: availableRegions.length,
     },
   };
 }
 
-export default async function HomePage({ searchParams }: HomePageProps) {
+export default async function HomePage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
-  const { results, pagination } = await getSkus(params);
-
+  const initial = await getInitial(params);
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-10">
-        <h1 className="text-4xl font-bold tracking-tight text-zinc-950">
-          Find Your Laptop
-        </h1>
-        <p className="mt-3 text-lg text-zinc-700">
-          Search and filter laptop specs and pricing. Seed data shown for exploration; values are not independently verified.
-        </p>
-      </div>
-
-      <LiveCatalogRefresh />
-
-      <div className="flex flex-col lg:flex-row gap-8">
-        <FilterPanel />
-
-        <div className="flex-1">
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-sm text-zinc-700">
-            {pagination.totalResults} laptop{pagination.totalResults !== 1 ? "s" : ""}
-          </p>
-          <SortSelect />
+    <div>
+      <section className="border-b border-[var(--line)] py-14 sm:py-20">
+        <div className="container">
+          <div className="max-w-3xl">
+            <p className="eyebrow mb-5">Laptop intelligence, without the noise</p>
+            <h1 className="font-display text-[clamp(42px,6vw,76px)] leading-[.98] tracking-[-.045em] text-balance">Make a shortlist<br /><em className="text-[var(--accent)]">you can trust.</em></h1>
+            <p className="mt-7 max-w-xl text-[16px] leading-7 text-[var(--muted)]">Veridian turns scattered laptop specifications into clear, comparable decisions. Search the catalog by the details that actually matter to you.</p>
+          </div>
+          <div className="mt-12 grid max-w-3xl grid-cols-2 gap-6 border-t border-[var(--line)] pt-6 sm:grid-cols-4">
+            <Stat value={initial.stats.catalogTotal.toLocaleString()} label="configurations cataloged" />
+            <Stat value={initial.stats.certifiedTotal.toLocaleString()} label="with a cited certification" />
+            <Stat value={String(initial.stats.manufacturerCount)} label="manufacturers" />
+            <Stat value={String(initial.stats.regionCount)} label="regions with recorded prices" />
+          </div>
         </div>
-
-          {results.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-slate-700 text-lg">
-                No laptops match your filters.
-              </p>
-              <p className="text-slate-700 mt-2">
-                Try adjusting your criteria or clearing filters.
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {results.map((sku) => (
-                  <SkuCard key={sku.id} sku={sku} />
-                ))}
-              </div>
-              <Pagination
-                page={pagination.page}
-                totalPages={pagination.totalPages}
-                totalResults={pagination.totalResults}
-              />
-            </>
-          )}
+      </section>
+      <section className="container py-10 sm:py-14" aria-label="Laptop catalog">
+        <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div><p className="eyebrow mb-2">The catalog</p><h2 className="font-display text-[32px] tracking-[-.035em]">Find your next machine</h2></div>
+          <p className="max-w-xs text-[12px] leading-5 text-[var(--muted)] sm:text-right">Filter by hard constraints. Every result stays tied to its source record.</p>
         </div>
-      </div>
+        <CatalogApp initial={initial} />
+      </section>
     </div>
   );
 }
 
+function Stat({ value, label }: { value: string; label: string }) {
+  return <div><p className="font-mono text-[19px] font-semibold tabular-nums">{value}</p><p className="mt-1 text-[11px] leading-4 text-[var(--muted)]">{label}</p></div>;
+}

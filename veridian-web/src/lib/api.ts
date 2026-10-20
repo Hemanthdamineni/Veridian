@@ -68,36 +68,55 @@ export function buildSkusQuery(params: SkusQueryParams): Record<string, unknown>
     where.displayTouch = false;
   }
 
-  // Region availability + price filter
+  // Region selects which regional price to display — it is deliberately NOT an
+  // existence requirement. Configurations with no price recorded for the region
+  // (notably the ENERGY STAR certified records, which carry no retail price)
+  // must stay in the catalog and be reported as "price not reported" rather
+  // than being silently dropped. Only an explicit price bound requires a
+  // recorded price, because a bound cannot be evaluated without one.
   if (params.region) {
-    const pricingFilter: Record<string, unknown> = {
-      some: {
-        region: params.region,
-        available: true,
-      },
-    };
-
-    if (params.priceMin || params.priceMax) {
-      const priceFilter: { gte?: number; lte?: number } = {};
-      if (params.priceMin) {
-        const min = parseFloat(params.priceMin);
-        if (!isNaN(min)) priceFilter.gte = min;
-      }
-      if (params.priceMax) {
-        const max = parseFloat(params.priceMax);
-        if (!isNaN(max)) priceFilter.lte = max;
-      }
-      (pricingFilter.some as Record<string, unknown>).msrp = priceFilter;
+    const priceFilter: { gte?: number; lte?: number } = {};
+    if (params.priceMin) {
+      const min = parseFloat(params.priceMin);
+      if (!isNaN(min)) priceFilter.gte = min;
+    }
+    if (params.priceMax) {
+      const max = parseFloat(params.priceMax);
+      if (!isNaN(max)) priceFilter.lte = max;
     }
 
-    where.pricing = pricingFilter;
+    if (Object.keys(priceFilter).length > 0) {
+      where.pricing = {
+        some: {
+          region: params.region,
+          available: true,
+          msrp: priceFilter,
+        },
+      };
+    }
+  }
+
+  // Provenance tier. The catalog deliberately mixes two tiers of record —
+  // certified configurations that carry a cited source, and reference
+  // configurations that do not — so the tier is an explicit filter.
+  if (params.provenance) {
+    const tiers = params.provenance.split(",").filter(Boolean);
+    const wantCertified = tiers.includes("certified");
+    const wantReference = tiers.includes("reference");
+    if (wantCertified && !wantReference) {
+      where.certifiedSpecs = { some: {} };
+    } else if (wantReference && !wantCertified) {
+      where.certifiedSpecs = { none: {} };
+    }
   }
 
   // Text search (model name or SKU code)
   if (params.q) {
     where.OR = [
-      { skuCode: { contains: params.q, mode: "insensitive" } },
-      { model: { name: { contains: params.q, mode: "insensitive" } } },
+      // SQLite does not support Prisma's `mode` filter option; its default
+      // NOCASE collation provides case-insensitive matching for catalog text.
+      { skuCode: { contains: params.q } },
+      { model: { name: { contains: params.q } } },
     ];
   }
 
@@ -165,6 +184,46 @@ interface SkuWithRelations {
     };
   };
   pricing: Array<{ region: string; currency: string; msrp: number }>;
+  certifiedSpecs?: Array<{ id: string }>;
+}
+
+/**
+ * Provenance of a catalog row.
+ *
+ * - `certified` — the row traces back to a cited certification record with a
+ *   stored raw observation and payload hash.
+ * - `reference` — the row is a reference configuration with no cited source.
+ */
+export type SkuProvenance = "certified" | "reference";
+
+export interface PricedSkuLike {
+  pricing: Array<{ region: string; msrp: number }>;
+}
+
+/**
+ * Sort rows by the MSRP recorded for `region`.
+ *
+ * Rows with no price for the region sort last in BOTH directions. Treating a
+ * missing price as `Infinity` would push priceless configurations to the top
+ * of a "most expensive" list, which reads as a price claim the data does not
+ * support.
+ */
+export function sortSkusByPrice<T extends PricedSkuLike>(
+  skus: T[],
+  region: string,
+  direction: "asc" | "desc"
+): T[] {
+  const priceOf = (sku: T): number | null =>
+    sku.pricing.find((p) => p.region === region)?.msrp ?? null;
+
+  return [...skus].sort((a, b) => {
+    const pa = priceOf(a);
+    const pb = priceOf(b);
+    if (pa === null && pb === null) return 0;
+    if (pa === null) return 1;
+    if (pb === null) return -1;
+    return direction === "asc" ? pa - pb : pb - pa;
+  });
 }
 
 export function formatSkuListItem(sku: SkuWithRelations, region?: string | undefined): SkuListItem {
@@ -199,6 +258,7 @@ export function formatSkuListItem(sku: SkuWithRelations, region?: string | undef
     batteryWh: sku.batteryWh,
     os: sku.os,
     buildMaterial: sku.buildMaterial,
+    provenance: sku.certifiedSpecs && sku.certifiedSpecs.length > 0 ? "certified" : "reference",
     price: price
       ? {
           region: price.region,

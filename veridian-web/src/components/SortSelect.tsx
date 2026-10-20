@@ -1,34 +1,25 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+export const SORT_OPTIONS: { v: string; label: string }[] = [
+  // The default order is ingestion order, not launch date — label it so the
+  // two are not confused with the explicit "Launch: newest" option.
+  { v: "", label: "Recently added" },
+  { v: "price_asc", label: "Price: lowest" },
+  { v: "price_desc", label: "Price: highest" },
+  { v: "weight_asc", label: "Weight: lightest" },
+  { v: "battery_desc", label: "Battery: largest" },
+  { v: "newest", label: "Launch: newest" },
+];
 
-export function SortSelect() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const currentSort = searchParams.get("sort") || "";
-
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (e.target.value) {
-      params.set("sort", e.target.value);
-    } else {
-      params.delete("sort");
-    }
-    router.push(`/?${params.toString()}`);
-  };
-
+export function SortSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <select
-      value={currentSort}
-      onChange={handleChange}
-      className="px-3 py-1.5 text-sm border border-zinc-300 rounded-lg bg-white text-zinc-900"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label="Sort results"
+      className="field min-h-[36px] w-auto pr-8 text-[12px]"
     >
-      <option value="">Sort by</option>
-      <option value="price_asc">Price: Low to High</option>
-      <option value="price_desc">Price: High to Low</option>
-      <option value="weight_asc">Weight: Lightest First</option>
-      <option value="battery_desc">Battery: Largest First</option>
-      <option value="newest">Newest First</option>
+      {SORT_OPTIONS.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
     </select>
   );
 }

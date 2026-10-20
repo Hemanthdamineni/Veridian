@@ -38,6 +38,11 @@ export interface SkuListItem {
   buildMaterial: string | null;
   price: SkuPrice | null;
   storeUrl: string | null;
+  /**
+   * `certified` — the row carries a cited certification record.
+   * `reference` — the row is a reference configuration with no cited source.
+   */
+  provenance: "certified" | "reference";
   catalogVisible?: boolean;
   certifiedSpecs?: Array<{
     source: string;
@@ -94,6 +99,17 @@ export interface Pagination {
 export interface SkusResponse {
   results: SkuListItem[];
   pagination: Pagination;
+  /**
+   * Regions for which at least one price is recorded. The catalog only offers
+   * these as price-display regions — offering a region with no data would
+   * guarantee an empty result set.
+   */
+  availableRegions?: string[];
+  /**
+   * How the current result set splits between certified configurations (with a
+   * cited source) and reference configurations (without one).
+   */
+  tiers?: { certified: number; reference: number };
 }
 
 export interface ManufacturerItem {
@@ -117,6 +133,7 @@ export interface SkusQueryParams {
   region?: string;
   priceMin?: string;
   priceMax?: string;
+  provenance?: string;
   q?: string;
   sort?: string;
   page?: string;

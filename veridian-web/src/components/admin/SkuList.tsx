@@ -1,69 +1,30 @@
-interface Sku {
-  id: string;
-  skuCode: string;
-  cpuModel: string;
-  ramGb: number;
-  weightKg: number | null;
-  createdAt: Date;
-  model: {
-    name: string;
-    series: {
-      name: string;
-      manufacturer: {
-        name: string;
-      };
-    };
-  };
-  pricing: {
-    region: string;
-    currency: string;
-    msrp: number;
-  }[];
-}
+import { formatDate, formatPrice } from "@/lib/format";
 
-interface SkuListProps {
-  skus: Sku[];
-}
+interface Sku { id: string; skuCode: string; cpuModel: string; ramGb: number; weightKg: number | null; createdAt: Date; model: { name: string; series: { name: string; manufacturer: { name: string } } }; pricing: { region: string; currency: string; msrp: number }[] }
+
+interface SkuListProps { skus: Sku[] }
 
 export function SkuList({ skus }: SkuListProps) {
   if (skus.length === 0) {
-    return (
-      <div className="text-center py-8 text-zinc-500">
-        No SKUs yet. Create one using the form.
-      </div>
-    );
+    return <div className="rounded-[8px] border border-dashed border-[var(--line-strong)] p-8 text-center text-[13px] text-[var(--muted)]">No configurations yet. Add one using the form.</div>;
   }
-
   return (
-    <div className="space-y-2 max-h-[600px] overflow-y-auto">
+    <ul className="max-h-[620px] divide-y divide-[var(--line)] overflow-y-auto">
       {skus.map((sku) => (
-        <div
-          key={sku.id}
-          className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700"
-        >
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="font-medium text-zinc-900 dark:text-zinc-100 text-sm">
-                {sku.model.name}
-              </p>
-              <p className="text-xs text-zinc-500 font-mono">{sku.skuCode}</p>
+        <li key={sku.id} className="py-3 first:pt-0 last:pb-0">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-medium">{sku.model.name}</p>
+              <p className="mt-0.5 truncate font-mono text-[10px] text-[var(--muted)]">{sku.skuCode}</p>
             </div>
-            {sku.pricing[0] && (
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                {new Intl.NumberFormat("en-US", {
-                  style: "currency",
-                  currency: sku.pricing[0].currency,
-                  maximumFractionDigits: 0,
-                }).format(sku.pricing[0].msrp)}
-              </p>
-            )}
+            {sku.pricing[0] && <p className="shrink-0 font-mono text-[13px] font-medium">{formatPrice(sku.pricing[0].msrp, sku.pricing[0].currency)}</p>}
           </div>
-          <p className="text-xs text-zinc-400 mt-1">
-            {sku.model.series.manufacturer.name} • {sku.cpuModel} •{" "}
-            {sku.ramGb} GB • {sku.weightKg !== null ? `${sku.weightKg} kg` : "weight n/a"}
+          <p className="mt-1.5 text-[11px] text-[var(--quiet)]">
+            {sku.model.series.manufacturer.name} · {sku.cpuModel} · {sku.ramGb} GB · {sku.weightKg !== null ? `${sku.weightKg} kg` : "weight n/a"}
           </p>
-        </div>
+          <p className="mt-1 font-mono text-[10px] text-[var(--quiet)]">Added {formatDate(sku.createdAt.toISOString())}</p>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }

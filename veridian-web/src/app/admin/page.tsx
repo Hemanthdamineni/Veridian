@@ -4,126 +4,41 @@ import { AdminStatsPanel } from "@/components/AdminStatsPanel";
 
 export const dynamic = "force-dynamic";
 
-interface Manufacturer {
-  id: string;
-  name: string;
-  series: {
-    id: string;
-    name: string;
-    models: {
-      id: string;
-      name: string;
-    }[];
-  }[];
-}
-
-interface Sku {
-  id: string;
-  skuCode: string;
-  cpuModel: string;
-  ramGb: number;
-  weightKg: number | null;
-  createdAt: Date;
-  model: {
-    name: string;
-    series: {
-      name: string;
-      manufacturer: {
-        name: string;
-      };
-    };
-  };
-  pricing: {
-    region: string;
-    currency: string;
-    msrp: number;
-  }[];
-}
+interface Manufacturer { id: string; name: string; series: { id: string; name: string; models: { id: string; name: string }[] }[] }
+interface Sku { id: string; skuCode: string; cpuModel: string; ramGb: number; weightKg: number | null; createdAt: Date; model: { name: string; series: { name: string; manufacturer: { name: string } } }; pricing: { region: string; currency: string; msrp: number }[] }
 
 async function getData() {
   try {
     const { prisma } = await import("@/lib/db");
     const [manufacturers, skus] = await Promise.all([
-      prisma.manufacturer.findMany({
-        include: {
-          series: {
-            include: {
-              models: true,
-            },
-          },
-        },
-        orderBy: { name: "asc" },
-      }),
-      prisma.sku.findMany({
-        include: {
-          model: {
-            include: {
-              series: {
-                include: { manufacturer: true },
-              },
-            },
-          },
-          pricing: true,
-        },
-        orderBy: { createdAt: "desc" },
-        take: 50,
-      }),
+      prisma.manufacturer.findMany({ include: { series: { include: { models: true } } }, orderBy: { name: "asc" } }),
+      prisma.sku.findMany({ include: { model: { include: { series: { include: { manufacturer: true } } } }, pricing: true }, orderBy: { createdAt: "desc" }, take: 50 }),
     ]);
     return { manufacturers, skus, error: null };
   } catch (error) {
-    return {
-      manufacturers: [] as Manufacturer[],
-      skus: [] as Sku[],
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
+    return { manufacturers: [] as Manufacturer[], skus: [] as Sku[], error: error instanceof Error ? error.message : "Unknown error" };
   }
 }
 
 export default async function AdminPage() {
   const { manufacturers, skus, error } = await getData();
-
-  if (error) {
-    return (
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 mb-8">
-          Admin — SKU Management
-        </h1>
-        <div className="p-4 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg">
-          <p className="font-medium">Database connection error</p>
-          <p className="text-sm mt-1">{error}</p>
-          <p className="text-sm mt-2">
-            Please ensure DATABASE_URL is configured and the database is accessible.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 mb-8">
-        Admin — SKU Management
-      </h1>
-
-      <div className="mb-8">
-        <AdminStatsPanel />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 mb-4">
-            Add New SKU
-          </h2>
-          <SkuForm manufacturers={manufacturers} />
-        </div>
-
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 mb-4">
-            Recent SKUs ({skus.length})
-          </h2>
-          <SkuList skus={skus} />
-        </div>
-      </div>
+    <div className="container py-10 sm:py-14">
+      <header className="mb-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div><p className="eyebrow mb-2">Internal workspace</p><h1 className="font-display text-[40px] tracking-[-.04em]">Catalog curation</h1><p className="mt-2 text-[13px] text-[var(--muted)]">Review source data and add verified configurations.</p></div>
+        <span className="font-mono text-[11px] text-[var(--quiet)]">{skus.length} recent records</span>
+      </header>
+      {error ? (
+        <div className="surface border-[var(--danger)] p-6" role="alert"><p className="font-semibold">Database connection error</p><p className="mt-2 text-[13px] text-[var(--muted)]">{error}</p></div>
+      ) : (
+        <>
+          <AdminStatsPanel />
+          <div className="mt-8 grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+            <section className="surface p-6 sm:p-8"><div className="mb-6"><p className="eyebrow mb-2">New record</p><h2 className="font-display text-[25px] tracking-[-.025em]">Add a configuration</h2></div><SkuForm manufacturers={manufacturers} /></section>
+            <section className="surface p-6 sm:p-8"><div className="mb-6 flex items-end justify-between gap-4"><div><p className="eyebrow mb-2">Recently added</p><h2 className="font-display text-[25px] tracking-[-.025em]">SKU records</h2></div><span className="font-mono text-[11px] text-[var(--muted)]">{skus.length} shown</span></div><SkuList skus={skus} /></section>
+          </div>
+        </>
+      )}
     </div>
   );
 }

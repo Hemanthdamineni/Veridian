@@ -180,7 +180,38 @@ export function parseNaturalLanguageQuery(query: string): Partial<SkusQueryParam
     params.sort = "price_asc";
   }
 
+  // Preserve any residual model/SKU keyword after the recognized filter
+  // phrases are removed. Without this, "Zenbook under $1500" would search for
+  // the literal string "zenbook under $1500" and match nothing.
+  const residual = extractKeyword(query);
+  if (residual) params.q = residual;
+
   return params;
+}
+
+/**
+ * Strip recognized filter phrases and filler words, returning the remaining
+ * text to use as a model/SKU search term. Returns "" when nothing meaningful
+ * is left, so callers can fall back to pure structured filtering.
+ */
+export function extractKeyword(query: string): string {
+  let s = ` ${query} `;
+  const removals: RegExp[] = [
+    /(under|less than|below|max(?:imum)?|budget(?:\s*of)?)\s*[$₹]?\s*\d[\d,]*/gi,
+    /(under|less than)\s*\d+(?:\.\d+)?\s*kg/gi,
+    /\d+(?:\.\d+)?\s*kg/gi,
+    /\d+(?:\.\d+)?\s*(?:inch|in|["”'])/gi,
+    /\d+\s*gb\s*(?:of\s*)?(?:ram|memory)/gi,
+    /\d+\s*(?:tb|gb)\s*(?:ssd|storage|nvme)/gi,
+    /\b(oled|ips|mini-?led)\b/gi,
+    /\b(intel|amd|ryzen|apple|qualcomm|snapdragon|m[1-4])\b/gi,
+    /\b(programming|coding|development|developer|gaming|business|work|student|travel|portable|creative|video editing|design)\b/gi,
+    /\b(touchscreen|touch|2-in-1|convertible)\b/gi,
+    /\b(newest|latest|new|cheapest|affordable|budget|quiet|lightweight|light|best|good|long|battery life|battery)\b/gi,
+    /\b(laptop|notebook|machine|computer|with|for|and|or|a|an|the|that|is|are|have|has)\b/gi,
+  ];
+  for (const re of removals) s = s.replace(re, " ");
+  return s.replace(/[.,;:!?]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
 /**

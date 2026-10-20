@@ -1,93 +1,86 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
-
-interface PaginationProps {
+interface Props {
   page: number;
   totalPages: number;
   totalResults: number;
+  onChange: (page: number) => void;
 }
 
-export function Pagination({ page, totalPages, totalResults }: PaginationProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const goToPage = useCallback(
-    (newPage: number) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("page", newPage.toString());
-      router.push(`/?${params.toString()}`);
-    },
-    [router, searchParams]
-  );
-
+export function Pagination({ page, totalPages, totalResults, onChange }: Props) {
   if (totalPages <= 1) return null;
 
-  const getPageNumbers = (): (number | string)[] => {
-    const pages: (number | string)[] = [];
-    const maxVisible = 7;
-
-    if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      pages.push(1);
-      if (page > 3) pages.push("...");
-
-      const start = Math.max(2, page - 1);
-      const end = Math.min(totalPages - 1, page + 1);
-      for (let i = start; i <= end; i++) pages.push(i);
-
-      if (page < totalPages - 2) pages.push("...");
-      pages.push(totalPages);
-    }
-
-    return pages;
-  };
+  const pages = visiblePages(page, totalPages);
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
-      <p className="text-sm text-slate-700">
-        {totalResults} result{totalResults !== 1 ? "s" : ""}
+    <div className="mt-10 flex flex-col items-center justify-between gap-4 sm:flex-row">
+      <p className="text-[12px] text-[var(--muted)]" role="status">
+        Page {page} of {totalPages} · {totalResults.toLocaleString()} result{totalResults === 1 ? "" : "s"}
       </p>
-
-      <nav className="flex items-center gap-1">
-        <button
-          onClick={() => goToPage(page - 1)}
-          disabled={page <= 1}
-          className="px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          Previous
-        </button>
-
-        {getPageNumbers().map((p, i) =>
-          typeof p === "string" ? (
-            <span key={`ellipsis-${i}`} className="px-2 text-slate-700">
-              ...
+      <nav aria-label="Pagination" className="flex items-center gap-1">
+        <PageBtn disabled={page <= 1} onClick={() => onChange(page - 1)} label="Previous page">
+          ← Prev
+        </PageBtn>
+        {pages.map((p, i) =>
+          p === "…" ? (
+            <span key={`e${i}`} className="px-1 text-[12px] text-[var(--quiet)]" aria-hidden="true">
+              …
             </span>
           ) : (
             <button
               key={p}
-              onClick={() => goToPage(p)}
-              className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+              type="button"
+              onClick={() => onChange(p as number)}
+              aria-current={p === page ? "page" : undefined}
+              aria-label={`Page ${p}`}
+              className={`min-h-[36px] min-w-[36px] rounded-[5px] px-2 text-[12px] font-medium transition-colors ${
                 p === page
-                  ? "bg-blue-600 text-white"
-                  : "text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  ? "bg-[var(--ink)] text-white"
+                  : "text-[var(--muted)] hover:bg-[#eceae5] hover:text-[var(--ink)]"
               }`}
             >
               {p}
             </button>
           )
         )}
-
-        <button
-          onClick={() => goToPage(page + 1)}
-          disabled={page >= totalPages}
-          className="px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          Next
-        </button>
+        <PageBtn disabled={page >= totalPages} onClick={() => onChange(page + 1)} label="Next page">
+          Next →
+        </PageBtn>
       </nav>
     </div>
   );
+}
+
+function PageBtn({
+  children,
+  disabled,
+  onClick,
+  label,
+}: {
+  children: React.ReactNode;
+  disabled?: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      aria-label={label}
+      className="min-h-[36px] rounded-[5px] border border-[var(--line-strong)] px-3 text-[12px] font-medium text-[var(--muted)] transition-colors hover:border-[var(--ink)] hover:text-[var(--ink)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[var(--line-strong)] disabled:hover:text-[var(--muted)]"
+    >
+      {children}
+    </button>
+  );
+}
+
+function visiblePages(page: number, total: number): (number | "…")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const out: (number | "…")[] = [1];
+  if (page > 3) out.push("…");
+  for (let i = Math.max(2, page - 1); i <= Math.min(total - 1, page + 1); i++) out.push(i);
+  if (page < total - 2) out.push("…");
+  out.push(total);
+  return out;
 }

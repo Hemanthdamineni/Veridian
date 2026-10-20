@@ -15,19 +15,21 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const idsParam = searchParams.get("ids");
+    const region = searchParams.get("region") || "US";
 
     if (!idsParam) {
       return NextResponse.json(
-        { error: "ids parameter is required (comma-separated UUIDs)" },
+        { error: "ids parameter is required (comma-separated IDs)" },
         { status: 400 }
       );
     }
 
-    const ids = idsParam.split(",").filter(Boolean);
+    // Dedupe so the same SKU cannot occupy two columns.
+    const ids = Array.from(new Set(idsParam.split(",").map((s) => s.trim()).filter(Boolean)));
 
-    if (ids.length < 2) {
+    if (ids.length === 0) {
       return NextResponse.json(
-        { error: "At least 2 SKU IDs are required for comparison" },
+        { error: "Provide at least one SKU ID" },
         { status: 400 }
       );
     }
@@ -51,20 +53,32 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        pricing: true,
+        pricing: { where: { region } },
         ports: true,
       },
     });
 
+    // Reject silently-partial comparisons: every requested ID must resolve.
     if (skus.length === 0) {
       return NextResponse.json(
         { error: "No SKUs found with the provided IDs" },
         { status: 404 }
       );
     }
+    if (skus.length !== ids.length) {
+      return NextResponse.json(
+        { error: `${ids.length - skus.length} of the ${ids.length} requested SKUs could not be found` },
+        { status: 404 }
+      );
+    }
+
+    // Preserve the caller's ordering (findMany does not guarantee it).
+    const ordered = ids
+      .map((id) => skus.find((s) => s.id === id))
+      .filter((s): s is (typeof skus)[number] => Boolean(s));
 
     // Format for comparison
-    const comparison = skus.map((sku) => ({
+    const comparison = ordered.map((sku) => ({
       id: sku.id,
       sku_code: sku.skuCode,
       name: sku.model.name,
@@ -117,11 +131,21 @@ export async function GET(request: NextRequest) {
     }));
 
     // Generate comparison analysis
-    const analysis = generateComparisonAnalysis(skus);
+    const analysis = generateComparisonAnalysis(ordered);
+
+    // Regions we actually hold prices for, so the client only offers a region
+    // that can produce a price instead of an empty column.
+    const regionRows = await prisma.skuRegionalPricing.findMany({
+      distinct: ["region"],
+      select: { region: true },
+      orderBy: { region: "asc" },
+    });
 
     return NextResponse.json({
+      region,
       comparison,
       analysis,
+      availableRegions: regionRows.map((r) => r.region),
     });
   } catch (error) {
     console.error("Error generating comparison:", error);
@@ -158,9 +182,12 @@ function generateComparisonAnalysis(skus: ComparableSku[]) {
     };
   }
 
-  // Compare weight (lighter is better) — only among SKUs that report weight
-  const withWeight = skus.filter((s) => s.weightKg !== null) as (ComparableSku & { weightKg: number })[];
-  if (withWeight.length > 0) {
+  // Only declare a winner when every compared SKU reports the metric; otherwise a
+  // missing value would be treated as a loss and the claim would be misleading.
+  const withWeight = skus.every((s) => s.weightKg !== null)
+    ? (skus as (ComparableSku & { weightKg: number })[])
+    : [];
+  if (withWeight.length > 1) {
     const minWeight = Math.min(...withWeight.map((s) => s.weightKg));
     const weightWinners = withWeight.filter((s) => s.weightKg === minWeight);
     if (weightWinners.length === 1) {
@@ -171,9 +198,10 @@ function generateComparisonAnalysis(skus: ComparableSku[]) {
     }
   }
 
-  // Compare battery — only among SKUs that report capacity
-  const withBattery = skus.filter((s) => s.batteryWh !== null) as (ComparableSku & { batteryWh: number })[];
-  if (withBattery.length > 0) {
+  const withBattery = skus.every((s) => s.batteryWh !== null)
+    ? (skus as (ComparableSku & { batteryWh: number })[])
+    : [];
+  if (withBattery.length > 1) {
     const maxBattery = Math.max(...withBattery.map((s) => s.batteryWh));
     const batteryWinners = withBattery.filter((s) => s.batteryWh === maxBattery);
     if (batteryWinners.length === 1) {
@@ -184,19 +212,20 @@ function generateComparisonAnalysis(skus: ComparableSku[]) {
     }
   }
 
-  // Compare display — only among SKUs with a measured refresh rate
-  const displayScores = skus
-    .filter((s) => s.displayRefreshHz !== null && s.displayType !== null)
-    .map((s) => {
-      let score = 0;
-      if (s.displayType === "OLED") score += 3;
-      else if (s.displayType === "Mini-LED") score += 2;
-      else if (s.displayType === "IPS") score += 1;
-      score += (s.displayRefreshHz as number) / 60;
-      score += (s.displayNits || 300) / 500;
-      return { sku: s, score };
-    });
-  displayScores.sort((a, b) => b.score - a.score);
+  // Compare display — only when every SKU reports type and refresh rate
+  const displayScores = skus.every((s) => s.displayRefreshHz !== null && s.displayType !== null)
+    ? skus
+        .map((s) => {
+          let score = 0;
+          if (s.displayType === "OLED") score += 3;
+          else if (s.displayType === "Mini-LED") score += 2;
+          else if (s.displayType === "IPS") score += 1;
+          score += (s.displayRefreshHz as number) / 60;
+          score += (s.displayNits || 300) / 500;
+          return { sku: s, score };
+        })
+        .sort((a, b) => b.score - a.score)
+    : [];
   if (displayScores.length > 1 && displayScores[0].score > displayScores[1].score) {
     analysis.display = {
       winner: displayScores[0].sku.id,

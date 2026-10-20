@@ -34,3 +34,8 @@ __pycache__/
 .commandcode/
 .DS_Store
 Thumbs.db
+
+# Local QA harness and screenshot output. The scripts resolve Playwright from a
+# machine-specific path, and the images are regenerable artifacts.
+.qa/
+_shots/

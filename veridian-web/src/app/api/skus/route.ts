@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { buildSkusQuery, buildOrderBy, parsePagination, formatSkuListItem } from "@/lib/api";
+import { buildSkusQuery, buildOrderBy, parsePagination, formatSkuListItem, sortSkusByPrice } from "@/lib/api";
 import type { SkusResponse } from "@/types";
 
 // Force dynamic rendering since we use request.url
@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
       region: searchParams.get("region") || undefined,
       priceMin: searchParams.get("price_min") || undefined,
       priceMax: searchParams.get("price_max") || undefined,
+      provenance: searchParams.get("provenance") || undefined,
       q: searchParams.get("q") || undefined,
       sort: searchParams.get("sort") || undefined,
       page: searchParams.get("page") || undefined,
@@ -54,15 +55,28 @@ export async function GET(request: NextRequest) {
     const orderBy = buildOrderBy(params.sort);
     const { page, limit } = parsePagination(params);
 
+    // Resolve the price-display region once so the query, the sort and the
+    // serialized price all agree on the same region.
+    const region = params.region || "US";
+
     // Get total count for pagination
-    const totalResults = await prisma.sku.count({ where });
+    const [totalResults, regionRows, certifiedCount] = await Promise.all([
+      prisma.sku.count({ where }),
+      prisma.skuRegionalPricing.findMany({
+        distinct: ["region"],
+        select: { region: true },
+        orderBy: { region: "asc" },
+      }),
+      // How the current result set splits between the two data tiers.
+      prisma.sku.count({ where: { AND: [where, { certifiedSpecs: { some: {} } }] } }),
+    ]);
+    const availableRegions = regionRows.map((r) => r.region);
 
     let skus;
 
     // Price sorting requires special handling since it's a relation field
     if (params.sort === "price_asc" || params.sort === "price_desc") {
       // Fetch all matching SKUs with pricing for the region
-      const region = params.region || "US";
       const allSkus = await prisma.sku.findMany({
         where,
         orderBy: [{ createdAt: "desc" }],
@@ -77,15 +91,17 @@ export async function GET(request: NextRequest) {
             },
           },
           pricing: { where: { region } },
+          certifiedSpecs: { select: { id: true }, take: 1 },
         },
       });
 
-      // Sort by price
-      const sorted = [...allSkus].sort((a, b) => {
-        const priceA = a.pricing[0]?.msrp ?? Infinity;
-        const priceB = b.pricing[0]?.msrp ?? Infinity;
-        return params.sort === "price_asc" ? priceA - priceB : priceB - priceA;
-      });
+      // Sort by price. Rows with no price for this region stay last in both
+      // directions so a "most expensive" list never leads with unpriced rows.
+      const sorted = sortSkusByPrice(
+        allSkus,
+        region,
+        params.sort === "price_asc" ? "asc" : "desc"
+      );
 
       // Paginate
       const skip = (page - 1) * limit;
@@ -108,15 +124,14 @@ export async function GET(request: NextRequest) {
               },
             },
           },
-          pricing: params.region
-            ? { where: { region: params.region } }
-            : true,
+          pricing: { where: { region } },
+          certifiedSpecs: { select: { id: true }, take: 1 },
         },
       });
     }
 
     const results = skus.map((sku) =>
-      formatSkuListItem(sku as Parameters<typeof formatSkuListItem>[0], params.region)
+      formatSkuListItem(sku as Parameters<typeof formatSkuListItem>[0], region)
     );
 
     const response: SkusResponse = {
@@ -127,6 +142,8 @@ export async function GET(request: NextRequest) {
         totalResults,
         totalPages: Math.ceil(totalResults / limit),
       },
+      availableRegions,
+      tiers: { certified: certifiedCount, reference: totalResults - certifiedCount },
     };
 
     return NextResponse.json(response);

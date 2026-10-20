@@ -2,142 +2,80 @@
 
 import Link from "next/link";
 import type { SkuListItem } from "@/types";
+import { formatPrice, formatStorage, formatWeight } from "@/lib/format";
 
-function formatPrice(msrp: number, currency: string): string {
-  const formatter = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  });
-  return formatter.format(msrp);
-}
-
-function formatWeight(kg: number | null): string {
-  return kg === null ? "Not reported" : `${kg.toFixed(2)} kg`;
-}
-
-function formatStorage(gb: number | null): string {
-  if (gb === null) return "Not reported";
-  return gb >= 1024 ? `${gb / 1024} TB` : `${gb} GB`;
-}
-
-export function SkuCard({ sku }: { sku: SkuListItem }) {
+export function SkuCard({ sku, index = 0 }: { sku: SkuListItem; index?: number }) {
   return (
-    <Link
-      href={`/skus/${sku.id}`}
-      className="block bg-white border border-[#d5e0e5] rounded-xl p-4 shadow-sm hover:shadow-lg hover:border-[#087f8c] transition-all group"
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <p className="text-xs text-slate-700 dark:text-slate-700 uppercase tracking-wide">
-            {sku.manufacturerName}
-          </p>
-          <h3 className="font-semibold text-zinc-900 dark:text-zinc-50 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-            {sku.modelName}
-          </h3>
-          <p className="text-xs text-slate-700 font-mono">{sku.skuCode}</p>
+    <article className="surface reveal group flex min-h-[254px] flex-col p-5 transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-[var(--line-strong)] hover:shadow-[0_4px_16px_rgba(25,22,17,.05)]" style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="eyebrow mb-1">{sku.manufacturerName}</p>
+          <h2 className="truncate text-[17px] font-semibold tracking-[-.02em]">{sku.modelName}</h2>
+          <p className="mt-1 truncate font-mono text-[10px] text-[var(--quiet)]">{sku.skuCode}</p>
         </div>
-        {sku.price && (
-          <div className="text-right">
-            <p className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              {formatPrice(sku.price.msrp, sku.price.currency)}
-            </p>
-            <p className="text-xs text-slate-700">{sku.price.region}</p>
-            {sku.storeUrl && (
-              <a
-                href={sku.storeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block mt-1 text-xs text-blue-600 hover:underline z-10 relative"
-                onClick={(e) => e.stopPropagation()}
-              >
-                View product page
-              </a>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Key Specs */}
-      <div className="grid grid-cols-2 gap-2 text-sm">
-        <div className="flex items-center gap-1.5">
-          <span className="text-slate-700">CPU:</span>
-          <span className="text-zinc-700 dark:text-slate-800 truncate">
-            {sku.cpuModel}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-slate-700">RAM:</span>
-          <span className="text-zinc-700 dark:text-slate-800">
-            {sku.ramGb} GB{sku.ramType ? ` ${sku.ramType}` : ""}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-slate-700">Display:</span>
-          <span className="text-zinc-700 dark:text-slate-800">
-            {sku.display.sizeIn !== null
-              ? `${sku.display.sizeIn}"${sku.display.type ? ` ${sku.display.type}` : ""}`
-              : "Not reported"}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-slate-700">Weight:</span>
-          <span className="text-zinc-700 dark:text-slate-800">
-            {formatWeight(sku.weightKg)}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-slate-700">Storage:</span>
-          <span className="text-zinc-700 dark:text-slate-800">
-            {formatStorage(sku.storageGb)}
-            {sku.storageType ? ` ${sku.storageType}` : ""}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-slate-700">Battery:</span>
-          <span className="text-zinc-700 dark:text-slate-800">
-            {sku.batteryWh !== null ? `${sku.batteryWh} Wh` : "Not reported"}
-          </span>
+        <div className="shrink-0 text-right">
+          {sku.price ? (
+            <>
+              <p className="font-mono text-[15px] font-semibold tabular-nums">
+                {formatPrice(sku.price.msrp, sku.price.currency)}
+              </p>
+              <p className="mt-0.5 text-[10px] uppercase tracking-[.1em] text-[var(--quiet)]">MSRP reference</p>
+            </>
+          ) : (
+            <>
+              <p className="text-[11px] font-medium text-[var(--muted)]">Price not reported</p>
+              <p className="mt-0.5 text-[10px] uppercase tracking-[.1em] text-[var(--quiet)]">for this region</p>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Footer Tags */}
-      <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
-        {sku.display.touch && (
-          <span className="px-2 py-0.5 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
-            Touch
+      <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-3 border-y border-[var(--line)] py-4 text-[12px]">
+        <Spec label="Processor" value={sku.cpuModel} />
+        <Spec label="Memory" value={`${sku.ramGb} GB${sku.ramType ? ` ${sku.ramType}` : ""}`} />
+        <Spec label="Display" value={`${sku.display.sizeIn ? `${sku.display.sizeIn}"` : "—"}${sku.display.type ? ` · ${sku.display.type}` : ""}`} />
+        <Spec label="Weight" value={formatWeight(sku.weightKg)} />
+        <Spec label="Storage" value={`${formatStorage(sku.storageGb)}${sku.storageType ? ` · ${sku.storageType}` : ""}`} />
+        <Spec label="Battery" value={sku.batteryWh !== null ? `${sku.batteryWh} Wh` : "—"} />
+      </dl>
+
+      <div className="mt-auto flex items-center justify-between gap-3 pt-4">
+        <div className="flex flex-wrap gap-1.5">
+          <span
+            className={`rounded px-2 py-1 text-[10px] font-medium ${
+              sku.provenance === "certified"
+                ? "bg-[var(--success-soft)] text-[var(--success)]"
+                : "bg-[var(--surface-soft)] text-[var(--quiet)]"
+            }`}
+            title={
+              sku.provenance === "certified"
+                ? "Cited certification record — see the source link on the detail page"
+                : "Reference configuration without a cited certification record"
+            }
+          >
+            {sku.provenance === "certified" ? "Certified" : "Reference"}
           </span>
-        )}
-        <span className="px-2 py-0.5 text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-slate-700 rounded">
-          {sku.os}
-        </span>
-        {sku.buildMaterial && (
-          <span className="px-2 py-0.5 text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-slate-700 rounded">
-            {sku.buildMaterial}
-          </span>
-        )}
-        {sku.ramSoldered === false && (
-          <span className="px-2 py-0.5 text-xs bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded">
-            Upgradeable RAM
-          </span>
-        )}
+          {sku.display.touch && <span className="rounded bg-[var(--accent-soft)] px-2 py-1 text-[10px] font-medium text-[var(--accent-dark)]">Touch</span>}
+          {sku.display.refreshHz && sku.display.refreshHz > 60 && <span className="rounded bg-[var(--surface-soft)] px-2 py-1 text-[10px] text-[var(--muted)]">{sku.display.refreshHz} Hz</span>}
+          {sku.ramSoldered === false && <span className="rounded bg-[var(--surface-soft)] px-2 py-1 text-[10px] text-[var(--muted)]">Upgradeable RAM</span>}
+        </div>
+        <Link
+          href={`/skus/${sku.id}`}
+          prefetch={false}
+          aria-label={`Inspect ${sku.manufacturerName} ${sku.modelName}`}
+          className="shrink-0 text-[12px] font-semibold text-[var(--accent-dark)] underline decoration-[var(--accent-soft)] underline-offset-4 transition-colors hover:text-[var(--ink)]"
+        >
+          Inspect <span aria-hidden="true">→</span>
+        </Link>
       </div>
-    </Link>
+    </article>
   );
+}
+
+function Spec({ label, value }: { label: string; value: string }) {
+  return <div className="min-w-0"><dt className="mb-0.5 text-[10px] uppercase tracking-[.08em] text-[var(--quiet)]">{label}</dt><dd className="truncate font-medium text-[var(--ink)]" title={value}>{value || "—"}</dd></div>;
 }
 
 export function SkuCardSkeleton() {
-  return (
-    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 animate-pulse">
-      <div className="h-3 w-20 bg-zinc-200 dark:bg-zinc-700 rounded mb-2" />
-      <div className="h-5 w-48 bg-zinc-200 dark:bg-zinc-700 rounded mb-1" />
-      <div className="h-3 w-32 bg-zinc-200 dark:bg-zinc-700 rounded mb-4" />
-      <div className="grid grid-cols-2 gap-2">
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="h-4 bg-zinc-200 dark:bg-zinc-700 rounded" />
-        ))}
-      </div>
-    </div>
-  );
+  return <div className="surface min-h-[254px] animate-pulse p-5"><div className="flex justify-between"><div className="space-y-2"><div className="h-2.5 w-16 rounded bg-[#ebe9e4]"/><div className="h-4 w-40 rounded bg-[#ebe9e4]"/><div className="h-2.5 w-24 rounded bg-[#ebe9e4]"/></div><div className="h-5 w-16 rounded bg-[#ebe9e4]"/></div><div className="mt-7 border-y border-[var(--line)] py-4"><div className="grid grid-cols-2 gap-4">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="space-y-2"><div className="h-2 w-12 rounded bg-[#ebe9e4]"/><div className="h-3 w-20 rounded bg-[#ebe9e4]"/></div>)}</div></div></div>;
 }

@@ -1,287 +1,182 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
 import { CPU_BRANDS, DISPLAY_TYPES, REGIONS } from "@/types";
+import type { FilterState } from "@/lib/catalog";
 
-interface FilterState {
-  cpuBrand: string[];
-  ramMin: string;
-  storageMin: string;
-  displayType: string[];
-  refreshMin: string;
-  weightMax: string;
-  batteryMin: string;
-  touch: string;
-  region: string;
-  priceMin: string;
-  priceMax: string;
-  q: string;
-  sort: string;
+interface FilterControls {
+  state: FilterState;
+  onChange: (next: FilterState) => void;
+  onClear: () => void;
+  /** Regions for which at least one price is recorded. */
+  availableRegions: string[];
 }
 
-export function FilterPanel() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+const RAM_OPTIONS = [8, 16, 32, 64, 128];
+const STORAGE_OPTIONS = [256, 512, 1024, 2048];
+const WEIGHT_OPTIONS = [1.0, 1.2, 1.4, 1.6, 1.8, 2.0];
+const BATTERY_OPTIONS = [40, 50, 60, 70, 80, 90];
 
-  const getFilterState = useCallback((): FilterState => {
-    return {
-      cpuBrand: searchParams.get("cpu_brand")?.split(",") || [],
-      ramMin: searchParams.get("ram_min") || "",
-      storageMin: searchParams.get("storage_min") || "",
-      displayType: searchParams.get("display_type")?.split(",") || [],
-      refreshMin: searchParams.get("refresh_min") || "",
-      weightMax: searchParams.get("weight_max") || "",
-      batteryMin: searchParams.get("battery_min") || "",
-      touch: searchParams.get("touch") || "",
-      region: searchParams.get("region") || "US",
-      priceMin: searchParams.get("price_min") || "",
-      priceMax: searchParams.get("price_max") || "",
-      q: searchParams.get("q") || "",
-      sort: searchParams.get("sort") || "",
-    };
-  }, [searchParams]);
-
-  const updateFilters = useCallback(
-    (updates: Partial<FilterState>) => {
-      const current = getFilterState();
-      const newFilters = { ...current, ...updates };
-      const params = new URLSearchParams();
-
-      if (newFilters.cpuBrand.length > 0) {
-        params.set("cpu_brand", newFilters.cpuBrand.join(","));
-      }
-      if (newFilters.ramMin) params.set("ram_min", newFilters.ramMin);
-      if (newFilters.storageMin) params.set("storage_min", newFilters.storageMin);
-      if (newFilters.displayType.length > 0) {
-        params.set("display_type", newFilters.displayType.join(","));
-      }
-      if (newFilters.refreshMin) params.set("refresh_min", newFilters.refreshMin);
-      if (newFilters.weightMax) params.set("weight_max", newFilters.weightMax);
-      if (newFilters.batteryMin) params.set("battery_min", newFilters.batteryMin);
-      if (newFilters.touch) params.set("touch", newFilters.touch);
-      if (newFilters.region && newFilters.region !== "US") {
-        params.set("region", newFilters.region);
-      }
-      if (newFilters.priceMin) params.set("price_min", newFilters.priceMin);
-      if (newFilters.priceMax) params.set("price_max", newFilters.priceMax);
-      if (newFilters.q) params.set("q", newFilters.q);
-      if (newFilters.sort) params.set("sort", newFilters.sort);
-
-      router.push(`/?${params.toString()}`);
-    },
-    [router, getFilterState]
-  );
-
-  const clearFilters = useCallback(() => {
-    router.push("/");
-  }, [router]);
-
-  const filters = getFilterState();
-  const hasActiveFilters = Object.entries(filters).some(([key, value]) => {
-    if (key === "region") return value !== "US";
-    if (Array.isArray(value)) return value.length > 0;
-    return value !== "";
-  });
+export function FilterPanel({ state, onChange, onClear, availableRegions }: FilterControls) {
+  const set = (updates: Partial<FilterState>) => onChange({ ...state, ...updates });
 
   return (
-    <aside className="w-full lg:w-72 space-y-6">
-      {/* Search */}
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-          Search
-        </label>
-        <input
-          type="text"
-          placeholder="Model name or SKU..."
-          value={filters.q}
-          onChange={(e) => updateFilters({ q: e.target.value })}
-          className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+    <div className="space-y-7">
+      <section>
+        <h2 className="label">Search</h2>
+        <input className="field" type="text" placeholder="Model name or SKU code…" value={state.q}
+          onChange={(e) => set({ q: e.target.value })} aria-label="Search model or SKU" />
+      </section>
+
+      <section>
+        <h2 className="label">Source</h2>
+        <CheckList
+          options={["certified", "reference"]}
+          selected={state.provenance}
+          onToggle={(v) =>
+            set({
+              provenance: state.provenance.includes(v)
+                ? state.provenance.filter((x) => x !== v)
+                : [...state.provenance, v],
+            })
+          }
+          name="provenance"
+          labels={{ certified: "Certified — carries a cited source record", reference: "Reference — no cited source" }}
         />
-      </div>
+      </section>
 
-      {/* CPU Brand */}
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-          CPU Brand
-        </label>
-        <div className="space-y-2">
-          {CPU_BRANDS.map((brand) => (
-            <label key={brand} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={filters.cpuBrand.includes(brand)}
-                onChange={(e) => {
-                  const newBrands = e.target.checked
-                    ? [...filters.cpuBrand, brand]
-                    : filters.cpuBrand.filter((b) => b !== brand);
-                  updateFilters({ cpuBrand: newBrands });
-                }}
-                className="rounded border-zinc-300 dark:border-zinc-600"
-              />
-              <span className="text-zinc-700 dark:text-zinc-300">{brand}</span>
-            </label>
-          ))}
-        </div>
-      </div>
+      <section>
+        <h2 className="label">Processor</h2>
+        <CheckList options={CPU_BRANDS as unknown as string[]} selected={state.cpuBrand} onToggle={(v) => toggleInArray(state.cpuBrand, v, (arr) => set({ cpuBrand: arr }))} name="cpu" />
+      </section>
 
-      {/* RAM */}
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-          Min RAM (GB)
-        </label>
-        <select
-          value={filters.ramMin}
-          onChange={(e) => updateFilters({ ramMin: e.target.value })}
-          className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm"
-        >
-          <option value="">Any</option>
-          <option value="8">8 GB</option>
-          <option value="16">16 GB</option>
-          <option value="32">32 GB</option>
-          <option value="64">64 GB</option>
-        </select>
-      </div>
+      <section>
+        <h2 className="label">Minimum RAM</h2>
+        <OptionSelect value={state.ramMin} options={RAM_OPTIONS.map((v) => ({ v: String(v), label: `${v} GB` }))} onChange={(v) => set({ ramMin: v })} id="ram" />
+      </section>
 
-      {/* Storage */}
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-          Min Storage (GB)
-        </label>
-        <select
-          value={filters.storageMin}
-          onChange={(e) => updateFilters({ storageMin: e.target.value })}
-          className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm"
-        >
-          <option value="">Any</option>
-          <option value="256">256 GB</option>
-          <option value="512">512 GB</option>
-          <option value="1000">1 TB</option>
-          <option value="2000">2 TB</option>
-        </select>
-      </div>
+      <section>
+        <h2 className="label">Minimum storage</h2>
+        <OptionSelect value={state.storageMin} options={STORAGE_OPTIONS.map((v) => ({ v: String(v), label: v >= 1024 ? `${v / 1024} TB` : `${v} GB` }))} onChange={(v) => set({ storageMin: v })} id="storage" />
+      </section>
 
-      {/* Display Type */}
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-          Display Type
-        </label>
-        <div className="space-y-2">
-          {DISPLAY_TYPES.map((type) => (
-            <label key={type} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={filters.displayType.includes(type)}
-                onChange={(e) => {
-                  const newTypes = e.target.checked
-                    ? [...filters.displayType, type]
-                    : filters.displayType.filter((t) => t !== type);
-                  updateFilters({ displayType: newTypes });
-                }}
-                className="rounded border-zinc-300 dark:border-zinc-600"
-              />
-              <span className="text-zinc-700 dark:text-zinc-300">{type}</span>
-            </label>
-          ))}
-        </div>
-      </div>
+      <section>
+        <h2 className="label">Display type</h2>
+        <CheckList options={DISPLAY_TYPES as unknown as string[]} selected={state.displayType} onToggle={(v) => toggleInArray(state.displayType, v, (arr) => set({ displayType: arr }))} name="display" />
+      </section>
 
-      {/* Weight */}
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-          Max Weight (kg)
-        </label>
-        <input
-          type="number"
-          step="0.1"
-          placeholder="e.g., 1.5"
-          value={filters.weightMax}
-          onChange={(e) => updateFilters({ weightMax: e.target.value })}
-          className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm"
-        />
-      </div>
+      <section>
+        <h2 className="label">Minimum refresh rate</h2>
+        <OptionSelect value={state.refreshMin} options={[60, 90, 120, 144, 165, 240].map((v) => ({ v: String(v), label: `${v} Hz` }))} onChange={(v) => set({ refreshMin: v })} id="refresh" />
+      </section>
 
-      {/* Battery */}
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-          Min Battery (Wh)
-        </label>
-        <input
-          type="number"
-          step="5"
-          placeholder="e.g., 60"
-          value={filters.batteryMin}
-          onChange={(e) => updateFilters({ batteryMin: e.target.value })}
-          className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm"
-        />
-      </div>
+      <section>
+        <h2 className="label">Maximum weight</h2>
+        <OptionSelect value={state.weightMax} options={WEIGHT_OPTIONS.map((v) => ({ v: String(v), label: `${v.toFixed(1)} kg` }))} onChange={(v) => set({ weightMax: v })} id="weight" />
+      </section>
 
-      {/* Touch */}
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-          Touch Display
-        </label>
-        <select
-          value={filters.touch}
-          onChange={(e) => updateFilters({ touch: e.target.value })}
-          className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm"
-        >
-          <option value="">Any</option>
-          <option value="true">Yes</option>
-          <option value="false">No</option>
-        </select>
-      </div>
+      <section>
+        <h2 className="label">Minimum battery</h2>
+        <OptionSelect value={state.batteryMin} options={BATTERY_OPTIONS.map((v) => ({ v: String(v), label: `${v} Wh` }))} onChange={(v) => set({ batteryMin: v })} id="battery" />
+      </section>
 
-      {/* Region */}
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-          Region
-        </label>
-        <select
-          value={filters.region}
-          onChange={(e) => updateFilters({ region: e.target.value })}
-          className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm"
-        >
-          {REGIONS.map((region) => (
-            <option key={region} value={region}>
-              {region}
-            </option>
-          ))}
-        </select>
-      </div>
+      <section>
+        <h2 className="label">Touch display</h2>
+        <OptionSelect value={state.touch} options={[{ v: "", label: "Any" }, { v: "true", label: "Yes" }, { v: "false", label: "No" }]} onChange={(v) => set({ touch: v })} id="touch" />
+      </section>
 
-      {/* Price Range */}
-      <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-          Price Range
-        </label>
-        <div className="flex gap-2">
+      <section className="border-t border-[var(--line)] pt-6">
+        <h2 className="label mb-3">Price region</h2>
+        <RegionPills value={state.region} onChange={(r) => set({ region: r })} availableRegions={availableRegions} />
+        <p className="mt-3 text-[11px] leading-5 text-[var(--quiet)]">
+          Picks the currency shown for each configuration. Configurations with no price recorded
+          for that region stay in the results and are marked &ldquo;price not reported&rdquo;.
+        </p>
+      </section>
+
+      <section className="border-t border-[var(--line)] pt-6">
+        <h2 className="label mb-3">MSRP range</h2>
+        <div className="flex items-center gap-2">
           <input
             type="number"
+            inputMode="numeric"
+            min={0}
+            className="field"
             placeholder="Min"
-            value={filters.priceMin}
-            onChange={(e) => updateFilters({ priceMin: e.target.value })}
-            className="w-1/2 px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm"
+            aria-label="Minimum MSRP"
+            value={state.priceMin}
+            onChange={(e) => set({ priceMin: e.target.value })}
           />
+          <span aria-hidden="true" className="text-[var(--quiet)]">–</span>
           <input
             type="number"
+            inputMode="numeric"
+            min={0}
+            className="field"
             placeholder="Max"
-            value={filters.priceMax}
-            onChange={(e) => updateFilters({ priceMax: e.target.value })}
-            className="w-1/2 px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm"
+            aria-label="Maximum MSRP"
+            value={state.priceMax}
+            onChange={(e) => set({ priceMax: e.target.value })}
           />
         </div>
-      </div>
+        <p className="mt-3 text-[11px] leading-5 text-[var(--quiet)]">
+          Manufacturer suggested price, recorded per region. These are reference values from our
+          seed dataset, not live retailer prices — filter on them for shape, not for a quote.
+        </p>
+      </section>
 
-      {/* Clear Filters */}
-      {hasActiveFilters && (
-        <button
-          onClick={clearFilters}
-          className="w-full px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-        >
-          Clear All Filters
+      <section className="border-t border-[var(--line)] pt-6">
+        <button type="button" className="btn-quiet w-full" onClick={onClear}>Clear all filters</button>
+      </section>
+    </div>
+  );
+}
+
+function toggleInArray(arr: string[], value: string, onNext: (next: string[]) => void) {
+  onNext(arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value]);
+}
+
+function CheckList({ options, selected, onToggle, name, labels }: { options: string[]; selected: string[]; onToggle: (v: string) => void; name: string; labels?: Record<string, string> }) {
+  return (
+    <div className="space-y-2" role="group">
+      {options.map((opt) => {
+        const id = `${name}-${opt}`;
+        return (
+          <label key={opt} htmlFor={id} className="flex cursor-pointer items-center gap-2.5 text-[13px]">
+            <input id={id} type="checkbox" checked={selected.includes(opt)} onChange={() => onToggle(opt)}
+              className="h-4 w-4 rounded-[4px] border border-[var(--line-strong)] accent-[var(--accent)] transition-colors checked:bg-[var(--ink)]" />
+            <span>{labels?.[opt] ?? opt}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function OptionSelect({ value, options, onChange, id }: { value: string; options: { v: string; label: string }[]; onChange: (v: string) => void; id: string }) {
+  return (
+    <select id={id} className="field" value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">Any</option>
+      {options.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
+    </select>
+  );
+}
+
+function RegionPills({ value, onChange, availableRegions }: { value: string; onChange: (r: string) => void; availableRegions: string[] }) {
+  // Only offer regions we actually hold prices for. Offering a region with no
+  // recorded price guarantees an empty result set, which reads as a broken
+  // product rather than an honest "no coverage" state.
+  const regions = REGIONS.filter((r) => availableRegions.includes(r));
+  const shown = regions.length > 0 ? regions : availableRegions;
+  const selected = shown.includes(value) ? value : shown[0] ?? value;
+
+  return (
+    <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Price region">
+      {shown.map((r) => (
+        <button key={r} type="button" role="radio" aria-checked={selected === r} onClick={() => onChange(r)}
+          className={`rounded-[5px] px-2.5 py-1.5 text-[12px] font-medium transition-colors ${selected === r ? "bg-[var(--ink)] text-white" : "border border-[var(--line-strong)] text-[var(--muted)] hover:border-[var(--ink)]"}`}>
+          {r}
         </button>
-      )}
-    </aside>
+      ))}
+    </div>
   );
 }

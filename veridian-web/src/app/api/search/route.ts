@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { buildSkusQuery, parsePagination, formatSkuListItem } from "@/lib/api";
+import { buildSkusQuery, buildOrderBy, parsePagination, formatSkuListItem } from "@/lib/api";
 import { parseNaturalLanguageQuery } from "@/lib/ai";
 import type { SkusResponse } from "@/types";
 
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const nlQuery = searchParams.get("q");
-    const region = searchParams.get("region") || undefined;
+    const region = searchParams.get("region") || "US";
     const page = searchParams.get("page") || "1";
     const limit = searchParams.get("limit") || "24";
 
@@ -36,6 +36,10 @@ export async function GET(request: NextRequest) {
     // Parse natural language query to structured filters
     const parsedFilters = parseNaturalLanguageQuery(nlQuery);
 
+    // Effective region: an explicit query param wins, otherwise the parser may
+    // have inferred a region from a currency symbol (e.g. ₹ → IN).
+    const effectiveRegion = region || parsedFilters.region || "US";
+
     // Convert camelCase to snake_case for API
     const params = {
       cpuBrand: parsedFilters.cpuBrand,
@@ -46,7 +50,7 @@ export async function GET(request: NextRequest) {
       weightMax: parsedFilters.weightMax,
       batteryMin: parsedFilters.batteryMin,
       touch: parsedFilters.touch,
-      region: region || parsedFilters.region,
+      region: effectiveRegion,
       priceMin: parsedFilters.priceMin,
       priceMax: parsedFilters.priceMax,
       q: parsedFilters.q,
@@ -62,6 +66,7 @@ export async function GET(request: NextRequest) {
 
     const skus = await prisma.sku.findMany({
       where,
+      orderBy: buildOrderBy(parsedFilters.sort),
       skip,
       take: limitNum,
       include: {
@@ -74,14 +79,12 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        pricing: region
-          ? { where: { region } }
-          : true,
+        pricing: { where: { region: effectiveRegion } },
       },
     });
 
     const results = skus.map((sku) =>
-      formatSkuListItem(sku as Parameters<typeof formatSkuListItem>[0], region)
+      formatSkuListItem(sku as Parameters<typeof formatSkuListItem>[0], effectiveRegion)
     );
 
     const response: SkusResponse & { parsed_filters: Record<string, string | undefined> } = {
@@ -93,13 +96,14 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(totalResults / limitNum),
       },
       parsed_filters: {
+        q: parsedFilters.q,
         cpu_brand: parsedFilters.cpuBrand,
         ram_min: parsedFilters.ramMin,
         storage_min: parsedFilters.storageMin,
         display_type: parsedFilters.displayType,
         weight_max: parsedFilters.weightMax,
         price_max: parsedFilters.priceMax,
-        region: parsedFilters.region,
+        region: effectiveRegion,
         sort: parsedFilters.sort,
         touch: parsedFilters.touch,
       },

@@ -1,36 +1,51 @@
 import type { Metadata } from "next";
-import "./globals.css";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import "./globals.css";
+import { SiteNav } from "@/components/SiteNav";
 
 export const metadata: Metadata = {
-  title: "Veridian — Laptop Decision Platform",
-  description:
-    "Filter laptop catalog by specs and pricing. Catalog is currently populated from local seed data and not independently verified.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  title: {
+    default: "Veridian — Laptop intelligence, without the noise",
+    template: "%s | Veridian",
+  },
+  description: "A structured, source-aware catalog for choosing laptops with confidence.",
+  applicationName: "Veridian",
+  keywords: ["laptop specs", "laptop comparison", "ultrabook catalog", "laptop research"],
+  openGraph: {
+    type: "website",
+    siteName: "Veridian",
+    title: "Veridian — Laptop intelligence, without the noise",
+    description: "A structured, source-aware catalog for choosing laptops with confidence.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Veridian — Laptop intelligence, without the noise",
+    description: "A structured, source-aware catalog for choosing laptops with confidence.",
+  },
 };
 
-interface RootLayoutProps {
-  children: ReactNode;
-}
-
-export default function RootLayout({ children }: RootLayoutProps) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen flex flex-col text-zinc-950">
-        <header className="border-b border-[#cbd9df] bg-white/95 backdrop-blur">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#075e68] text-sm font-black text-white">V</span>
-              <span className="text-xl font-bold tracking-tight text-[#102033]">Veridian</span>
+      <body>
+        <a href="#main-content" className="skip-link">Skip to content</a>
+        <header className="border-b border-[var(--line)] bg-[var(--canvas)]">
+          <div className="container flex h-[68px] items-center justify-between">
+            <Link href="/" className="flex items-center gap-3" aria-label="Veridian home">
+              <span className="flex h-8 w-8 items-center justify-center rounded-[5px] bg-[var(--ink)] text-[13px] font-semibold text-white">V</span>
+              <span className="font-display text-[22px] tracking-[-.03em]">Veridian</span>
             </Link>
-            <nav className="flex items-center gap-4 text-sm font-semibold text-[#365064]">
-              <Link href="/" className="hover:text-[#075e68]">Browse catalog</Link>
-            </nav>
+          <SiteNav />
+        </div>
+      </header>
+        <main id="main-content" className="min-h-[calc(100vh-140px)]">{children}</main>
+        <footer className="border-t border-[var(--line)] py-8">
+          <div className="container flex flex-col gap-3 text-[12px] text-[var(--muted)] sm:flex-row sm:items-center sm:justify-between">
+            <p>Veridian is an independent laptop research project.</p>
+            <div className="flex gap-4"><Link href="/methodology" className="hover:text-[var(--ink)]">How data works</Link><Link href="/admin" className="hover:text-[var(--ink)]">Curation</Link></div>
           </div>
-        </header>
-        <main className="flex-1">{children}</main>
-        <footer className="border-t border-[#cbd9df] bg-white/70 py-8 text-center text-sm font-medium text-[#526579]">
-          Veridian — laptop specs and pricing catalog. Seed data is for exploration only; verify details before purchase.
         </footer>
       </body>
     </html>
