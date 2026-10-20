@@ -111,8 +111,12 @@ export class EnergyStarAdapter {
     return { records, rejected, raw };
   }
 
-  async run(offset = 0, limit = 100): Promise<IngestionReport> {
-    const payload = await this.fetch(offset, limit);
+  async run(
+    offset = 0,
+    limit = 100,
+    type: string = LAPTOP_PRODUCT_TYPES[0]
+  ): Promise<IngestionReport> {
+    const payload = await this.fetch(offset, limit, type);
     const extracted = this.extract(payload);
     return {
       source: ENERGY_STAR_SOURCE.name,

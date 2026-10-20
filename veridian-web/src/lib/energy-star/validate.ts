@@ -11,6 +11,7 @@ import {
   deriveSeriesName,
   isPlaceholderNote,
   parseAdditionalModelInfo,
+  resolveModelName,
   stripEnumerationPrefix,
   type AdditionalModelInfo,
 } from "./canonical";
@@ -157,8 +158,12 @@ export function validateEnergyStarRecord(raw: unknown): { record: NormalizedReco
   const partNumber = resolvePartNumber(modelNumber, additional);
   const upc = text(row, "upc");
 
+  if (errors.length || !id || !brand || !model || !modelNumber || !energyStarId) {
+    return { record: null, errors };
+  }
+
   const brandCanonical = canonicalBrand(brand);
-  const canonicalModelName = stripEnumerationPrefix(model);
+  const canonicalModelName = resolveModelName(model, additional);
   const seriesName = deriveSeriesName(brandCanonical, canonicalModelName, additional);
 
   const signature = configurationSignature({
@@ -175,10 +180,6 @@ export function validateEnergyStarRecord(raw: unknown): { record: NormalizedReco
     os,
   });
   const skuCode = canonicalSkuCode(partNumber, canonicalModelName, signature);
-
-  if (errors.length || !id || !brand || !model || !modelNumber || !energyStarId) {
-    return { record: null, errors };
-  }
 
   return {
     errors,

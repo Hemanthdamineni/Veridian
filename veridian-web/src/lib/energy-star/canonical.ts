@@ -288,8 +288,37 @@ const BRAND_SERIES_RULES: Record<string, Array<[RegExp, number]>> = {
  * e.g. "IdeaPad Slim 5 13IWC11" -> "IdeaPad Slim 5" (size / SKU suffix cut).
  */
 const GENERIC_TAIL = new Set([
-  "gen", "gb", "ghz", "inch", "in", "with", "and", "the", "inch",
+  "gen", "gb", "ghz", "inch", "in", "with", "and", "the",
 ]);
+
+/**
+ * Resolve the display name for a model.
+ *
+ * Some manufacturers certify an internal chassis code as the model name
+ * (Dell "P112F", ASUS "B1503CVA") while publishing the marketing name
+ * ("Dell 15 D15260") in `additional_model_information`. Showing the internal
+ * code makes the catalog unsearchable by the name a buyer actually uses, so
+ * the marketing name is preferred when one is available. The internal code
+ * is never discarded - it is kept as the part number.
+ */
+export function resolveModelName(
+  modelName: string,
+  additional?: AdditionalModelInfo
+): string {
+  const name = stripEnumerationPrefix(modelName).replace(/\s+/g, " ").trim();
+  if (!name) return name;
+
+  // A name that already reads like a product name is used as reported.
+  if (hasLettersAndSpaces(name)) return name;
+
+  if (additional) {
+    for (const marketing of additional.marketingNames) {
+      const candidate = stripEnumerationPrefix(marketing).replace(/\s+/g, " ").trim();
+      if (candidate.length >= 3) return candidate;
+    }
+  }
+  return name;
+}
 
 /**
  * Derive the product family (Series) for a reported model name.
