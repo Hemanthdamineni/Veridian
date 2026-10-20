@@ -2,6 +2,8 @@
 Veridian - Unified Multi-Manufacturer Scraper Runner
 """
 
+from veridian_db.clock import utcnow
+
 import asyncio
 import sys
 import os
@@ -178,7 +180,7 @@ async def run_incremental_update(
     session = Session()
 
     # Find recently scraped URLs
-    cutoff = datetime.utcnow() - timedelta(hours=max_age_hours)
+    cutoff = utcnow() - timedelta(hours=max_age_hours)
     recent_urls = set(
         url for (url,) in session.query(ScrapedPage.url).filter(
             ScrapedPage.scraped_at > cutoff,

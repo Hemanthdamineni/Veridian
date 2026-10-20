@@ -3,6 +3,8 @@ Veridian Data Normalizer - Transforms scraped data into canonical entities
 Following database-design.md specification exactly
 """
 
+from .clock import utcnow
+
 import re
 import hashlib
 from typing import Dict, List, Any, Optional, Tuple
@@ -887,7 +889,7 @@ class DataNormalizer:
                 name=model_name,
                 generation=gen or "",
                 slug=re.sub(r'[^\w]+', '-', model_name.lower()).strip('-'),
-                release_date=datetime.utcnow()
+                release_date=utcnow()
             )
             self.session.add(model)
             self.session.flush()
@@ -982,7 +984,7 @@ class DataNormalizer:
                     sku=effective_sku,
                     name=scraped_variant.name,
                     status=ProductStatus(scraped_variant.status.value) if hasattr(scraped_variant.status, 'value') and scraped_variant.status else ProductStatus.CURRENT,
-                    release_date=datetime.utcnow(),
+                    release_date=utcnow(),
                     color=scraped_variant.specs.get('color', {}).get('raw') if scraped_variant.specs.get('color') else None,
                     source_urls=[scraped_variant.source_url] if scraped_variant.source_url else [],
                 )
@@ -1032,7 +1034,7 @@ class DataNormalizer:
             existing.raw_text = norm_value.raw_text
             existing.source_url = source_url
             existing.confidence = norm_value.confidence
-            existing.updated_at = datetime.utcnow()
+            existing.updated_at = utcnow()
         else:
             norm_spec = NormalizedSpec(
                 variant_id=variant.id,
@@ -1268,7 +1270,7 @@ class DataNormalizer:
             for key, value in search_index.__dict__.items():
                 if not key.startswith('_'):
                     setattr(existing, key, value)
-            existing.updated_at = datetime.utcnow()
+            existing.updated_at = utcnow()
         else:
             self.session.add(search_index)
 

@@ -6,6 +6,8 @@ Monitors price changes and triggers notifications when conditions are met.
 Based on Veridian-spec.md B.4
 """
 
+from veridian_db.clock import utcnow
+
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -39,7 +41,7 @@ class Alert:
     threshold_value: float
     channel: NotificationChannel
     active: bool = True
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=utcnow)
     last_triggered: Optional[datetime] = None
     trigger_count: int = 0
 
@@ -50,7 +52,7 @@ class AlertEvent:
     alert: Alert
     current_price: float
     message: str
-    triggered_at: datetime = field(default_factory=datetime.utcnow)
+    triggered_at: datetime = field(default_factory=utcnow)
 
 
 class AlertEngine:
@@ -155,7 +157,7 @@ class AlertEngine:
     def _trigger_alert(self, event: AlertEvent):
         """Trigger an alert notification."""
         alert = event.alert
-        alert.last_triggered = datetime.utcnow()
+        alert.last_triggered = utcnow()
         alert.trigger_count += 1
 
         handler = self._notification_handlers.get(alert.channel)

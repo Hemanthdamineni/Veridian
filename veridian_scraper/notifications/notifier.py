@@ -10,6 +10,8 @@ Sends notifications via multiple channels:
 Based on Veridian-spec.md B.7
 """
 
+from veridian_db.clock import utcnow
+
 import logging
 import json
 from dataclasses import dataclass
@@ -39,7 +41,7 @@ class NotificationMessage:
         if self.metadata is None:
             self.metadata = {}
         if self.created_at is None:
-            self.created_at = datetime.utcnow()
+            self.created_at = utcnow()
 
 
 class NotificationService:

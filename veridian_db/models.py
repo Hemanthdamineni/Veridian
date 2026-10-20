@@ -13,6 +13,8 @@ import uuid
 import enum
 from datetime import datetime
 
+from .clock import utcnow
+
 # Use SQLite-compatible types
 def UUID_COL():
     """SQLite-compatible UUID column (stored as CHAR(36))"""
@@ -102,8 +104,8 @@ class Brand(Base):
     country = Column(String(100))
     founded_year = Column(Integer)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
 
 class Category(Base):
@@ -117,7 +119,7 @@ class Category(Base):
     schema_json = Column(JSON)
     display_order = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     parent = relationship('Category', remote_side=[id], backref='children', foreign_keys=[parent_id])
 
@@ -146,8 +148,8 @@ class ProductFamily(Base):
     marketing_description = Column(Text)
     first_release_date = Column(DateTime)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     __table_args__ = (
         UniqueConstraint('brand_id', 'slug', name='uq_family_brand_slug'),
@@ -174,8 +176,8 @@ class ProductModel(Base):
     target_audience = Column(JSON)
     predecessor_id = Column(CHAR(36), ForeignKey('product_models.id'), nullable=True)
     successor_id = Column(CHAR(36), ForeignKey('product_models.id'), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     __table_args__ = (
         UniqueConstraint('family_id', 'slug', name='uq_model_family_slug'),
@@ -206,8 +208,8 @@ class ProductVariant(Base):
     configuration_options = Column(JSON)
     source_urls = Column(JSON)
     canonical_url = Column(String(1000))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     __table_args__ = (
         UniqueConstraint('model_id', 'region_id', 'sku', name='uq_variant_model_region_sku'),
@@ -276,8 +278,8 @@ class Component(Base):
     product_page_url = Column(String(1000))
     datasheet_url = Column(String(1000))
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     __table_args__ = (
         UniqueConstraint('type', 'manufacturer', 'slug', name='uq_component_type_mfr_slug'),
@@ -293,7 +295,7 @@ class ComponentRelationship(Base):
     target_id = UUID_FK('components')
     relationship_type = Column(String(50), nullable=False)
     notes = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     __table_args__ = (
         UniqueConstraint('source_id', 'target_id', 'relationship_type', name='uq_comp_rel'),
@@ -321,8 +323,8 @@ class ProductConfiguration(Base):
     source_urls = Column(JSON)
     confidence = Column(Float, default=1.0)
     verified = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     __table_args__ = (
         UniqueConstraint('variant_id', 'component_id', 'slot_identifier', name='uq_config_variant_comp_slot'),
@@ -352,8 +354,8 @@ class NormalizedSpec(Base):
     verified_by = Column(String(100))
     verified_at = Column(DateTime)
     notes = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     __table_args__ = (
         UniqueConstraint('variant_id', 'spec_category', 'spec_name', name='uq_spec_variant_cat_name'),
@@ -375,7 +377,7 @@ class ProductRelationship(Base):
     relationship_type = Column(String(50), nullable=False)
     notes = Column(Text)
     confidence = Column(Float, default=1.0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     __table_args__ = (
         UniqueConstraint('source_variant_id', 'target_variant_id', 'relationship_type', name='uq_prod_rel'),
@@ -398,7 +400,7 @@ class Seller(Base):
     is_marketplace = Column(Boolean, default=False)
     region_id = UUID_FK('regions')
     affiliate_network = Column(String(100))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     region = relationship('Region', backref='sellers')
 
@@ -420,8 +422,8 @@ class PriceListing(Base):
     condition = Column(String(50), default='new')
     is_affiliate = Column(Boolean, default=False)
     affiliate_commission = Column(Float)
-    first_seen = Column(DateTime, default=datetime.utcnow, index=True)
-    last_seen = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    first_seen = Column(DateTime, default=utcnow, index=True)
+    last_seen = Column(DateTime, default=utcnow, onupdate=utcnow)
     is_active = Column(Boolean, default=True, index=True)
     raw_data = Column(JSON)
 
@@ -437,7 +439,7 @@ class PriceHistory(Base):
     listing_id = UUID_FK('price_listings')
     price_amount = Column(Float, nullable=False)
     price_currency = Column(String(10), nullable=False)
-    recorded_at = Column(DateTime, default=datetime.utcnow, index=True)
+    recorded_at = Column(DateTime, default=utcnow, index=True)
     change_type = Column(String(20))
 
     listing = relationship('PriceListing', backref='history')
@@ -477,7 +479,7 @@ class BenchmarkRun(Base):
     date_run = Column(DateTime)
     is_verified = Column(Boolean, default=False)
     notes = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     __table_args__ = (
         UniqueConstraint('definition_id', 'variant_id', 'source_url', name='uq_bench_run'),
@@ -510,7 +512,7 @@ class Review(Base):
     is_verified = Column(Boolean, default=False)
     confidence = Column(Float, default=1.0)
     language = Column(String(10), default='en')
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     __table_args__ = (
         UniqueConstraint('variant_id', 'source_url', name='uq_review'),
@@ -536,7 +538,7 @@ class CommunityReport(Base):
     votes_up = Column(Integer, default=0)
     votes_down = Column(Integer, default=0)
     moderator_notes = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
     resolved_at = Column(DateTime)
 
     variant = relationship('ProductVariant', backref='community_reports')
@@ -560,7 +562,7 @@ class FieldValidation(Base):
     verified_by = Column(String(100))
     verified_at = Column(DateTime)
     conflict_details = Column(JSON)
-    observed_at = Column(DateTime, default=datetime.utcnow)
+    observed_at = Column(DateTime, default=utcnow)
     collector_version = Column(String(50))
     notes = Column(Text)
 
@@ -597,7 +599,7 @@ class SearchIndex(Base):
     ports = Column(JSON)
     colors = Column(JSON)
     release_year = Column(Integer, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     __table_args__ = (
         Index('ix_search_price_range', 'price_min', 'price_max'),
@@ -621,7 +623,7 @@ class ComparisonMetric(Base):
     calculation_method = Column(String(200))
     source_data = Column(JSON)
     confidence = Column(Float, default=1.0)
-    computed_at = Column(DateTime, default=datetime.utcnow)
+    computed_at = Column(DateTime, default=utcnow)
 
     __table_args__ = (
         UniqueConstraint('variant_id', 'metric_category', 'metric_name', name='uq_comp_metric'),
@@ -649,7 +651,7 @@ class KnowledgeEntry(Base):
     source_urls = Column(JSON)
     is_verified = Column(Boolean, default=False)
     reported_by = Column(String(100))
-    reported_at = Column(DateTime, default=datetime.utcnow)
+    reported_at = Column(DateTime, default=utcnow)
     tags = Column(JSON)
 
 
@@ -667,7 +669,7 @@ class AuditLog(Base):
     new_value = Column(JSON)
     changed_by = Column(String(100))
     change_reason = Column(Text)
-    changed_at = Column(DateTime, default=datetime.utcnow, index=True)
+    changed_at = Column(DateTime, default=utcnow, index=True)
     ip_address = Column(String(45))
     user_agent = Column(String(500))
 
@@ -696,7 +698,7 @@ class PendingEntity(Base):
     reviewer = Column(String(100))
     reviewed_at = Column(DateTime)
     notes = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=utcnow, index=True)
 
     __table_args__ = (
         Index('ix_pending_status', 'status'),
@@ -728,7 +730,7 @@ class MediaAsset(Base):
     display_order = Column(Integer, default=0)
     source_url = Column(String(1000))
     license = Column(String(100))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     variant = relationship('ProductVariant', backref='media_assets')
     component = relationship('Component', backref='media_assets')
@@ -743,7 +745,7 @@ class ScraperRun(Base):
     id = UUID_COL()
     scraper_name = Column(String(100), nullable=False, index=True)
     region_code = Column(String(10), index=True)
-    started_at = Column(DateTime, default=datetime.utcnow)
+    started_at = Column(DateTime, default=utcnow)
     completed_at = Column(DateTime)
     status = Column(String(20), default='running')
     products_discovered = Column(Integer, default=0)
@@ -752,7 +754,7 @@ class ScraperRun(Base):
     products_updated = Column(Integer, default=0)
     errors = Column(JSON)
     config_snapshot = Column(JSON)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
 
 class ScrapedPage(Base):
@@ -766,7 +768,7 @@ class ScrapedPage(Base):
     page_type = Column(String(50))
     status_code = Column(Integer)
     content_hash = Column(CHAR(64))
-    scraped_at = Column(DateTime, default=datetime.utcnow)
+    scraped_at = Column(DateTime, default=utcnow)
     response_time_ms = Column(Integer)
     error = Column(Text)
 

@@ -7,6 +7,8 @@ Implements append-only price history and rollup calculations.
 Based on Veridian-spec.md B.4
 """
 
+from veridian_db.clock import utcnow
+
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -79,7 +81,7 @@ class PriceTracker:
         days: int = 90
     ) -> List[PricePoint]:
         """Get price history for a SKU."""
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        cutoff = utcnow() - timedelta(days=days)
         results = [
             pp for pp in self._price_history
             if pp.sku_id == sku_id
@@ -104,7 +106,7 @@ class PriceTracker:
         highest = max(prices)
 
         # 30-day average
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        thirty_days_ago = utcnow() - timedelta(days=30)
         prices_30d = [
             pp.price for pp in history
             if pp.scraped_at >= thirty_days_ago and pp.is_available
@@ -112,7 +114,7 @@ class PriceTracker:
         avg_30d = sum(prices_30d) / len(prices_30d) if prices_30d else current_price
 
         # 90-day average
-        ninety_days_ago = datetime.utcnow() - timedelta(days=90)
+        ninety_days_ago = utcnow() - timedelta(days=90)
         prices_90d = [
             pp.price for pp in history
             if pp.scraped_at >= ninety_days_ago and pp.is_available

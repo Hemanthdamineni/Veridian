@@ -1,3 +1,5 @@
+from veridian_db.clock import utcnow
+
 def test_normalize_product():
     """Test normalization of product specs."""
     from asus_scraper.data_normalizer import normalize_product
@@ -63,7 +65,7 @@ def test_price_rollup():
         price=899,
         currency="USD",
         url="",
-        scraped_at=datetime.utcnow(),
+        scraped_at=utcnow(),
         is_available=True,
     ))
     rollup = tracker.compute_rollups("1", "1")
