@@ -19,10 +19,10 @@ regions:
     language: "en"
     currency: "USD"
     category_paths:
-      surface-laptop: "/d/surface-laptop"
-      surface-pro: "/d/surface-pro"
-      surface-book: "/d/surface-book"
-      surface-studio: "/d/surface-studio"
-      surface-go: "/d/surface-go"
+      surface-laptop: "d/surface-laptop"
+      surface-pro: "d/surface-pro"
+      surface-book: "d/surface-book"
+      surface-studio: "d/surface-studio"
+      surface-go: "d/surface-go"
     rate_limit: 0.5
     timeout: 30

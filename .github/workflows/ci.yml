@@ -40,13 +40,73 @@ jobs:
         run: npm run lint
 
       - name: Type check
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Unit and integration tests
-        run: npx vitest run
+        run: npm test
 
       - name: Production build
         run: npm run build
+
+      - name: Check the PostgreSQL schema is in sync with the source of truth
+        run: npm run db:schema:pg-check
+
+  postgres:
+    name: PostgreSQL (live schema, ingestion, audit)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: veridian
+          POSTGRES_PASSWORD: veridian
+          POSTGRES_DB: veridian
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: veridian-web
+    env:
+      DATABASE_URL: "postgresql://veridian:veridian@localhost:5432/veridian"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: veridian-web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate the PostgreSQL Prisma client
+        run: npx prisma generate --schema prisma/schema.postgres.prisma
+
+      - name: Apply the schema to a live PostgreSQL database
+        run: npx prisma db push --schema prisma/schema.postgres.prisma --skip-generate
+
+      # The ingestion path is exercised against a real server, not a mock, so
+      # a schema that only validates structurally cannot pass unnoticed.
+      - name: Ingest the cited certification dataset
+        run: npm run db:ingest:es
+
+      - name: Load the reference dataset
+        run: npm run db:seed
+
+      - name: Populate the component graph
+        run: npm run db:components
+
+      - name: Audit the catalog
+        run: npm run db:audit
+
+      - name: Assert the catalog is populated
+        run: npm run db:assert
 
   python:
     name: Python (domain engine tests)

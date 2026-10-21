@@ -55,7 +55,7 @@ model Series {
   models       Model[]
   @@unique([manufacturerId, slug])
   @@index([categoryId])
-  @@map("serieses")
+  @@map("series")
 }
 
 model Model {

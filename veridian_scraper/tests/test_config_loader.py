@@ -57,7 +57,9 @@ def test_region_config_carries_the_category_paths():
     manager = ConfigManager(str(CONFIG_DIR))
     regions = manager.get_region_configs('asus')
     us = next(r for r in regions if r.code == 'us')
-    assert us.category_paths['laptops'] == '/laptops/'
+    # The path is relative to the regional base URL, so the listing stays
+    # inside the region (https://www.asus.com/us/laptops/).
+    assert us.category_paths['laptops'] == 'laptops/'
     assert us.currency == 'USD'
 
 
@@ -121,6 +123,24 @@ def test_unknown_manufacturer_returns_nothing():
     manager = ConfigManager(str(CONFIG_DIR))
     assert manager.get_manufacturer_config('nintendo') is None
     assert manager.get_region_configs('nintendo') == []
+
+
+@pytest.mark.parametrize('manufacturer', MANUFACTURERS)
+def test_category_paths_stay_inside_the_region(manufacturer):
+    """A leading slash would drop the regional prefix of the base URL.
+
+    That is how the category listings ended up on the global site instead of
+    the regional one (and how they 404'd).
+    """
+    from urllib.parse import urljoin
+
+    manager = ConfigManager(str(CONFIG_DIR))
+    for region in manager.get_region_configs(manufacturer):
+        for category, path in region.category_paths.items():
+            url = urljoin(region.base_url, path)
+            assert url.startswith(region.base_url), (
+                f"{manufacturer}/{region.code}/{category} leaves the region: {url}"
+            )
 
 
 @pytest.mark.parametrize('manufacturer', MANUFACTURERS)

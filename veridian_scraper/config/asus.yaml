@@ -19,12 +19,12 @@ regions:
     language: "en"
     currency: "USD"
     category_paths:
-      laptops: "/laptops/"
-      displays-desktops: "/displays-desktops/"
-      monitors: "/monitors/"
-      motherboards-components: "/motherboards-components/"
-      networking-iot-servers: "/networking-iot-servers/"
-      accessories: "/accessories/"
+      laptops: "laptops/"
+      displays-desktops: "displays-desktops/"
+      monitors: "monitors/"
+      motherboards-components: "motherboards-components/"
+      networking-iot-servers: "networking-iot-servers/"
+      accessories: "accessories/"
     rate_limit: 0.5
     timeout: 30
   - code: "in"
@@ -33,12 +33,12 @@ regions:
     language: "en"
     currency: "INR"
     category_paths:
-      laptops: "/laptops/"
-      displays-desktops: "/displays-desktops/"
-      monitors: "/monitors/"
-      motherboards-components: "/motherboards-components/"
-      networking-iot-servers: "/networking-iot-servers/"
-      accessories: "/accessories/"
+      laptops: "laptops/"
+      displays-desktops: "displays-desktops/"
+      monitors: "monitors/"
+      motherboards-components: "motherboards-components/"
+      networking-iot-servers: "networking-iot-servers/"
+      accessories: "accessories/"
     rate_limit: 0.5
     timeout: 30
   - code: "uk"
@@ -47,12 +47,12 @@ regions:
     language: "en"
     currency: "GBP"
     category_paths:
-      laptops: "/laptops/"
-      displays-desktops: "/displays-desktops/"
-      monitors: "/monitors/"
-      motherboards-components: "/motherboards-components/"
-      networking-iot-servers: "/networking-iot-servers/"
-      accessories: "/accessories/"
+      laptops: "laptops/"
+      displays-desktops: "displays-desktops/"
+      monitors: "monitors/"
+      motherboards-components: "motherboards-components/"
+      networking-iot-servers: "networking-iot-servers/"
+      accessories: "accessories/"
     rate_limit: 0.5
     timeout: 30
   - code: "de"
@@ -61,12 +61,12 @@ regions:
     language: "de"
     currency: "EUR"
     category_paths:
-      laptops: "/laptops/"
-      displays-desktops: "/displays-desktops/"
-      monitors: "/monitors/"
-      motherboards-components: "/motherboards-components/"
-      networking-iot-servers: "/networking-iot-servers/"
-      accessories: "/accessories/"
+      laptops: "laptops/"
+      displays-desktops: "displays-desktops/"
+      monitors: "monitors/"
+      motherboards-components: "motherboards-components/"
+      networking-iot-servers: "networking-iot-servers/"
+      accessories: "accessories/"
     rate_limit: 0.5
     timeout: 30
   - code: "fr"
@@ -75,11 +75,11 @@ regions:
     language: "fr"
     currency: "EUR"
     category_paths:
-      laptops: "/laptops/"
-      displays-desktops: "/displays-desktops/"
-      monitors: "/monitors/"
-      motherboards-components: "/motherboards-components/"
-      networking-iot-servers: "/networking-iot-servers/"
-      accessories: "/accessories/"
+      laptops: "laptops/"
+      displays-desktops: "displays-desktops/"
+      monitors: "monitors/"
+      motherboards-components: "motherboards-components/"
+      networking-iot-servers: "networking-iot-servers/"
+      accessories: "accessories/"
     rate_limit: 0.5
     timeout: 30

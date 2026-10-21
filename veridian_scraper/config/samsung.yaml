@@ -19,7 +19,6 @@ regions:
     language: "en"
     currency: "USD"
     category_paths:
-      laptops: "/computers/laptops/"
-      galaxy-book: "/computers/galaxy-book/"
+      galaxy-book: "computing/galaxy-book/"
     rate_limit: 0.5
     timeout: 30

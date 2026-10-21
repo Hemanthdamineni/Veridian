@@ -19,12 +19,12 @@ regions:
     language: "en"
     currency: "USD"
     category_paths:
-      laptops: "/us/en/laptops/"
-      desktops: "/us/en/desktops/"
-      workstations: "/us/en/workstations/"
-      tablets: "/us/en/tablets/"
-      monitors: "/us/en/monitors/"
-      accessories: "/us/en/accessories/"
+      laptops: "laptops/"
+      desktops: "desktops/"
+      workstations: "workstations/"
+      tablets: "tablets/"
+      monitors: "monitors/"
+      accessories: "accessories/"
     rate_limit: 0.5
     timeout: 30
   - code: "in"
@@ -33,12 +33,12 @@ regions:
     language: "en"
     currency: "INR"
     category_paths:
-      laptops: "/in/en/laptops/"
-      desktops: "/in/en/desktops/"
-      workstations: "/in/en/workstations/"
-      tablets: "/in/en/tablets/"
-      monitors: "/in/en/monitors/"
-      accessories: "/in/en/accessories/"
+      laptops: "laptops/"
+      desktops: "desktops/"
+      workstations: "workstations/"
+      tablets: "tablets/"
+      monitors: "monitors/"
+      accessories: "accessories/"
     rate_limit: 0.5
     timeout: 30
   - code: "uk"
@@ -47,11 +47,11 @@ regions:
     language: "en"
     currency: "GBP"
     category_paths:
-      laptops: "/c/laptops/"
-      desktops: "/c/desktops/"
-      workstations: "/c/workstations/"
-      tablets: "/c/tablets/"
-      monitors: "/c/monitors/"
-      accessories: "/c/accessories/"
+      laptops: "laptops/"
+      desktops: "desktops/"
+      workstations: "workstations/"
+      tablets: "tablets/"
+      monitors: "monitors/"
+      accessories: "accessories/"
     rate_limit: 0.5
     timeout: 30

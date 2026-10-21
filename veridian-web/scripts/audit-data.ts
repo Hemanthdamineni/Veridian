@@ -107,9 +107,13 @@ async function main() {
   );
 
   // --- Duplicates -----------------------------------------------------------
-  const duplicateSkuCodes = await prisma.$queryRaw<
-    Array<{ skuCode: string; n: number }>
-  >`SELECT skuCode, COUNT(*) as n FROM Sku GROUP BY skuCode HAVING COUNT(*) > 1`;
+  // Grouping is done through Prisma rather than raw SQL so the audit runs
+  // unchanged on SQLite and PostgreSQL, whose table names differ.
+  const duplicateSkuCodes = await prisma.sku.groupBy({
+    by: ["skuCode"],
+    _count: { _all: true },
+    having: { skuCode: { _count: { gt: 1 } } },
+  });
   add(
     "duplicates/sku-code",
     "error",
@@ -123,23 +127,26 @@ async function main() {
   // different machines the source describes with the same coarse fields.
   // The part number is the stronger discriminator, so they are reported for
   // review rather than merged automatically.
-  const alternatePartNumbers = await prisma.$queryRaw<
-    Array<{ modelId: string; n: number }>
-  >`
-    SELECT modelId, COUNT(*) as n FROM (
-      SELECT s.modelId,
-             s.cpuBrand, s.cpuModel, s.cpuCores, s.ramGb, s.storageType,
-             s.displaySizeIn, s.displayRefreshHz, s.batteryWh
-      FROM Sku s
-      GROUP BY s.modelId, s.cpuBrand, s.cpuModel, s.cpuCores, s.ramGb,
-               s.storageType, s.displaySizeIn, s.displayRefreshHz, s.batteryWh
-      HAVING COUNT(*) > 1
-    ) GROUP BY modelId
-  `;
+  const alternatePartNumbers = await prisma.sku.groupBy({
+    by: [
+      "modelId",
+      "cpuBrand",
+      "cpuModel",
+      "cpuCores",
+      "ramGb",
+      "storageType",
+      "displaySizeIn",
+      "displayRefreshHz",
+      "batteryWh",
+    ],
+    _count: { _all: true },
+    having: { modelId: { _count: { gt: 1 } } },
+  });
+  const affectedModels = new Set(alternatePartNumbers.map((row) => row.modelId));
   add(
     "identity/alternate-part-numbers",
     "info",
-    alternatePartNumbers.length,
+    affectedModels.size,
     "Models holding several part numbers with the same specification signature (kept separate on purpose)"
   );
 
@@ -273,13 +280,11 @@ async function main() {
     );
   }
 
-  const duplicateObservations = await prisma.$queryRaw<
-    Array<{ skuId: string; region: string; n: number }>
-  >`
-    SELECT skuId, region, COUNT(*) as n FROM PriceObservation
-    GROUP BY skuId, region, price, timestamp, sourceName
-    HAVING COUNT(*) > 1
-  `;
+  const duplicateObservations = await prisma.priceObservation.groupBy({
+    by: ["skuId", "region", "price", "timestamp", "sourceName"],
+    _count: { _all: true },
+    having: { skuId: { _count: { gt: 1 } } },
+  });
   add(
     "price/duplicate-observation",
     "warning",

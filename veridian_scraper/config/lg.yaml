@@ -19,7 +19,6 @@ regions:
     language: "en"
     currency: "USD"
     category_paths:
-      laptops: "/laptops/"
-      gram: "/laptops/gram/"
+      laptops: "laptops/"
     rate_limit: 0.5
     timeout: 30

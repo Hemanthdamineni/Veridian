@@ -15,11 +15,12 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:studio": "prisma studio",
     "db:schema:pg": "node scripts/generate-postgres-schema.mjs",
-    "db:schema:pg --check": "node scripts/generate-postgres-schema.mjs --check",
+    "db:schema:pg-check": "node scripts/generate-postgres-schema.mjs --check",
     "db:ingest:es": "tsx scripts/ingest-energy-star.ts",
     "db:components": "tsx scripts/populate-components.ts",
     "db:audit": "tsx scripts/audit-data.ts",
-    "db:audit:repair": "tsx scripts/audit-data.ts --repair"
+    "db:audit:repair": "tsx scripts/audit-data.ts --repair",
+    "db:assert": "tsx scripts/assert-catalog.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
