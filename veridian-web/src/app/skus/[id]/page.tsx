@@ -2,12 +2,20 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { toProvenance } from "@/lib/api";
+import { PROVENANCE_LABELS } from "@/types";
 import type { SkuDetail } from "@/types";
 import { formatCpu, formatDate, formatPrice, formatStorage, formatWeight } from "@/lib/format";
 
 interface SkuDetailPageProps {
   params: Promise<{ id: string }>;
 }
+
+const COMPONENT_KIND_LABELS: Record<string, string> = {
+  cpu: "Processor",
+  display: "Display",
+  storage: "Storage",
+};
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -42,6 +50,28 @@ async function getSku(id: string): Promise<SkuDetail | null> {
       pricing: true,
       ports: true,
       certifiedSpecs: true,
+      sources: {
+        select: {
+          source: true,
+          kind: true,
+          sourceUrl: true,
+          observedAt: true,
+          confidence: true,
+          note: true,
+        },
+      },
+      components: {
+        include: {
+          component: {
+            select: {
+              id: true,
+              kind: true,
+              canonicalName: true,
+              slug: true,
+            },
+          },
+        },
+      },
     },
   });
   if (!sku) return null;
@@ -77,13 +107,28 @@ async function getSku(id: string): Promise<SkuDetail | null> {
     os: sku.os,
     buildMaterial: sku.buildMaterial,
     linuxCompat: sku.linuxCompat,
-    provenance: sku.certifiedSpecs.length > 0 ? "certified" : "reference",
+    provenance: toProvenance(sku.provenance),
+    sources: sku.sources.map((source) => ({
+      source: source.source,
+      kind: source.kind,
+      sourceUrl: source.sourceUrl,
+      observedAt: source.observedAt.toISOString(),
+      confidence: source.confidence,
+      note: source.note,
+    })),
     launchDate: sku.launchDate?.toISOString() || null,
     discontinued: sku.discontinued,
     productUrl: sku.model.productUrl,
     price: sku.pricing[0] ? { region: sku.pricing[0].region, currency: sku.pricing[0].currency, msrp: sku.pricing[0].msrp } : null,
     pricing: sku.pricing.map((p) => ({ region: p.region, currency: p.currency, msrp: p.msrp })),
     ports: sku.ports.map((p) => ({ portType: p.portType, count: p.count })),
+    components: sku.components.map((link) => ({
+      id: link.component.id,
+      kind: link.component.kind,
+      name: link.component.canonicalName,
+      slug: link.component.slug,
+      role: link.role,
+    })),
     certifiedSpecs: sku.certifiedSpecs.map((s) => ({
       source: s.source, sourceUrl: s.sourceUrl, observedAt: s.observedAt.toISOString(),
       certifiedAt: s.certifiedAt?.toISOString() || null, marketDate: s.marketDate?.toISOString() || null,
@@ -127,10 +172,12 @@ export default async function SkuDetailPage({ params }: SkuDetailPageProps) {
             className={`rounded-[5px] px-2 py-1 text-[10px] font-semibold ${
               sku.provenance === "certified"
                 ? "bg-[var(--success-soft)] text-[var(--success)]"
-                : "bg-[var(--surface-soft)] text-[var(--quiet)]"
+                : sku.provenance === "manufacturer"
+                  ? "bg-[var(--accent-soft)] text-[var(--accent-dark)]"
+                  : "bg-[var(--warning-soft)] text-[var(--warning)]"
             }`}
           >
-            {sku.provenance === "certified" ? "Certified source" : "Reference configuration"}
+            {PROVENANCE_LABELS[sku.provenance]}
           </span>
           {sku.discontinued && <span className="rounded-[5px] bg-[var(--danger-soft)] px-2 py-1 text-[10px] font-semibold text-[var(--danger)]">Discontinued</span>}
         </div>
@@ -184,6 +231,34 @@ export default async function SkuDetailPage({ params }: SkuDetailPageProps) {
             <SpecRow label="Operating system" value={sku.os} />
             {sku.linuxCompat && <SpecRow label="Linux compatibility" value={sku.linuxCompat} />}
           </SpecSection>
+          {sku.components && sku.components.length > 0 && (
+            <SpecSection title="Shared components">
+              <p className="mb-3 text-[12px] leading-5 text-[var(--muted)]">
+                These are the parts this configuration is built around. Following one shows every
+                other machine in the catalog that shares it.
+              </p>
+              <ul className="space-y-2">
+                {sku.components.map((component) => (
+                  <li key={`${component.kind}-${component.id}`}>
+                    <Link
+                      href={`/components/${component.slug}`}
+                      className="flex items-baseline justify-between gap-3 rounded-[5px] border border-[var(--line)] px-3 py-2 transition-colors hover:border-[var(--line-strong)]"
+                    >
+                      <span className="min-w-0">
+                        <span className="block text-[10px] uppercase tracking-[.08em] text-[var(--quiet)]">
+                          {COMPONENT_KIND_LABELS[component.kind] ?? component.kind}
+                        </span>
+                        <span className="block truncate text-[13px] font-medium text-[var(--ink)]">
+                          {component.name}
+                        </span>
+                      </span>
+                      <span aria-hidden="true" className="shrink-0 text-[var(--quiet)]">→</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </SpecSection>
+          )}
           {sku.certifiedSpecs && sku.certifiedSpecs.length > 0 ? (
             <SpecSection title="Certified provenance">
               <div className="space-y-4 text-[12px] leading-5 text-[var(--muted)]">
@@ -199,16 +274,45 @@ export default async function SkuDetailPage({ params }: SkuDetailPageProps) {
             </SpecSection>
           ) : (
             <SpecSection title="Provenance">
-              <p className="text-[12px] leading-5 text-[var(--muted)]">
-                This configuration has no cited certification record. Its figures come from our
-                reference dataset, which expands a small set of manufacturer-published
-                configurations into a broad catalog for discovery. Treat every value as a reported
-                specification and confirm the exact part number on the manufacturer&rsquo;s own page
-                before buying.
-              </p>
-              <p className="mt-3 text-[11px] text-[var(--quiet)]">
-                See <Link href="/methodology" className="text-[var(--accent-dark)] underline underline-offset-4">how this catalog works</Link> for the full breakdown.
-              </p>
+              <div className="space-y-3 text-[12px] leading-5 text-[var(--muted)]">
+                <p>
+                  {sku.provenance === "manufacturer" ? (
+                    <>
+                      These figures were checked against the manufacturer&rsquo;s own specification
+                      page, which is linked below. The page lists every configuration of this
+                      family, so a field the page does not state for this exact part number is
+                      shown as reported rather than filled in.
+                    </>
+                  ) : (
+                    <>
+                      This configuration has no cited source. Its figures come from our own
+                      reference dataset and have <strong className="font-semibold text-[var(--ink)]">not
+                      been checked against the manufacturer</strong>. Treat every value as a
+                      reported specification and confirm the exact part number on the
+                      manufacturer&rsquo;s own page before buying.
+                    </>
+                  )}
+                </p>
+                {sku.sources && sku.sources.length > 0 && (
+                  <ul className="space-y-2 border-t border-[var(--line)] pt-3">
+                    {sku.sources.map((source) => (
+                      <li key={source.source}>
+                        <p>
+                          <strong className="font-semibold text-[var(--ink)]">{source.source}</strong>
+                          <span className="text-[var(--quiet)]"> · {source.kind} · observed {formatDate(source.observedAt)}</span>
+                        </p>
+                        {source.sourceUrl && (
+                          <a href={source.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-0.5 inline-block text-[var(--accent-dark)] underline underline-offset-4">View the page this came from ↗</a>
+                        )}
+                        {source.note && <p className="mt-0.5 text-[11px] text-[var(--quiet)]">{source.note}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p className="text-[11px] text-[var(--quiet)]">
+                  See <Link href="/methodology" className="text-[var(--accent-dark)] underline underline-offset-4">how this catalog works</Link> for the full breakdown.
+                </p>
+              </div>
             </SpecSection>
           )}
         </div>

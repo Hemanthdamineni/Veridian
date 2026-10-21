@@ -1,29 +1,43 @@
-manufacturer:
-  dell:
-    brand: "Dell"
-    base_url: "https://www.dell.com"
-    regions:
-      - code: US
-        name: "United States"
-        base_url: "https://www.dell.com/en-us"
-        language: en-US
-        currency: USD
-        category_paths:
-          laptops: "/shop/dell-laptops/sr/laptops"
-        selectors:
-          product_link: "a.product-link"
-          product_name: "h1.product-name"
-          specs_table: "table.specs-table"
-          next_page: "a.next-page"
-      - code: IN
-        name: "India"
-        base_url: "https://www.dell.com/en-in"
-        language: en-IN
-        currency: INR
-        category_paths:
-          laptops: "/shop/dell-laptops/sr/laptops"
-        selectors:
-          product_link: "a.product-link"
-          product_name: "h1.product-name"
-          specs_table: "table.specs-table"
-          next_page: "a.next-page"
+# Dell scraper configuration.
+#
+# This file is the source of truth for the Dell base URL and for the region
+# list (category paths, rate limit, timeout). CSS selectors live in the
+# scraper code because the site changes them with every build.
+manufacturer: "dell"
+brand: "Dell"
+base_url: "https://www.dell.com/"
+user_agent: "VeridianBot/1.0 (+https://veridian.dev; contact@veridian.dev)"
+output_dir: "./output"
+max_concurrent: 2
+retry_attempts: 3
+checkpoint_interval: 10
+
+regions:
+  - code: "in"
+    name: "India"
+    base_url: "https://www.dell.com/"
+    language: "en"
+    currency: "INR"
+    category_paths:
+      laptops: "/en-in/shop/laptops/"
+      desktops: "/en-in/shop/desktops/"
+      monitors: "/en-in/shop/monitors/"
+      workstations: "/en-in/shop/workstations/"
+      servers: "/en-in/shop/servers/"
+      accessories: "/en-in/shop/accessories/"
+    rate_limit: 0.5
+    timeout: 30
+  - code: "au"
+    name: "Australia"
+    base_url: "https://www.dell.com/"
+    language: "en"
+    currency: "AUD"
+    category_paths:
+      laptops: "/en-au/shop/laptops/"
+      desktops: "/en-au/shop/desktops/"
+      monitors: "/en-au/shop/monitors/"
+      workstations: "/en-au/shop/workstations/"
+      servers: "/en-au/shop/servers/"
+      accessories: "/en-au/shop/accessories/"
+    rate_limit: 0.5
+    timeout: 30

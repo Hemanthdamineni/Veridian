@@ -40,22 +40,34 @@ describe("region semantics — region selects the price, not the row", () => {
 describe("provenance tier filter", () => {
   it("selects only certified configurations", () => {
     const where = buildSkusQuery({ provenance: "certified" });
-    expect(where.certifiedSpecs).toEqual({ some: {} });
+    expect(where.provenance).toBe("certified");
   });
 
-  it("selects only reference configurations", () => {
-    const where = buildSkusQuery({ provenance: "reference" });
-    expect(where.certifiedSpecs).toEqual({ none: {} });
+  it("selects only manufacturer-verified configurations", () => {
+    const where = buildSkusQuery({ provenance: "manufacturer" });
+    expect(where.provenance).toBe("manufacturer");
   });
 
-  it("applies no tier constraint when both tiers are requested", () => {
-    const where = buildSkusQuery({ provenance: "certified,reference" });
-    expect(where.certifiedSpecs).toBeUndefined();
+  it("selects only unverified configurations", () => {
+    const where = buildSkusQuery({ provenance: "unverified" });
+    expect(where.provenance).toBe("unverified");
+  });
+
+  it("matches any of the requested tiers", () => {
+    const where = buildSkusQuery({ provenance: "certified,manufacturer" });
+    expect(where.provenance).toEqual({ in: ["certified", "manufacturer"] });
+  });
+
+  it("applies no tier constraint when every tier is requested", () => {
+    const where = buildSkusQuery({ provenance: "certified,manufacturer,unverified" });
+    expect(where.provenance).toEqual({
+      in: ["certified", "manufacturer", "unverified"],
+    });
   });
 
   it("applies no tier constraint for an unknown tier", () => {
     const where = buildSkusQuery({ provenance: "invented" });
-    expect(where.certifiedSpecs).toBeUndefined();
+    expect(where.provenance).toBeUndefined();
   });
 });
 

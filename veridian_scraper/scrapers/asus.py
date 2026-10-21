@@ -6,19 +6,26 @@ import asyncio
 import hashlib
 import re
 from datetime import datetime
-from typing import AsyncIterator, List, Dict, Any, Optional
+from typing import AsyncIterator, List, Dict, Any, Optional, Tuple
 from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 
 from .base import (
-    BaseScraper, ScraperConfig, RegionConfig,
+    BaseScraper, ScraperConfig, RegionConfig, apply_yaml_config,
     Product, ProductVariant, ProductCategory, ProductStatus,
     SpecValue, SpecParser,
     generate_product_id, generate_variant_id,
     canonicalize_url, extract_canonical_key,
     clean_text, parse_spec_field, extract_price
 )
+
+
+def _format_capacity(capacity_gb: int) -> str:
+    """Render a storage/memory capacity given in GB as GB or TB."""
+    if capacity_gb >= 1024 and capacity_gb % 1024 == 0:
+        return f"{capacity_gb // 1024}TB"
+    return f"{capacity_gb}GB"
 
 
 class AsusScraper(BaseScraper):
@@ -94,6 +101,32 @@ class AsusScraper(BaseScraper):
         'Model': 'model',
     }
 
+    # Stable hooks on the live ASUS tech-spec page.
+    #
+    # The spec table is rendered by a Vue component whose generated class names
+    # are hashed per build (``techSpec-vue-...__rowTableItems___RrFQ1``), so
+    # only the class names the site keeps literal are used:
+    #   * ``div.rowTableItemViewBox``     - one container per spec row
+    #   * ``div.rowTableTitle``           - the row title, which lives in the
+    #                                       previous sibling of the row container
+    #   * ``div[class*="rowTableItems"]`` - one value cell per configuration
+    #   * ``div.pdName``                  - the part number inside the value
+    #                                       cells of the "Model" row
+    #   * ``div[class*="itemName"]``      - the configuration name in the
+    #                                       header row of the table
+    TECHSPEC_ROWS = 'div.rowTableItemViewBox'
+    TECHSPEC_VALUES = 'div[class*="rowTableItems"]'
+    TECHSPEC_TITLE = 'div.rowTableTitle'
+    TECHSPEC_PART_NUMBER = 'div.pdName'
+    TECHSPEC_HEADER_NAME = 'div[class*="itemName"]'
+
+    # Rows that carry marketing copy or legal text instead of product data.
+    TECHSPEC_SKIP_ROWS = frozenset({
+        'disclaimer', 'exclusive subscription offers', 'microsoft office',
+        'xbox game pass', 'built-in apps', 'myasus features', 'military grade',
+        'ecolabels & compliances', 'included in the box',
+    })
+
     def __init__(self, config: ScraperConfig, region: RegionConfig):
         super().__init__(config, region)
 
@@ -103,10 +136,11 @@ class AsusScraper(BaseScraper):
             'product_card': '.ProductCard, .product-item, .product-card',
             'product_link': 'a[href*="/laptops/"], a[href*="/displays-desktops/"], a[href*="/monitors/"]',
             'techspec_link': 'a[href*="/techspec"], a[href*="specifications"]',
-            'variant_names': '.TechSpec__itemName__an9aU .pdName, .TechSpec__modelName, .model-name, .variant-name',
-            'spec_rows': '.TechSpec__rowTable__1LR9D, .TechSpec__row, .spec-row, tr.spec-row',
-            'spec_name': '.rowTableTitle, .TechSpec__rowTableTitle__3GLj4, .TechSpec__rowTitle, .spec-title, th',
-            'spec_values': '.TechSpec__rowTableItems__KYWXp, .TechSpec__rowTableItems, .spec-value, td',
+            'techspec_rows': self.TECHSPEC_ROWS,
+            'techspec_values': self.TECHSPEC_VALUES,
+            'techspec_title': self.TECHSPEC_TITLE,
+            'techspec_part_number': self.TECHSPEC_PART_NUMBER,
+            'techspec_header_name': self.TECHSPEC_HEADER_NAME,
         }
 
         # Override with region-specific selectors if provided
@@ -454,105 +488,185 @@ class AsusScraper(BaseScraper):
 
         return None
 
+    def _techspec_rows(self, soup: BeautifulSoup) -> List[Tuple[str, List[Any]]]:
+        """Split the tech-spec table into ``(row title, value cells)`` pairs.
+
+        The live page renders every spec row as a ``div.rowTableItemViewBox``
+        whose previous sibling holds the row title; the value cells of that row
+        are one per configuration column.
+        """
+        rows: List[Tuple[str, List[Any]]] = []
+        for container in soup.select(self.selectors['techspec_rows']):
+            cells = container.select(self.selectors['techspec_values'])
+            if not cells:
+                continue
+            title = self._techspec_row_title(container)
+            if not title:
+                continue
+            rows.append((title, cells))
+        return rows
+
+    def _techspec_row_title(self, container) -> str:
+        """Read the title of a spec row from the row container's previous sibling."""
+        sibling = container.find_previous_sibling('div')
+        if sibling is None:
+            return ''
+        title_elem = sibling.select_one(self.selectors['techspec_title'])
+        if not title_elem:
+            return ''
+        return clean_text(title_elem.get_text())
+
+    def _techspec_part_number(self, cell) -> str:
+        """The part number shown in a value cell of the Model row."""
+        part_elem = cell.select_one(self.selectors['techspec_part_number'])
+        if not part_elem:
+            return ''
+        return clean_text(part_elem.get_text())
+
     def _extract_variant_names(self, soup: BeautifulSoup) -> List[str]:
-        """Extract variant/model names from techspec page header"""
-        names = []
+        """Return the per-configuration names (part numbers) of the spec table.
 
-        # Try new ASUS selectors first
-        selectors = [
-            '.TechSpec__itemName__an9aU .pdName',
-            '.TechSpec__modelName',
-            '.model-name',
-            '.variant-name',
-            '[data-model-name]',
-            '.ProductSpecs__model',
-            'th[data-column]',
-        ]
+        The part numbers live in the value cells of the "Model" row, which is
+        rendered inside the same table, so their order is guaranteed to match
+        the value cells of every other row. The separately rendered page header
+        is only used as a fallback because its column order can differ.
+        """
+        for title, cells in self._techspec_rows(soup):
+            if title.lower() not in ('model', 'model name'):
+                continue
+            names = [self._techspec_part_number(cell) for cell in cells]
+            if any(names):
+                return names
 
-        for selector in selectors:
-            elems = soup.select(selector)
-            for elem in elems:
-                name = clean_text(elem.get_text() or elem.get('data-model-name', ''))
-                if name and name not in names:
-                    names.append(name)
+        # Fallback: the header row of the table carries the configuration names.
+        for container in soup.select(self.selectors['techspec_rows']):
+            cells = container.select(self.selectors['techspec_values'])
+            if not cells:
+                continue
+            names = []
+            for cell in cells:
+                name_elem = cell.select_one(self.selectors['techspec_header_name'])
+                names.append(clean_text(name_elem.get_text()) if name_elem else '')
+            if any(names):
+                return names
 
-        # If no names found, try to extract from table headers
-        if not names:
-            headers = soup.select('th[data-column], thead th')
-            for header in headers:
-                name = clean_text(header.get_text())
-                if name and name not in ['Model', 'Color', 'Specifications', 'Features']:
-                    names.append(name)
+        return []
 
-        return names
+    def _standard_spec_key(self, spec_name: str) -> str:
+        """Map a tech-spec row title to Veridian's standard spec key."""
+        standard = self.SPEC_KEY_MAPPING.get(spec_name)
+        if standard:
+            return standard
+        return (spec_name.lower()
+                .replace(' ', '_')
+                .replace('-', '_')
+                .replace('/', '_')
+                .replace('(', '')
+                .replace(')', ''))
+
+    def _configuration_signature(self, specs: Dict[str, SpecValue]) -> str:
+        """Short "memory / storage" signature used to disambiguate columns."""
+        parts = []
+        for key in ('memory', 'storage'):
+            spec = specs.get(key)
+            if not spec:
+                continue
+            capacity = (spec.structured or {}).get('capacity_gb')
+            if capacity is None:
+                continue
+            try:
+                capacity = int(capacity)
+            except (TypeError, ValueError):
+                continue
+            parts.append(_format_capacity(capacity))
+        return " / ".join(parts)
+
+    def _disambiguate_variant_names(self, names: List[str], specs: List[Dict[str, SpecValue]]) -> List[str]:
+        """Make the configuration names unique.
+
+        ASUS publishes the same model code for several configurations of one
+        product (they differ in memory or storage), so the code alone is not a
+        unique SKU. The distinguishing specification is appended when a code
+        repeats.
+        """
+        counts: Dict[str, int] = {}
+        for name in names:
+            counts[name] = counts.get(name, 0) + 1
+
+        seen: Dict[str, int] = {}
+        unique: List[str] = []
+        for index, name in enumerate(names):
+            base = name or f"Configuration {index + 1}"
+            if counts.get(base, 0) > 1:
+                suffix = self._configuration_signature(specs[index]) if index < len(specs) else ''
+                candidate = f"{base} {suffix}" if suffix else f"{base} ({index + 1})"
+            else:
+                candidate = base
+            serial = seen.get(candidate, 0)
+            seen[candidate] = serial + 1
+            if serial:
+                candidate = f"{candidate} ({serial + 1})"
+            unique.append(candidate)
+        return unique
 
     async def _extract_variants_from_techspec(self, techspec_url: str, product_url: str) -> List[ProductVariant]:
-        """Extract variants from techspec page"""
+        """Extract the per-configuration variants from the tech-spec page.
+
+        Every column of the spec table is one configuration. The column names
+        (part numbers) are taken from the "Model" row of the same table, so
+        the column order is guaranteed to line up with the value cells.
+        """
         try:
             soup = await self.http_client.get_soup(techspec_url)
         except Exception as e:
             self.logger.error(f"Failed to fetch techspec {techspec_url}: {e}")
             return []
 
-        variants = []
-
-        # Extract variant names from header
-        variant_names = self._extract_variant_names(soup)
-
-        if not variant_names:
+        rows = self._techspec_rows(soup)
+        if not rows:
+            self.logger.warning(f"No tech-spec rows found on {techspec_url}")
             return []
 
-        # Extract spec rows
-        spec_rows = soup.select(self.selectors['spec_rows'])
+        column_count = max(len(cells) for _, cells in rows)
+        names = self._extract_variant_names(soup)
+        names = (names + [''] * column_count)[:column_count]
+        if not any(names):
+            names = [f"Configuration {i + 1}" for i in range(column_count)]
 
-        # Build specs for each variant
-        variant_specs = {name: {} for name in variant_names}
+        variant_specs: List[Dict[str, SpecValue]] = [{} for _ in range(column_count)]
 
-        for row in spec_rows:
-            spec_name_elem = row.select_one(self.selectors['spec_name'])
-            if not spec_name_elem:
+        for title, cells in rows:
+            if title.lower() in self.TECHSPEC_SKIP_ROWS:
                 continue
 
-            spec_name = clean_text(spec_name_elem.get_text())
-            if not spec_name or spec_name in ['Model', 'Color', 'Model Name']:
+            standard_key = self._standard_spec_key(title)
+
+            for index, cell in enumerate(cells):
+                if index >= column_count:
+                    break
+                value = clean_text(cell.get_text(" ", strip=True))
+                if not value:
+                    continue
+                # Keep the structured parsing and multi-option splitting.
+                variant_specs[index][standard_key] = self._parse_spec_field_enhanced(
+                    standard_key, value, source_field=title
+                )
+
+        names = self._disambiguate_variant_names(names, variant_specs)
+
+        variants: List[ProductVariant] = []
+        canonical_key = extract_canonical_key(product_url, 'asus')
+        for index, specs in enumerate(variant_specs):
+            if not specs:
                 continue
-
-            # Standardize spec key
-            standard_key = self.SPEC_KEY_MAPPING.get(spec_name, spec_name.lower().replace(' ', '_').replace('-', '_').replace('/', '_').replace('(', '').replace(')', ''))
-            # Use the standardized key for storage, but keep original as source_field
-
-            # Skip boilerplate/disclaimer fields
-            if spec_name in ['Disclaimer', 'Exclusive Subscription Offers', 'Microsoft Office',
-                            'Xbox Game Pass', 'Built-in Apps', 'MyASUS Features', 'Military Grade',
-                            'Ecolabels & Compliances', 'Included in the Box']:
-                continue
-
-            # Get value containers for each variant
-            value_containers = row.select(self.selectors['spec_values'])
-
-            for idx, container in enumerate(value_containers):
-                if idx < len(variant_names):
-                    variant_name = variant_names[idx]
-                    value = clean_text(container.get_text())
-                    if value:
-                        # Normalize whitespace
-                        value = re.sub(r'\s+', ' ', value)
-                        # Parse into structured SpecValue with multi-option handling
-                        # Pass standard_key to _parse_spec_field_enhanced so it can use the right extraction rules
-                        variant_specs[variant_name][standard_key] = self._parse_spec_field_enhanced(standard_key, value, source_field=spec_name)
-
-        # Create ProductVariant objects
-        for variant_name, specs in variant_specs.items():
-            if specs:
-                # Generate canonical key from product URL for variant ID
-                canonical_key = extract_canonical_key(product_url, 'asus')
-                variant_id = generate_variant_id('asus', canonical_key, variant_name)
-                variants.append(ProductVariant(
-                    variant_id=variant_id,
-                    name=variant_name,
-                    specs=specs,
-                    source_url=techspec_url
-                ))
+            name = names[index]
+            variants.append(ProductVariant(
+                variant_id=generate_variant_id('asus', canonical_key, name),
+                name=name,
+                sku=name,
+                specs=specs,
+                source_url=techspec_url
+            ))
 
         return variants
 
@@ -1450,7 +1564,7 @@ def create_asus_config() -> ScraperConfig:
         ),
     ]
 
-    return ScraperConfig(
+    config = ScraperConfig(
         manufacturer='asus',
         brand='ASUS',
         base_url='https://www.asus.com/',
@@ -1460,6 +1574,10 @@ def create_asus_config() -> ScraperConfig:
         retry_attempts=3,
         checkpoint_interval=10
     )
+
+    # The YAML configuration is authoritative for the base URL and the
+    # region list (category paths, rate limit, timeout).
+    return apply_yaml_config(config)
 
 
 async def run_asus_scraper(regions: List[str] = None):

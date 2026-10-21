@@ -1,6 +1,18 @@
 """
 Veridian Scraper - Base Scraper Classes
 Abstract base classes for manufacturer scrapers
+
+This module owns three cross-cutting concerns that every manufacturer scraper
+depends on:
+
+* **Configuration** - the YAML files in ``veridian_scraper/config`` are the
+  source of truth for base URLs, regions and their category paths.
+* **robots.txt compliance** - ADR-003 requires a robots.txt check before the
+  first request and a refusal when the source policy does not permit the
+  fetch. The HTTP client therefore consults the policy before every request
+  and raises instead of trying to work around a block.
+* **Health reporting** - every run is measured (pages, products, SKUs,
+  failures) so an empty run can never be mistaken for a successful one.
 """
 
 import asyncio
@@ -11,8 +23,9 @@ import re
 from abc import ABC, abstractmethod
 from pathlib import Path
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any, Set, AsyncIterator
+from typing import Optional, List, Dict, Any, Set, AsyncIterator, Callable, Tuple
 from urllib.parse import urljoin, urlparse, parse_qs
+from urllib.robotparser import RobotFileParser
 from datetime import datetime
 import yaml
 
@@ -27,11 +40,26 @@ from ..models import (
     canonicalize_url, extract_canonical_key,
     ScrapingProgress
 )
+from ..health import (
+    ScraperHealth, SkuLedger, RunReport,
+    SOURCE_FAILURE, PARSER_FAILURE,
+    get_collector,
+)
 
 
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
+
+# Veridian identifies itself honestly to every site it talks to. ADR-003 and
+# the data source register both require an identifiable agent with contact
+# details, so the robots policy is always evaluated for this agent and no
+# request is ever sent with a spoofed identity.
+ROBOTS_USER_AGENT = "VeridianBot/1.0 (+https://veridian.dev; contact@veridian.dev)"
+
+# Directory holding the per-manufacturer YAML configuration files.
+CONFIG_DIR = Path(__file__).resolve().parent.parent / 'config'
+
 
 @dataclass
 class RegionConfig:
@@ -54,7 +82,8 @@ class ScraperConfig:
     brand: str
     base_url: str
     regions: List[RegionConfig]
-    user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    user_agent: str = ROBOTS_USER_AGENT
+    robots_user_agent: str = ROBOTS_USER_AGENT
     output_dir: str = "./output"
     max_concurrent: int = 3
     retry_attempts: int = 3
@@ -62,35 +91,300 @@ class ScraperConfig:
 
 
 class ConfigManager:
-    """Load and manage configuration from YAML"""
+    """Load and manage configuration from YAML.
+
+    Veridian keeps one YAML file per manufacturer in ``veridian_scraper/config``.
+    Three document shapes are accepted, because both the historical
+    multi-vendor file and the per-manufacturer files exist in the repository:
+
+    ``manufacturers: {asus: {...}}``
+        A mapping of manufacturer name to its configuration block.
+    ``manufacturer: asus``
+        The file describes exactly one manufacturer; ``brand``, ``base_url``
+        and ``regions`` sit next to the key.
+    ``manufacturer: {asus: {...}}``
+        The legacy nested form used by the first generation of config files.
+
+    Passing a directory loads and merges every ``*.yaml`` file it contains,
+    which is how the shared manager is built.
+    """
 
     def __init__(self, config_path: str):
-        with open(config_path, 'r') as f:
-            self.config = yaml.safe_load(f)
         self.logger = logging.getLogger(__name__)
+        self.config_path = Path(config_path)
+        self.config: Dict[str, Any] = {}
+        self.manufacturers: Dict[str, Dict[str, Any]] = {}
 
-    def get_manufacturer_config(self, manufacturer: str) -> Optional[Dict]:
-        return self.config.get('manufacturers', {}).get(manufacturer)
+        if self.config_path.is_dir():
+            paths = sorted(self.config_path.glob('*.yaml')) + sorted(self.config_path.glob('*.yml'))
+            for path in paths:
+                document = self._read_yaml(path)
+                self.config.setdefault('manufacturers', {}).update(self._normalize(document))
+                self.manufacturers.update(self._normalize(document))
+        else:
+            self.config = self._read_yaml(self.config_path)
+            self.manufacturers = self._normalize(self.config)
+
+    @staticmethod
+    def _read_yaml(path: Path) -> Dict[str, Any]:
+        with open(path, 'r', encoding='utf-8') as handle:
+            return yaml.safe_load(handle) or {}
+
+    @staticmethod
+    def _normalize(document: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+        """Flatten the accepted document shapes into {manufacturer: config}."""
+        manufacturers: Dict[str, Dict[str, Any]] = {}
+        if not isinstance(document, dict):
+            return manufacturers
+
+        nested = document.get('manufacturers')
+        if isinstance(nested, dict):
+            for name, block in nested.items():
+                manufacturers[str(name).lower()] = dict(block or {})
+
+        single = document.get('manufacturer')
+        if isinstance(single, str):
+            block = {k: v for k, v in document.items() if k != 'manufacturer'}
+            manufacturers[single.lower()] = block
+        elif isinstance(single, dict):
+            for name, block in single.items():
+                manufacturers[str(name).lower()] = dict(block or {})
+
+        return manufacturers
+
+    def get_manufacturer_config(self, manufacturer: str) -> Optional[Dict[str, Any]]:
+        """Return the raw configuration block for a manufacturer (if any)."""
+        return self.manufacturers.get(manufacturer.lower())
 
     def get_region_configs(self, manufacturer: str) -> List[RegionConfig]:
+        """Build the region list for a manufacturer from the YAML."""
         mfg_config = self.get_manufacturer_config(manufacturer)
         if not mfg_config:
             return []
 
         regions = []
-        for r in mfg_config.get('regions', []):
+        for r in mfg_config.get('regions') or []:
             regions.append(RegionConfig(
-                code=r['code'],
-                name=r['name'],
-                base_url=r['base_url'],
+                # Region codes are lower-cased so that a config file written as
+                # "US" still matches the "--regions us" CLI flag.
+                code=str(r.get('code', '')).strip().lower(),
+                name=r.get('name', ''),
+                base_url=r.get('base_url', ''),
                 language=r.get('language', 'en'),
                 currency=r.get('currency', 'USD'),
-                category_paths=r.get('category_paths', {}),
-                selectors=r.get('selectors', {}),
-                rate_limit=r.get('rate_limit', 1.0),
-                timeout=r.get('timeout', 30)
+                category_paths=r.get('category_paths') or {},
+                selectors=r.get('selectors') or {},
+                rate_limit=float(r.get('rate_limit', 1.0)),
+                timeout=int(r.get('timeout', 30)),
             ))
         return regions
+
+    def get_scraper_config(self, manufacturer: str) -> Optional[ScraperConfig]:
+        """Build a complete ScraperConfig from YAML, or None when unknown."""
+        mfg_config = self.get_manufacturer_config(manufacturer)
+        if not mfg_config:
+            return None
+
+        regions = self.get_region_configs(manufacturer)
+        if not regions:
+            return None
+
+        return ScraperConfig(
+            manufacturer=manufacturer.lower(),
+            brand=mfg_config.get('brand', manufacturer.title()),
+            base_url=mfg_config.get('base_url', ''),
+            regions=regions,
+            user_agent=mfg_config.get('user_agent', ROBOTS_USER_AGENT),
+            robots_user_agent=mfg_config.get('robots_user_agent', ROBOTS_USER_AGENT),
+            output_dir=mfg_config.get('output_dir', './output'),
+            max_concurrent=int(mfg_config.get('max_concurrent', 3)),
+            retry_attempts=int(mfg_config.get('retry_attempts', 3)),
+            checkpoint_interval=int(mfg_config.get('checkpoint_interval', 10)),
+        )
+
+
+_CONFIG_MANAGER: Optional[ConfigManager] = None
+
+
+def get_config_manager(config_dir: Optional[str] = None) -> ConfigManager:
+    """Return the shared ConfigManager (loaded from veridian_scraper/config)."""
+    global _CONFIG_MANAGER
+    if _CONFIG_MANAGER is None or config_dir is not None:
+        _CONFIG_MANAGER = ConfigManager(config_dir or str(CONFIG_DIR))
+    return _CONFIG_MANAGER
+
+
+def apply_yaml_config(config: ScraperConfig, manager: Optional[ConfigManager] = None) -> ScraperConfig:
+    """Overlay the YAML configuration onto a scraper config.
+
+    The YAML files are authoritative for the fields they can supply (the base
+    URL and the region list with its category paths, rate limit and timeout);
+    every other setting keeps the value that is built in code unless the YAML
+    states it explicitly.
+    """
+    manager = manager or get_config_manager()
+    mfg_config = manager.get_manufacturer_config(config.manufacturer)
+    if not mfg_config:
+        return config
+
+    for field in ('brand', 'base_url', 'user_agent', 'robots_user_agent', 'output_dir'):
+        value = mfg_config.get(field)
+        if value:
+            setattr(config, field, value)
+
+    for field in ('max_concurrent', 'retry_attempts', 'checkpoint_interval'):
+        value = mfg_config.get(field)
+        if value is not None:
+            setattr(config, field, int(value))
+
+    regions = manager.get_region_configs(config.manufacturer)
+    if regions:
+        config.regions = regions
+
+    return config
+
+
+# =============================================================================
+# ROBOTS.TXT POLICY
+# =============================================================================
+
+class RobotsPolicyError(RuntimeError):
+    """Base class for robots.txt policy failures."""
+
+
+class RobotsDisallowedError(RobotsPolicyError):
+    """The site's robots.txt does not permit this path for the Veridian agent."""
+
+
+class RobotsUnavailableError(RobotsPolicyError):
+    """The site's robots.txt could not be read, so the policy is unknown."""
+
+
+def _origin_of(url: str) -> str:
+    """Return the scheme://host part of a URL (the robots.txt scope)."""
+    parsed = urlparse(url)
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+class RobotsPolicy:
+    """Fetches, caches and evaluates ``robots.txt`` per origin.
+
+    ADR-003 requires a robots.txt check before the first request and a refusal
+    when a source's robots policy does not permit the fetch, so the policy is
+    consulted before *every* request and a refusal raises instead of trying to
+    work around the block. There is no CAPTCHA solving, no login and no
+    identity spoofing: if the policy does not allow the fetch, Veridian stops.
+
+    The policy is always evaluated for the honest ``VeridianBot`` agent,
+    because the rules a site publishes for crawlers are the rules Veridian has
+    to obey.
+    """
+
+    def __init__(
+        self,
+        user_agent: str = ROBOTS_USER_AGENT,
+        timeout: float = 15.0,
+        fetcher: Optional[Callable[[str], Any]] = None,
+    ):
+        self.user_agent = user_agent
+        self.timeout = timeout
+        self._fetcher = fetcher
+        self._parsers: Dict[str, Optional[RobotFileParser]] = {}
+        self._delays: Dict[str, Optional[float]] = {}
+        self._client: Optional[httpx.AsyncClient] = None
+        self.logger = logging.getLogger(f"{__name__}.{user_agent.split('/')[0]}")
+
+    async def _client_or_new(self) -> httpx.AsyncClient:
+        if self._client is None:
+            self._client = httpx.AsyncClient(
+                timeout=self.timeout,
+                headers={'User-Agent': self.user_agent},
+                follow_redirects=True,
+            )
+        return self._client
+
+    async def close(self) -> None:
+        """Release the underlying HTTP client."""
+        if self._client is not None:
+            await self._client.aclose()
+            self._client = None
+
+    async def _fetch(self, url: str) -> Tuple[int, str]:
+        """Fetch a robots.txt file, returning (status_code, body)."""
+        if self._fetcher is not None:
+            status, text = await self._fetcher(url)
+            return int(status), text or ""
+        client = await self._client_or_new()
+        response = await client.get(url)
+        return response.status_code, response.text
+
+    async def _parser_for(self, origin: str) -> Optional[RobotFileParser]:
+        """Return the parser for an origin.
+
+        ``None`` means "no robots.txt published", which RFC 9309 section
+        2.3.1.3 defines as "everything is allowed". A robots.txt that cannot be
+        read (403, 429, 5xx, network error) raises
+        :class:`RobotsUnavailableError`: an unknown policy is not permission.
+        """
+        if origin in self._parsers:
+            return self._parsers[origin]
+
+        robots_url = f"{origin}/robots.txt"
+        try:
+            status, text = await self._fetch(robots_url)
+        except RobotsPolicyError:
+            raise
+        except Exception as exc:
+            self._parsers[origin] = None
+            self._delays[origin] = None
+            raise RobotsUnavailableError(
+                f"robots.txt for {origin} could not be retrieved: {exc}"
+            ) from exc
+
+        if status in (404, 410):
+            self._parsers[origin] = None
+            self._delays[origin] = None
+            return None
+
+        if 200 <= status < 300:
+            parser = RobotFileParser()
+            parser.parse(text.splitlines())
+            self._parsers[origin] = parser
+            delay = parser.crawl_delay(self.user_agent)
+            self._delays[origin] = float(delay) if delay else None
+            return parser
+
+        self._parsers[origin] = None
+        self._delays[origin] = None
+        raise RobotsUnavailableError(
+            f"robots.txt for {origin} returned HTTP {status}; refusing to fetch"
+        )
+
+    async def is_allowed(self, url: str) -> bool:
+        """Is this URL permitted for the Veridian agent?"""
+        origin = _origin_of(url)
+        parser = await self._parser_for(origin)
+        if parser is None:
+            return True
+        return parser.can_fetch(self.user_agent, url)
+
+    async def crawl_delay(self, url: str) -> Optional[float]:
+        """Crawl delay (seconds) declared for this origin, if any."""
+        origin = _origin_of(url)
+        await self._parser_for(origin)
+        return self._delays.get(origin)
+
+    async def check(self, url: str) -> None:
+        """Raise unless the URL may be fetched.
+
+        Raises:
+            RobotsDisallowedError: the policy forbids this path.
+            RobotsUnavailableError: the policy could not be determined.
+        """
+        if not await self.is_allowed(url):
+            raise RobotsDisallowedError(
+                f"robots.txt does not permit {self.user_agent} to fetch {url}"
+            )
 
 
 # =============================================================================
@@ -113,13 +407,21 @@ class RateLimiter:
 
 
 class HTTPClient:
-    """Async HTTP client with rate limiting, retries, and session management"""
+    """Async HTTP client with rate limiting, robots.txt compliance, retries and session management"""
 
-    def __init__(self, config: ScraperConfig, region: RegionConfig):
+    def __init__(
+        self,
+        config: ScraperConfig,
+        region: RegionConfig,
+        health: Optional[ScraperHealth] = None,
+        robots: Optional[RobotsPolicy] = None,
+    ):
         self.config = config
         self.region = region
+        self.health = health
         self.client: Optional[httpx.AsyncClient] = None
         self.rate_limiter = RateLimiter(region.rate_limit)
+        self.robots = robots or RobotsPolicy(user_agent=config.robots_user_agent)
         self.logger = logging.getLogger(f"{__name__}.{region.code}")
         self.request_count = 0
         self.error_count = 0
@@ -142,6 +444,7 @@ class HTTPClient:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self.client:
             await self.client.aclose()
+        await self.robots.close()
 
     def _is_retryable_error(self, exc: Exception) -> bool:
         """Check if an exception should trigger a retry"""
@@ -152,13 +455,49 @@ class HTTPClient:
             return 500 <= exc.response.status_code < 600
         return False
 
+    async def _respect_robots(self, url: str) -> None:
+        """Refuse the request when the source's robots policy forbids it.
+
+        The check happens before anything is fetched. A declared crawl delay
+        always wins over Veridian's own rate limit.
+        """
+        await self.robots.check(url)
+        delay = await self.robots.crawl_delay(url)
+        if delay:
+            elapsed = time.time() - self.rate_limiter.last_request
+            if elapsed < delay:
+                await asyncio.sleep(delay - elapsed)
+
+    async def get(self, url: str, **kwargs) -> httpx.Response:
+        """GET request with robots.txt compliance, rate limiting and retry.
+
+        A page that cannot be fetched is reported to the health tracker, so an
+        empty run can never be mistaken for a successful one.
+        """
+        await self._respect_robots(url)
+
+        if self.health is not None:
+            self.health.record_page_attempt()
+
+        started = time.perf_counter()
+        try:
+            response = await self._get_with_retry(url, **kwargs)
+        except Exception as exc:
+            if self.health is not None:
+                self.health.record_page_failure(url, exc, kind=SOURCE_FAILURE)
+            raise
+
+        if self.health is not None:
+            self.health.record_page_success((time.perf_counter() - started) * 1000)
+        return response
+
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
         retry=retry_if_exception_type((httpx.TimeoutException, httpx.NetworkError))
     )
-    async def get(self, url: str, **kwargs) -> httpx.Response:
-        """GET request with rate limiting and retry (5xx only)"""
+    async def _get_with_retry(self, url: str, **kwargs) -> httpx.Response:
+        """GET request with retry (5xx only)"""
         await self.rate_limiter.wait()
         self.request_count += 1
 
@@ -206,6 +545,8 @@ class BaseScraper(ABC):
         self.products: List[Product] = []
         self.progress = ScrapingProgress(region=region.code, manufacturer=config.manufacturer)
         self.http_client: Optional[HTTPClient] = None
+        self.health: Optional[ScraperHealth] = None
+        self.report: Optional[RunReport] = None
         self._seen_urls: Set[str] = set()
         self._canonical_keys: Dict[str, Product] = {}
 
@@ -229,44 +570,95 @@ class BaseScraper(ABC):
         """Map URL to product category"""
         pass
 
+    def _sku_ledger(self) -> Optional[SkuLedger]:
+        """Ledger of SKUs seen in previous runs (used to tell new from updated)."""
+        path = Path(self.config.output_dir) / 'health' / f"{self.config.manufacturer}.skus.json"
+        try:
+            return SkuLedger(path)
+        except OSError as exc:  # pragma: no cover - defensive
+            self.logger.warning("Could not open SKU ledger %s: %s", path, exc)
+            return None
+
     async def scrape(self, categories: Optional[List[str]] = None) -> List[Product]:
-        """Main scraping entry point"""
+        """Main scraping entry point.
+
+        The run is measured from start to finish and always produces a health
+        report, so "the process exited 0" can never be mistaken for "the run
+        collected data".
+        """
         self.logger.info(f"Starting scrape for {self.config.manufacturer} - {self.region.code}")
 
-        async with HTTPClient(self.config, self.region) as http_client:
-            self.http_client = http_client
+        health = ScraperHealth(self.config.manufacturer, self.region.code, ledger=self._sku_ledger())
+        self.health = health
 
-            # Discover categories
-            all_categories = await self.discover_categories()
-            self.logger.info(f"Found {len(all_categories)} categories")
+        try:
+            async with HTTPClient(self.config, self.region, health=health) as http_client:
+                self.http_client = http_client
 
-            # Filter categories if specified
-            if categories:
-                all_categories = [c for c in all_categories if c.get('name') in categories or c.get('slug') in categories]
+                # Discover categories
+                all_categories = await self.discover_categories()
+                self.logger.info(f"Found {len(all_categories)} categories")
 
-            # Scrape each category
-            for cat_info in all_categories:
-                cat_name = cat_info.get('name', cat_info.get('slug', 'unknown'))
+                # Filter categories if specified
+                if categories:
+                    all_categories = [c for c in all_categories if c.get('name') in categories or c.get('slug') in categories]
 
-                # Skip already completed categories
-                if cat_name in self.progress.completed_categories:
-                    self.logger.info(f"Skipping already completed category: {cat_name}")
-                    continue
+                # Scrape each category
+                for cat_info in all_categories:
+                    cat_name = cat_info.get('name', cat_info.get('slug', 'unknown'))
 
-                self.logger.info(f"Scraping category: {cat_name}")
+                    # Skip already completed categories
+                    if cat_name in self.progress.completed_categories:
+                        self.logger.info(f"Skipping already completed category: {cat_name}")
+                        continue
 
-                try:
-                    await self._scrape_category(cat_info)
-                    self.progress.completed_categories.append(cat_name)
-                except Exception as e:
-                    self.logger.error(f"Failed to scrape category {cat_name}: {e}")
-                    self.progress.error_count += 1
+                    self.logger.info(f"Scraping category: {cat_name}")
 
-                # Save checkpoint
-                self._save_checkpoint()
+                    try:
+                        await self._scrape_category(cat_info)
+                        self.progress.completed_categories.append(cat_name)
+                    except RobotsPolicyError as e:
+                        # The source policy forbids this fetch: stop, do not work
+                        # around it, and record the run as blocked.
+                        health.record_blocked(str(e))
+                        self.logger.error(f"Refusing to continue with {cat_name}: {e}")
+                        break
+                    except Exception as e:
+                        self.logger.error(f"Failed to scrape category {cat_name}: {e}")
+                        self.progress.error_count += 1
 
-        self.logger.info(f"Scraping complete: {len(self.products)} products")
+                    # Save checkpoint
+                    self._save_checkpoint()
+        except RobotsPolicyError as e:
+            health.record_blocked(str(e))
+            self.logger.error(f"Refusing to scrape {self.config.manufacturer}: {e}")
+        finally:
+            self.report = health.build_report()
+            collector = get_collector()
+            collector.register(self.report)
+            self._write_health_report(collector)
+            if health.ledger is not None:
+                health.ledger.save()
+
+        self.logger.info(
+            f"Scraping complete: {len(self.products)} products "
+            f"({self.report.status}, {self.report.pages_succeeded} pages parsed)"
+        )
         return self.products
+
+    def _write_health_report(self, collector) -> None:
+        """Write the merged per-manufacturer health report to disk."""
+        report = collector.get(self.config.manufacturer)
+        if report is None:
+            return
+        import json
+        path = Path(self.config.output_dir) / 'health' / f"{self.config.manufacturer}.json"
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, 'w', encoding='utf-8') as handle:
+                json.dump(report.to_dict(), handle, indent=2)
+        except OSError as exc:  # pragma: no cover - defensive
+            self.logger.warning("Could not write health report %s: %s", path, exc)
 
     async def _scrape_category(self, category_info: Dict):
         """Scrape all products in a category"""
@@ -274,35 +666,55 @@ class BaseScraper(ABC):
 
         async for product_url in self.discover_products(category_url, category_info):
             if product_url in self._seen_urls:
+                if self.health is not None:
+                    self.health.record_duplicate()
                 continue
 
             self._seen_urls.add(product_url)
+            if self.health is not None:
+                self.health.record_pages_discovered()
 
             try:
                 product = await self.extract_product(product_url, category_info)
                 if product:
-                    self._add_product(product)
+                    is_duplicate = self._add_product(product)
                     self.progress.scraped_products += 1
+
+                    if self.health is not None:
+                        if is_duplicate:
+                            self.health.record_duplicate()
+                        self.health.record_product(product)
 
                     if self.progress.scraped_products % self.config.checkpoint_interval == 0:
                         self._save_checkpoint()
 
+            except RobotsPolicyError:
+                # Policy refusals are not parser errors: let them abort the run.
+                raise
             except Exception as e:
                 self.logger.error(f"Failed to extract product {product_url}: {e}")
                 self.progress.failed_urls.append(product_url)
                 self.progress.error_count += 1
+                if self.health is not None and not isinstance(e, httpx.HTTPError):
+                    # HTTP failures are already counted by the client.
+                    self.health.record_parser_failure(product_url, e)
 
-    def _add_product(self, product: Product):
-        """Add product with deduplication by canonical key"""
+    def _add_product(self, product: Product) -> bool:
+        """Add product with deduplication by canonical key.
+
+        Returns True when the product was a duplicate of one already seen.
+        """
         key = product.canonical_key
 
         if key in self._canonical_keys:
             # Merge with existing
             existing = self._canonical_keys[key]
             self._merge_products(existing, product)
-        else:
-            self._canonical_keys[key] = product
-            self.products.append(product)
+            return True
+
+        self._canonical_keys[key] = product
+        self.products.append(product)
+        return False
 
     def _merge_products(self, existing: Product, new: Product):
         """Merge two products (same canonical key)"""

@@ -65,6 +65,8 @@ const BRAND_OVERRIDES: Record<string, string> = {
   "durabook": "Durabook",
   "sicomputer": "SiComputer",
   "acerinc": "Acer",
+  // The source writes this brand both as "Jp. ik" and as "jp.ik".
+  jpik: "J.P. Ik",
 };
 
 /** Brands that are always written in upper case. */
@@ -77,19 +79,28 @@ const UPPERCASE_BRANDS = new Set([
  * Canonical manufacturer name for a reported brand string.
  *
  * Collapses internal whitespace, applies the override table, then falls back
- * to title case for brands that are not acronyms.
+ * to title case for brands that are not acronyms. Lookup is done on a key
+ * with every separator removed, so "Jp. ik" and "jp.ik" resolve to the same
+ * manufacturer.
  */
 export function canonicalBrand(raw: string): string {
   const collapsed = raw.replace(/\s+/g, " ").trim();
   if (!collapsed) return "Unknown";
   const key = collapsed.toLowerCase();
   if (BRAND_OVERRIDES[key]) return BRAND_OVERRIDES[key];
+  const compact = key.replace(/[^a-z0-9]/g, "");
+  if (BRAND_OVERRIDES[compact]) return BRAND_OVERRIDES[compact];
   if (UPPERCASE_BRANDS.has(collapsed.toUpperCase())) return collapsed.toUpperCase();
-  // "Jp. ik" / "jp.ik" both collapse to "Jp. Ik" here; the override table
-  // handles the specific cases that need more than mechanical title case.
+  // Title case each word, and each part of a word separated by a period, so
+  // "jp.ik" and "jp. ik" produce the same spelling.
   return collapsed
     .split(" ")
-    .map((word) => (word ? word[0].toUpperCase() + word.slice(1).toLowerCase() : word))
+    .map((word) =>
+      word
+        .split(".")
+        .map((part) => (part ? part[0].toUpperCase() + part.slice(1).toLowerCase() : part))
+        .join(".")
+    )
     .join(" ");
 }
 
@@ -210,7 +221,7 @@ const BRAND_SERIES_RULES: Record<string, Array<[RegExp, number]>> = {
   Lenovo: [
     [/^(ThinkPad\s+(?:[A-Z]?\d{1,2}|T\d{2}|X1|P\d{1,2}s?))(?:\s+.*)?$/i, 1],
     [/^(ThinkBook\s+[\w]+)/i, 1],
-    [/^(IdeaPad\s+(?:Slim|Pro|Idea|1|2|3|4|5|Studio|Vibe|Plus|SL))(?:\s+.*)?$/i, 1],
+    [/^(IdeaPad\s+(?:Slim|Pro|Idea|Studio|Vibe|Plus|SL)\s*\d*)/i, 1],
     [/^(Yoga\s+[\w]*)/i, 1],
     [/^(Legion\s+[\w]*)/i, 1],
     [/^(ThinkCentre|ThinkPad\s+neo|ThinkPad\s+X1)/i, 0],
@@ -248,7 +259,7 @@ const BRAND_SERIES_RULES: Record<string, Array<[RegExp, number]>> = {
     [/^(Extensa\s+\d*)/i, 1],
   ],
   ASUS: [
-    [/^(Zenbook\s+\d*)/i, 1],
+    [/^(Zenbook\s+[A-Z]?\d*)/i, 1],
     [/^(Vivobook\s+\d*)/i, 1],
     [/^(ROG\s+[\w\s]*?\d)/i, 1],
     [/^(TUF\s+Gaming\s+[\w\s]*?\d)/i, 1],
@@ -312,10 +323,15 @@ export function resolveModelName(
   if (hasLettersAndSpaces(name)) return name;
 
   if (additional) {
-    for (const marketing of additional.marketingNames) {
-      const candidate = stripEnumerationPrefix(marketing).replace(/\s+/g, " ").trim();
-      if (candidate.length >= 3) return candidate;
-    }
+    // The source often lists several identifiers: the chassis code it
+    // certified, and one or more marketing names. The most specific
+    // marketing name is the one a buyer would recognise, so the longest
+    // candidate wins.
+    const candidates = additional.marketingNames
+      .map((marketing) => stripEnumerationPrefix(marketing).replace(/\s+/g, " ").trim())
+      .filter((candidate) => candidate.length >= 3)
+      .sort((a, b) => b.length - a.length);
+    if (candidates.length > 0) return candidates[0];
   }
   return name;
 }
@@ -341,16 +357,15 @@ export function deriveSeriesName(
   const name = stripEnumerationPrefix(modelName).replace(/\s+/g, " ").trim();
   if (!name) return brand;
 
-  // Prefer an explicit marketing family name carried in
-  // additional_model_information when the model name itself is a bare part
-  // number. Legends are excluded by the parser.
+  // The per-brand table is curated, so its capture is used as written: the
+  // rules already decide where the family name ends.
   const rules = BRAND_SERIES_RULES[brand];
   if (rules) {
     for (const [pattern, group] of rules) {
       const match = pattern.exec(name);
       if (match) {
         const captured = (match[group] ?? match[0]).replace(/\s+/g, " ").trim();
-        if (captured) return stripManufacturerPrefix(brand, stripTail(captured));
+        if (captured) return captured;
       }
     }
   }
@@ -358,16 +373,20 @@ export function deriveSeriesName(
   const isBarePartNumber = !/\s/.test(name);
 
   if (isBarePartNumber && additional) {
-    for (const marketing of additional.marketingNames) {
-      const derived = stripTail(marketing);
-      if (derived.length >= 3) return stripManufacturerPrefix(brand, derived);
-    }
+    // Prefer an explicit marketing family name carried in
+    // additional_model_information. Legends are excluded by the parser, the
+    // most specific candidate wins, and a trailing part number is removed.
+    const candidates = additional.marketingNames
+      .map((marketing) => stripPartNumber(marketing))
+      .filter((candidate) => candidate.length >= 3)
+      .sort((a, b) => b.length - a.length);
+    if (candidates.length > 0) return candidates[0];
   }
 
   // Generic: human-readable names keep their leading family tokens.
   if (hasLettersAndSpaces(name)) {
-    const derived = stripTail(name);
-    if (derived.length >= 3) return stripManufacturerPrefix(brand, derived);
+    const derived = stripPartNumber(stripTail(name));
+    if (derived.length >= 3) return derived;
   }
 
   // Bare part number: derive a chassis family by stripping the trailing
@@ -390,6 +409,11 @@ export function deriveSeriesName(
 /**
  * Remove a redundant leading manufacturer token from a family name
  * ("Lenovo Chrome 500e" -> "Chrome 500e").
+ *
+ * The manufacturer is carried separately on every record, so a family name
+ * that merely repeats the brand is noise. It is only applied to names the
+ * catalog derived itself, never to a marketing name the manufacturer
+ * published.
  */
 export function stripManufacturerPrefix(brand: string, value: string): string {
   const prefix = brand.trim();
@@ -404,10 +428,30 @@ function hasLettersAndSpaces(value: string): boolean {
 }
 
 /**
- * Strip trailing size / generation / part-number tokens from a family name.
+ * Strip a trailing part-number token from a marketing name.
+ *
+ * "Dell Pro Essential 15 PV15260" -> "Dell Pro Essential 15".
+ * A name with only two tokens is left alone, because its last token is the
+ * model rather than a part number.
+ */
+export function stripPartNumber(value: string): string {
+  const tokens = value.split(/\s+/).filter(Boolean);
+  // A name of three tokens or fewer ends with its model designation, not a
+  // part number: "Lenovo Chrome 500e" is a family plus a model.
+  if (tokens.length < 4) return value;
+  const last = tokens[tokens.length - 1];
+  if (!looksLikePartNumber(last)) return value;
+  return tokens.slice(0, -1).join(" ");
+}
+
+/**
+ * Strip trailing size, generation and filler tokens from a family name.
  *
  * "ThinkPad E14 Gen 8" -> "ThinkPad E14"
- * "MacBook Air 13 in. with M5" -> "MacBook Air"
+ * "MacBook Air 13-inch (M4)" -> "MacBook Air"
+ *
+ * A bare number is deliberately *not* cut: in a family name like
+ * "IdeaPad Slim 5" the number is the generation, not a size.
  */
 export function stripTail(value: string): string {
   const tokens = value.split(/\s+/).filter(Boolean);
@@ -415,9 +459,8 @@ export function stripTail(value: string): string {
   for (const token of tokens) {
     const lower = token.toLowerCase().replace(/[.,]/g, "");
     if (GENERIC_TAIL.has(lower)) break;
-    if (/^\d+(\.\d+)?("|in|inch)?$/.test(lower)) break; // bare size
+    if (/^\d+(\.\d+)?\s*(inch|in|")?$/.test(lower) && lower.length > 2) break; // size
     if (/^\d+(st|nd|rd|th)$/.test(lower)) break; // ordinal edition
-    if (/^\d+(in|inch|")/.test(lower)) break;
     if (/^(with|and|featuring|-)$/i.test(token)) break;
     kept.push(token);
   }

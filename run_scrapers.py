@@ -35,6 +35,9 @@ from veridian_db.models import Base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+# Import the health reporting layer
+from veridian_scraper.health import get_collector
+
 # Scraper registry
 SCRAPERS = {
     'asus': run_asus_scraper,
@@ -84,7 +87,15 @@ async def run_scraper(
             products = await SCRAPERS[name](regions, exclusion_list=exclusion_list)
         else:
             products = await SCRAPERS[name](regions)
-        print(f"✓ {name}: {len(products)} products scraped")
+
+        # A run that produced no parsed pages is not a success, no matter what
+        # the exit code says, so the health report decides what we print.
+        report = get_collector().get(name)
+        if report is not None and not report.success:
+            reason = report.blocked_reason or report.last_failure or 'no pages were parsed'
+            print(f"✗ {name}: {len(products)} products, run status '{report.status}' ({reason})")
+        else:
+            print(f"✓ {name}: {len(products)} products scraped")
         return products
     except Exception as e:
         print(f"✗ {name} failed: {e}")
@@ -160,6 +171,12 @@ async def run_all_scrapers(
         print(f"  {name:15s}: {count:4d} products")
     print(f"  {'TOTAL':15s}: {total:4d} products")
 
+    # Write the health reports of this run
+    collector = get_collector()
+    written = collector.write_all()
+    if written:
+        print(f"\nHealth reports written to {written[0].parent}")
+
     return all_results
 
 
@@ -215,6 +232,8 @@ def main():
     parser.add_argument('--no-db', action='store_true', help='Do not save to database')
     parser.add_argument('--db-url', default='sqlite:///veridian.db', help='Database URL')
     parser.add_argument('--incremental', action='store_true', help='Run incremental update')
+    parser.add_argument('--report', action='store_true',
+                        help='Print the scraper health summary table')
 
     args = parser.parse_args()
 
@@ -230,6 +249,12 @@ def main():
             save_to_db=not args.no_db,
             db_url=args.db_url
         ))
+
+    if args.report:
+        print(f"\n{'='*60}")
+        print("SCRAPER HEALTH REPORT")
+        print(f"{'='*60}")
+        print(get_collector().summary_table())
 
 
 if __name__ == '__main__':

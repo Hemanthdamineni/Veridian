@@ -14,20 +14,14 @@ from datetime import datetime
 from enum import Enum
 from typing import Callable, Dict, List, Optional
 
+from ..notifications.notifier import NotificationChannel
+
 
 class AlertCondition(Enum):
     """Types of alert conditions."""
     BELOW_PRICE = "below_price"           # Price drops below threshold
     LOWEST_EVER = "lowest_ever"           # Price hits all-time low
     PCT_OFF_MSRP = "pct_off_msrp"         # Discount percentage vs MSRP
-
-
-class NotificationChannel(Enum):
-    """Notification channels."""
-    EMAIL = "email"
-    TELEGRAM = "telegram"
-    DISCORD = "discord"
-    PUSH = "push"
 
 
 @dataclass

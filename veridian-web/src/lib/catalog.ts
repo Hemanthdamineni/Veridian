@@ -2,6 +2,11 @@
 
 export interface FilterState {
   q: string;
+  /**
+   * `filters` — the exact-constraint filter panel.
+   * `plain`   — a natural-language query parsed into filters.
+   */
+  mode: "filters" | "plain";
   cpuBrand: string[];
   ramMin: string;
   storageMin: string;
@@ -20,6 +25,7 @@ export interface FilterState {
 
 export const DEFAULT_FILTERS: FilterState = {
   q: "",
+  mode: "filters",
   cpuBrand: [],
   ramMin: "",
   storageMin: "",
@@ -40,6 +46,7 @@ export const DEFAULT_FILTERS: FilterState = {
 export function filtersToQuery(f: FilterState): string {
   const p = new URLSearchParams();
   if (f.q) p.set("q", f.q);
+  if (f.mode !== "filters") p.set("mode", f.mode);
   if (f.cpuBrand.length) p.set("cpu_brand", f.cpuBrand.join(","));
   if (f.ramMin) p.set("ram_min", f.ramMin);
   if (f.storageMin) p.set("storage_min", f.storageMin);
@@ -59,8 +66,10 @@ export function filtersToQuery(f: FilterState): string {
 
 /** Parse URLSearchParams into a full filter state. */
 export function queryToFilters(sp: URLSearchParams): FilterState {
+  const mode = sp.get("mode");
   return {
     q: sp.get("q") ?? "",
+    mode: mode === "plain" ? "plain" : "filters",
     cpuBrand: split(sp.get("cpu_brand")),
     ramMin: sp.get("ram_min") ?? "",
     storageMin: sp.get("storage_min") ?? "",
@@ -88,7 +97,7 @@ export function clampPage(n: number): number {
 
 /** True when anything beyond the (US, page 1) defaults is active. */
 export function hasActiveFilters(f: FilterState): boolean {
-  return !!(f.q || f.cpuBrand.length || f.ramMin || f.storageMin || f.displayType.length ||
+  return !!(f.q || f.mode !== "filters" || f.cpuBrand.length || f.ramMin || f.storageMin || f.displayType.length ||
     f.refreshMin || f.weightMax || f.batteryMin || f.touch || f.region !== "US" ||
     f.priceMin || f.priceMax || f.provenance.length || f.sort);
 }
@@ -112,7 +121,15 @@ export function activeChips(f: FilterState): { key: string; label: string; clear
   if (f.provenance.length) {
     chips.push({
       key: "provenance",
-      label: f.provenance.map((p) => (p === "certified" ? "Certified" : "Reference")).join(", "),
+      label: f.provenance
+        .map((p) =>
+          p === "certified"
+            ? "Certified"
+            : p === "manufacturer"
+              ? "Manufacturer"
+              : "Unverified"
+        )
+        .join(", "),
       clear: { provenance: [] },
     });
   }

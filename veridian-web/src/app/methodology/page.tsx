@@ -9,20 +9,34 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function MethodologyPage() {
-  const [catalogTotal, certifiedTotal, certifiedSpecTotal, sourceRows, regionRows] =
-    await Promise.all([
-      prisma.sku.count({ where: { catalogVisible: true } }),
-      prisma.sku.count({ where: { catalogVisible: true, certifiedSpecs: { some: {} } } }),
-      prisma.certifiedSkuSpec.count(),
-      prisma.rawObservation.count(),
-      prisma.skuRegionalPricing.findMany({
-        distinct: ["region"],
-        select: { region: true },
-        orderBy: { region: "asc" },
-      }),
-    ]);
+  const [
+    catalogTotal,
+    certifiedTotal,
+    manufacturerTotal,
+    unverifiedTotal,
+    certifiedSpecTotal,
+    sourceRows,
+    rejectedRows,
+    componentTotal,
+    linkTotal,
+    regionRows,
+  ] = await Promise.all([
+    prisma.sku.count({ where: { catalogVisible: true } }),
+    prisma.sku.count({ where: { catalogVisible: true, provenance: "certified" } }),
+    prisma.sku.count({ where: { catalogVisible: true, provenance: "manufacturer" } }),
+    prisma.sku.count({ where: { catalogVisible: true, provenance: "unverified" } }),
+    prisma.certifiedSkuSpec.count(),
+    prisma.rawObservation.count(),
+    prisma.rawObservation.count({ where: { status: "rejected" } }),
+    prisma.component.count(),
+    prisma.skuComponent.count(),
+    prisma.skuRegionalPricing.findMany({
+      distinct: ["region"],
+      select: { region: true },
+      orderBy: { region: "asc" },
+    }),
+  ]);
 
-  const referenceTotal = catalogTotal - certifiedTotal;
   const regions = regionRows.map((r) => r.region);
 
   return (
@@ -40,36 +54,45 @@ export default async function MethodologyPage() {
 
       <div className="mt-10 grid max-w-3xl grid-cols-2 gap-6 border-y border-[var(--line)] py-6 sm:grid-cols-4">
         <Figure value={certifiedTotal.toLocaleString()} label="certified configurations" />
-        <Figure value={referenceTotal.toLocaleString()} label="reference configurations" />
+        <Figure value={(manufacturerTotal + unverifiedTotal).toLocaleString()} label="reference configurations" />
         <Figure value={sourceRows.toLocaleString()} label="raw source observations" />
-        <Figure value={regions.length.toLocaleString()} label="regions with prices" />
+        <Figure value={componentTotal.toLocaleString()} label="shared components" />
       </div>
 
       <div className="mt-12 space-y-3">
-        <Section n="01" title="Two tiers of data, and they are not the same">
+        <Section n="01" title="Three tiers of data, and they are not the same">
           <p>
-            The catalog mixes two clearly separated kinds of record, and every listing is labelled
+            The catalog mixes three clearly separated kinds of record, and every listing is labelled
             with which one it is:
           </p>
           <ul className="list-disc space-y-2 pl-5">
             <li>
               <strong className="font-semibold">Certified</strong> — {certifiedTotal.toLocaleString()}{" "}
-              configurations that carry a cited certification record with a verifiable source
-              link, a certification date, and a stored hash of the original payload. These are
-              marked <span className="font-mono text-[11px]">Certified</span> in the catalog.
+              configurations that carry a cited certification record with a verifiable source link, a
+              certification date, and a stored hash of the original payload. These are marked{" "}
+              <span className="font-mono text-[11px]">Certified</span> in the catalog.
             </li>
             <li>
-              <strong className="font-semibold">Reference</strong> — {referenceTotal.toLocaleString()}{" "}
-              configurations drawn from a local seed dataset. These expand a small set of
-              manufacturer-published configurations into a broad catalog so the filters have
-              something to work against. They are marked{" "}
-              <span className="font-mono text-[11px]">Reference</span> and are not cited.
+              <strong className="font-semibold">Manufacturer</strong> —{" "}
+              {manufacturerTotal.toLocaleString()} configurations whose figures were checked
+              against the manufacturer&rsquo;s own technical specification page, which is cited on
+              the configuration page. These are marked{" "}
+              <span className="font-mono text-[11px]">Manufacturer</span>.
+            </li>
+            <li>
+              <strong className="font-semibold">Unverified</strong> —{" "}
+              {unverifiedTotal.toLocaleString()} configurations from our own reference dataset.
+              They have no citation and have <em className="italic">not</em> been checked against
+              the manufacturer. They are marked{" "}
+              <span className="font-mono text-[11px]">Unverified</span>, and their pages say so in
+              plain words.
             </li>
           </ul>
           <p>
-            The reference tier exists so the product can be developed and demonstrated against a
+            The unverified tier exists so the product can be developed and demonstrated against a
             realistic dataset. It is not a claim that each row was transcribed from a manufacturer
-            page, and it should not be read as one.
+            page, and it should not be read as one. Where a figure can be checked, it is checked
+            and the row moves up a tier.
           </p>
         </Section>
 
@@ -86,8 +109,16 @@ export default async function MethodologyPage() {
           <p>
             {certifiedSpecTotal.toLocaleString()} certification records are currently stored,
             written by an audited path that records every accepted and every rejected source row.
-            A record that fails validation is kept with its exact error rather than being dropped,
-            so a bad figure can never quietly become a catalog fact.
+            {rejectedRows.toLocaleString()} source rows failed validation and were kept with their
+            exact error rather than being dropped, so a bad figure can never quietly become a
+            catalog fact.
+          </p>
+          <p>
+            One certification record is not one configuration. The same machine is certified again
+            when it is re-tested, and one product line can be certified in several configurations.
+            Veridian therefore keys a configuration on the part number plus a signature of the
+            specifications the source asserts, so re-certifications collapse onto one entry and
+            genuinely different configurations stay apart.
           </p>
         </Section>
 
@@ -115,23 +146,47 @@ export default async function MethodologyPage() {
             region changes which currency is displayed; it never changes which configurations are
             eligible to appear in the results.
           </p>
+          <p>
+            Live retailer pricing is the largest piece of work still outstanding. The schema,
+            identity resolution and append-only history are in place for it, but no retailer feed is
+            connected yet, so no price in the system should be read as a street price.
+          </p>
         </Section>
 
-        <Section n="05" title="What is not tracked yet">
+        <Section n="05" title="Components, not just rows">
+          <p>
+            Every certified configuration is also broken down into the components it is built
+            around — the processor, the display class, the storage technology. {componentTotal.toLocaleString()}{" "}
+            components are shared across {linkTotal.toLocaleString()} configuration links, so you can
+            follow a processor across the whole catalog and see every machine built around it.{" "}
+            <Link href="/components" className="text-[var(--accent-dark)] underline underline-offset-4">
+              Browse the component graph
+            </Link>
+            .
+          </p>
+        </Section>
+
+        <Section n="06" title="What is not tracked yet">
           <ul className="list-disc space-y-2 pl-5">
             <li>Live retailer price tracking, price history, or alerts — still on the roadmap.</li>
             <li>
-              Every model ever made. The catalog focuses on current-generation ultrabooks and may
-              simply not cover a machine you own.
+              Every model ever made. The catalog covers what our sources certify, which is
+              weighted towards current business and education machines, and may simply not cover a
+              machine you own.
             </li>
             <li>
               Independent benchmark results. Our figures are sourced specifications, not measured
               performance.
             </li>
+            <li>
+              Marketing names for every product. Where a manufacturer certifies an internal chassis
+              code, we look for the marketing name in the same source record; where there is none,
+              the code is shown and the part number is kept.
+            </li>
           </ul>
         </Section>
 
-        <Section n="06" title="Verification expectations">
+        <Section n="07" title="Verification expectations">
           <p>
             Manufacturer-classified values can sometimes differ from a real unit in the field — a
             different RAM config, a regional variation, a revision. Treat any field as &ldquo;reported

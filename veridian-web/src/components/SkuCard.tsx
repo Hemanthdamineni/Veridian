@@ -1,8 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import type { SkuListItem } from "@/types";
+import type { SkuListItem, SkuProvenance } from "@/types";
+import { PROVENANCE_DESCRIPTIONS, PROVENANCE_LABELS } from "@/types";
 import { formatPrice, formatStorage, formatWeight } from "@/lib/format";
+
+/**
+ * The provenance badge. It is the fastest way for a reader to know how much
+ * weight a row's figures deserve, so it is present on every card and it
+ * always names the tier rather than implying a level of trust.
+ */
+export function ProvenanceBadge({ provenance }: { provenance: SkuProvenance }) {
+  const tone =
+    provenance === "certified"
+      ? "bg-[var(--success-soft)] text-[var(--success)]"
+      : provenance === "manufacturer"
+        ? "bg-[var(--accent-soft)] text-[var(--accent-dark)]"
+        : "bg-[var(--warning-soft)] text-[var(--warning)]";
+  return (
+    <span
+      className={`rounded px-2 py-1 text-[10px] font-medium ${tone}`}
+      title={PROVENANCE_DESCRIPTIONS[provenance]}
+    >
+      {PROVENANCE_LABELS[provenance]}
+    </span>
+  );
+}
 
 export function SkuCard({ sku, index = 0 }: { sku: SkuListItem; index?: number }) {
   return (
@@ -41,20 +64,7 @@ export function SkuCard({ sku, index = 0 }: { sku: SkuListItem; index?: number }
 
       <div className="mt-auto flex items-center justify-between gap-3 pt-4">
         <div className="flex flex-wrap gap-1.5">
-          <span
-            className={`rounded px-2 py-1 text-[10px] font-medium ${
-              sku.provenance === "certified"
-                ? "bg-[var(--success-soft)] text-[var(--success)]"
-                : "bg-[var(--surface-soft)] text-[var(--quiet)]"
-            }`}
-            title={
-              sku.provenance === "certified"
-                ? "Cited certification record — see the source link on the detail page"
-                : "Reference configuration without a cited certification record"
-            }
-          >
-            {sku.provenance === "certified" ? "Certified" : "Reference"}
-          </span>
+          <ProvenanceBadge provenance={sku.provenance} />
           {sku.display.touch && <span className="rounded bg-[var(--accent-soft)] px-2 py-1 text-[10px] font-medium text-[var(--accent-dark)]">Touch</span>}
           {sku.display.refreshHz && sku.display.refreshHz > 60 && <span className="rounded bg-[var(--surface-soft)] px-2 py-1 text-[10px] text-[var(--muted)]">{sku.display.refreshHz} Hz</span>}
           {sku.ramSoldered === false && <span className="rounded bg-[var(--surface-soft)] px-2 py-1 text-[10px] text-[var(--muted)]">Upgradeable RAM</span>}

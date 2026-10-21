@@ -10,7 +10,7 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 
 from .base import (
-    BaseScraper, ScraperConfig, RegionConfig,
+    BaseScraper, ScraperConfig, RegionConfig, apply_yaml_config,
     Product, ProductVariant, ProductCategory, ProductStatus,
     SpecValue, SpecParser,
     generate_product_id, generate_variant_id,
@@ -457,7 +457,7 @@ def create_dell_config() -> ScraperConfig:
         ),
     ]
 
-    return ScraperConfig(
+    config = ScraperConfig(
         manufacturer='dell',
         brand='Dell',
         base_url='https://www.dell.com/',
@@ -467,6 +467,10 @@ def create_dell_config() -> ScraperConfig:
         retry_attempts=3,
         checkpoint_interval=10
     )
+
+    # The YAML configuration is authoritative for the base URL and the
+    # region list (category paths, rate limit, timeout).
+    return apply_yaml_config(config)
 
 
 async def run_dell_scraper(regions: List[str] = None):

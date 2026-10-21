@@ -23,14 +23,33 @@ export function FilterPanel({ state, onChange, onClear, availableRegions }: Filt
     <div className="space-y-7">
       <section>
         <h2 className="label">Search</h2>
-        <input className="field" type="text" placeholder="Model name or SKU code…" value={state.q}
-          onChange={(e) => set({ q: e.target.value })} aria-label="Search model or SKU" />
+        <div className="mb-3 inline-flex rounded-[6px] border border-[var(--line-strong)] p-0.5" role="group" aria-label="Search mode">
+          <ModeButton
+            active={state.mode === "filters"}
+            onClick={() => set({ mode: "filters" })}
+            children="Exact filters"
+          />
+          <ModeButton
+            active={state.mode === "plain"}
+            onClick={() => set({ mode: "plain" })}
+            children="Plain English"
+          />
+        </div>
+        {state.mode === "plain" ? (
+          <p className="text-[12px] leading-5 text-[var(--muted)]">
+            Type what you want in the box at the top of the page. The sentence is parsed into
+            filters and shown back to you, so you can check the reading before trusting it.
+          </p>
+        ) : (
+          <input className="field" type="text" placeholder="Model name or SKU code…" value={state.q}
+            onChange={(e) => set({ q: e.target.value })} aria-label="Search model or SKU" />
+        )}
       </section>
 
       <section>
         <h2 className="label">Source</h2>
         <CheckList
-          options={["certified", "reference"]}
+          options={["certified", "manufacturer", "unverified"]}
           selected={state.provenance}
           onToggle={(v) =>
             set({
@@ -40,7 +59,11 @@ export function FilterPanel({ state, onChange, onClear, availableRegions }: Filt
             })
           }
           name="provenance"
-          labels={{ certified: "Certified — carries a cited source record", reference: "Reference — no cited source" }}
+          labels={{
+            certified: "Certified — a cited certification record",
+            manufacturer: "Manufacturer — checked against the maker's spec page",
+            unverified: "Unverified — no cited source",
+          }}
         />
       </section>
 
@@ -128,6 +151,29 @@ export function FilterPanel({ state, onChange, onClear, availableRegions }: Filt
         <button type="button" className="btn-quiet w-full" onClick={onClear}>Clear all filters</button>
       </section>
     </div>
+  );
+}
+
+function ModeButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded-[4px] px-2.5 py-1 text-[12px] font-medium transition-colors ${
+        active ? "bg-[var(--ink)] text-white" : "text-[var(--muted)] hover:text-[var(--ink)]"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 

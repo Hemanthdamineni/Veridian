@@ -11,9 +11,9 @@ manufacturer's own technical-specification page and reports:
   * which fields the manufacturer states differently,
   * a corrected value and a citable URL for every field it contradicts.
 
-Nothing is written back to the CSV here: the script prints a report and emits a
-machine-readable JSON sidecar. A row that cannot be confirmed is reported as
-unconfirmed, never silently corrected.
+Nothing is written back to the CSV by this script. It prints a report and can
+emit a machine-readable JSON sidecar with ``--json``. A row that cannot be
+confirmed is reported as unconfirmed, never silently corrected.
 
 Usage:  .venv/bin/python scripts/verify-reference-specs.py [--json out.json]
 """
@@ -39,15 +39,33 @@ CSV_PATH = ROOT / "veridian-web" / "data" / "laptops.csv"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 ACCEPT_LANGUAGE = "en-US,en;q=0.9"
 
-
-# =============================================================================
-# Manufacturer adapters
-# =============================================================================
+# ---------------------------------------------------------------------------
+# Manufacturer technical specification pages.
+#
+# Each entry was fetched and confirmed to return HTTP 200 and to contain the
+# part number it is used to verify. A row whose page is not registered here is
+# reported as unconfirmed rather than assumed correct.
+# ---------------------------------------------------------------------------
+TECHSPEC_PAGES: Dict[str, str] = {
+    "Zenbook A14 (UX3407)": "https://www.asus.com/us/laptops/for-home/zenbook/asus-zenbook-a14-ux3407/techspec/",
+    "Zenbook 14 (UX3405)": "https://www.asus.com/us/laptops/for-home/zenbook/asus-zenbook-14-ux3405/techspec/",
+    "Zenbook S 16 (UM5606)": "https://www.asus.com/us/laptops/for-home/zenbook/asus-zenbook-s-16-um5606/techspec/",
+    "Zenbook Duo (UX8406)": "https://www.asus.com/us/laptops/for-home/zenbook/asus-zenbook-duo-ux8406/techspec/",
+    "Vivobook S 14 (S3407)": "https://www.asus.com/us/laptops/for-home/vivobook/asus-vivobook-s-14-s3407/techspec/",
+    "Vivobook S 15 (S3507)": "https://www.asus.com/us/laptops/for-home/vivobook/asus-vivobook-s-15-s3507/techspec/",
+    "Zephyrus G14 (2025)": "https://www.asus.com/us/laptops/gaming/rog-republic-of-gamers/asus-rog-zephyrus-g14-ga403/techspec/",
+    "ProArt P16 (H7606)": "https://www.asus.com/us/laptops/for-creators/asus-proart-p16-h7606/techspec/",
+    "Zenbook 14 Flip (UP3404)": "https://www.asus.com/us/laptops/for-home/zenbook/asus-zenbook-14-flip-up3404/techspec/",
+}
 
 
 @dataclass
 class SpecColumn:
-    """One configuration column of a manufacturer specification table."""
+    """One configuration column of a manufacturer specification table.
+
+    ``values`` maps a row title ("Display", "Weight" ...) to the text the
+    manufacturer publishes for this configuration.
+    """
 
     name: str
     values: Dict[str, str] = field(default_factory=dict)
@@ -56,13 +74,30 @@ class SpecColumn:
 @dataclass
 class SpecTable:
     source_url: str
-    columns: List[SpecColumn] = field(default_factory=list)
+    order: List[str] = field(default_factory=list)
+    rows: Dict[str, Dict[str, str]] = field(default_factory=dict)
 
     def column(self, name: str) -> Optional[SpecColumn]:
-        for column in self.columns:
-            if column.name.strip().lower() == name.strip().lower():
-                return column
+        for candidate in self.order:
+            if candidate.strip().lower() == name.strip().lower():
+                return self._column(candidate)
         return None
+
+    def columns_with_prefix(self, prefix: str) -> List[SpecColumn]:
+        return [self._column(candidate) for candidate in self.order if candidate.startswith(prefix)]
+
+    @property
+    def columns(self) -> List[SpecColumn]:
+        return [self._column(candidate) for candidate in self.order]
+
+    def _column(self, part_number: str) -> SpecColumn:
+        return SpecColumn(
+            name=part_number,
+            values={
+                title: cells.get(part_number, "")
+                for title, cells in self.rows.items()
+            },
+        )
 
 
 def _text(element: Optional[Any]) -> str:
@@ -76,7 +111,7 @@ class AsusAdapter:
 
     The table is rendered by a Vue component whose class names are hashed per
     build, so the stable hooks are the literal class names the component adds
-    (``rowTableTitle``, ``rowTableItemViewBox``, ``pdName``) and the
+    (``rowTableTitle``, ``rowTableItemViewBox``, ``pdName``) and an
     attribute-contains match for the hashed value cells.
     """
 
@@ -90,14 +125,14 @@ class AsusAdapter:
         if response.status_code != 200:
             return None
         soup = BeautifulSoup(response.text, "html.parser")
-        rows = soup.select("div.rowTableItemViewBox")
-        if not rows:
+        rows_markup = soup.select("div.rowTableItemViewBox")
+        if not rows_markup:
             return None
 
-        values: Dict[str, Dict[str, str]] = {}
         order: List[str] = []
+        rows: Dict[str, Dict[str, str]] = {}
 
-        for row in rows:
+        for row in rows_markup:
             title_box = row.find_previous_sibling("div")
             if title_box is None:
                 continue
@@ -108,121 +143,163 @@ class AsusAdapter:
             box = row.find("div", class_=re.compile(r"rowTableItemBox"))
             if box is None:
                 continue
-            cells = [_text(c) for c in box.select('div[class*="rowTableItems"]')]
+            cells = box.select('div[class*="rowTableItems"]')
+            texts = [_text(c) for c in cells]
+
             if title.strip().lower() == "model":
-                names = []
-                for cell in box.select('div[class*="rowTableItems"]'):
+                # The Model row establishes the column order for the whole
+                # table, so every later row is aligned to it by position.
+                names: List[Optional[str]] = []
+                for cell in cells:
                     name_el = cell.find(class_="pdName")
                     names.append(_text(name_el) or None)
                 order = [n for n in names if n]
-                values[title] = dict(zip(names, cells))
-            else:
-                values.setdefault(title, {})
-                if order:
-                    # The first "Model" row establishes the column order; later
-                    # rows are aligned to it by position.
-                    for index, name in enumerate(names_of(values, order)):
-                        values[title][name] = cells[index] if index < len(cells) else ""
+                rows[title] = {
+                    name: text for name, text in zip(names, texts) if name
+                }
+            elif order:
+                rows[title] = {
+                    name: texts[index] if index < len(texts) else ""
+                    for index, name in enumerate(order)
+                }
 
         if not order:
             return None
-        return SpecTable(
-            source_url=str(response.url),
-            columns=[SpecColumn(name=n, values=values.get("", {})) for n in []],
-        ) if False else _build_table(source_url=str(response.url), order=order, values=values)
+        return SpecTable(source_url=str(response.url), order=order, rows=rows)
 
 
-def names_of(values: Dict[str, Dict[str, str]], order: List[str]) -> List[str]:
+def names_for(values: Dict[str, Dict[str, str]], order: List[str]) -> List[str]:
     return order
 
 
-def _build_table(source_url: str, order: List[str], values: Dict[str, Dict[str, str]]) -> SpecTable:
-    columns = []
-    for name in order:
-        columns.append(
-            SpecColumn(
-                name=name,
-                values={title: cells.get(name, "") for title, cells in values.items()},
-            )
-        )
-    return SpecTable(source_url=source_url, columns=columns)
 
-
-# =============================================================================
+# ---------------------------------------------------------------------------
 # Parsing helpers
-# =============================================================================
+# ---------------------------------------------------------------------------
 
-DISPLAY_RE = re.compile(
-    r"(?P<size>\d{1,2}(?:\.\d)?)[- ]?(?:inch|\")?\s*[,\-]?\s*"
-    r"(?:WUXGA|FHD\+?|\(?\d{3,4}\s*x\s*\d{3,4}\)?)",
+RESOLUTION_RE = re.compile(r"\(?\d{3,4}\s*x\s*\d{3,4}\)?")
+SIZE_RE = re.compile(r"\d{1,2}(?:\.\d)?\s*(?:-|\s)?(?:inch|\")", re.IGNORECASE)
+REFRESH_RE = re.compile(r"Refresh\s*Rate\s*:?\s*\d{2,3}\s*Hz", re.IGNORECASE)
+NITS_RE = re.compile(r"\d{3,4}\s*nits", re.IGNORECASE)
+WEIGHT_RE = re.compile(r"\d\.\d{2}\s*kg", re.IGNORECASE)
+BATTERY_RE = re.compile(r"\d{2,3}\s*WHrs", re.IGNORECASE)
+RAM_OPTION_RE = re.compile(r"(\d{1,3})\s*GB\s+(LPDDR\d+X?|DDR\d+)", re.IGNORECASE)
+RAM_TYPE_RE = re.compile(r"(LPDDR\d+X?|DDR\d+)", re.IGNORECASE)
+STORAGE_OPTION_RE = re.compile(r"(\d{1,2})\s*(TB|GB)\s+(?:M\.2\s+)?NVMe", re.IGNORECASE)
+CPU_RE = re.compile(
+    r"(Snapdragon[^)]*?Processor|Core\s+Ultra\s+\d+\s+\d+\w*|Ryzen[^)]*?Processor)",
     re.IGNORECASE,
 )
-RESOLUTION_RE = re.compile(r"\(?(\d{3,4})\s*x\s*(\d{3,4})\)?")
-REFRESH_RE = re.compile(r"Refresh\s*Rate\s*:?\s*(\d{2,3})\s*Hz", re.IGNORECASE)
-NITS_RE = re.compile(r"(\d{3,4})\s*nits", re.IGNORECASE)
-WEIGHT_RE = re.compile(r"(\d\.\d{2})\s*kg", re.IGNORECASE)
-BATTERY_RE = re.compile(r"(\d{2,3})\s*WHrs", re.IGNORECASE)
-RAM_RE = re.compile(r"(\d{1,3})\s*GB\s+(LPDDR\d+X?|DDR\d+)", re.IGNORECASE)
-STORAGE_RE = re.compile(r"(\d{1,2})\s*TB\s+M\.2", re.IGNORECASE)
-CPU_RE = re.compile(r"(Snapdragon[^)]*?Processor|Core\s+Ultra\s+\d+\s+\d+\w*|Ryzen[^)]*?Processor)", re.IGNORECASE)
 
 
-def parse_display(text: str) -> Dict[str, Any]:
+def option_pairs(column: SpecColumn) -> List[tuple]:
+    """Memory/storage option pairs the manufacturer lists for a column.
+
+    ASUS publishes one column per family code but merges the memory and
+    storage options of several configurations into the same cell, in the same
+    order. Pairing them by position recovers the individual configurations.
+    """
+    memory = column.values.get("Memory", "")
+    storage = column.values.get("Storage", "")
+    ram_options = [int(m) for m in RAM_OPTION_RE.findall(memory)]
+    storage_options = []
+    for size, unit in STORAGE_OPTION_RE.findall(storage):
+        storage_options.append(int(size) * 1024 if unit.upper() == "TB" else int(size))
+    pairs = []
+    for index, ram in enumerate(ram_options):
+        if index < len(storage_options):
+            pairs.append((ram, storage_options[index]))
+    return pairs
+
+
+def count_matches(text: str, pattern: "re.Pattern[str]") -> int:
+    return len(pattern.findall(text))
+
+
+def distinct_values(text: str, pattern: "re.Pattern[str]") -> List[str]:
+    return [m if isinstance(m, str) else m[0] for m in pattern.findall(text)]
+
+
+def parse_column(column: SpecColumn) -> Dict[str, Any]:
+    """Parse a manufacturer specification column.
+
+    A field is only reported when the manufacturer states a single value for
+    it. A cell that lists several options (a family page covering several
+    configurations) is ambiguous, and an ambiguous cell can never be used to
+    claim that a catalog row is wrong.
+    """
     out: Dict[str, Any] = {}
-    resolution = RESOLUTION_RE.search(text)
-    if resolution:
-        out["display_resolution"] = f"{resolution.group(1)}x{resolution.group(2)}"
-        width = int(resolution.group(1))
-        height = int(resolution.group(2))
-        # Diagonal from the pixel dimensions, rounded to one decimal.
-        diagonal = ((width**2 + height**2) ** 0.5) / 96.0
-        out["display_size"] = f"{diagonal:.1f}"
-    for panel in ("OLED", "IPS", "TN", "VA", "Mini-LED", "Mini LED"):
-        if panel.lower() in text.lower():
-            out["display_type"] = "Mini-LED" if "mini" in panel.lower() else panel.upper()
-            break
-    refresh = REFRESH_RE.search(text)
-    if refresh:
-        out["display_refresh"] = refresh.group(1)
-    nits = NITS_RE.search(text)
-    if nits:
-        out["display_nits"] = nits.group(1)
+    values = {k: v for k, v in column.values.items() if v}
+
+    display = values.get("Display", "")
+    if display:
+        resolutions = distinct_values(display, RESOLUTION_RE)
+        if len(resolutions) == 1:
+            out["display_resolution"] = re.sub(r"\s*x\s*", "x", resolutions[0].strip("()"))
+        sizes = distinct_values(display, SIZE_RE)
+        if len(sizes) == 1:
+            out["display_size"] = re.sub(r"[^\d.]", "", sizes[0])
+        panels = [p for p in ("OLED", "IPS", "TN", "VA") if p in display.upper()]
+        if len(panels) == 1:
+            out["display_type"] = panels[0]
+        refreshes = distinct_values(display, REFRESH_RE)
+        if len(refreshes) == 1:
+            out["display_refresh"] = refreshes[0]
+        nits = distinct_values(display, NITS_RE)
+        if len(nits) == 1:
+            out["display_nits"] = nits[0]
+
+    weight = values.get("Weight", "")
+    weights = distinct_values(weight, WEIGHT_RE)
+    if len(weights) == 1:
+        out["weight_kg"] = re.sub(r"[^\d.]", "", weights[0])
+
+    battery = values.get("Battery", "")
+    batteries = distinct_values(battery, BATTERY_RE)
+    if len(batteries) == 1:
+        out["battery_wh"] = re.sub(r"[^\d.]", "", batteries[0])
+
+    memory = values.get("Memory", "")
+    rams = distinct_values(memory, RAM_OPTION_RE)
+    if len(rams) == 1:
+        out["ram_gb"] = rams[0]
+    types = distinct_values(memory, RAM_TYPE_RE)
+    if len(types) == 1:
+        out["ram_type"] = types[0].upper()
+
+    storage = values.get("Storage", "")
+    storages = [
+        int(size) * 1024 if unit.upper() == "TB" else int(size)
+        for size, unit in STORAGE_OPTION_RE.findall(storage)
+    ]
+    if len(storages) == 1:
+        out["storage_gb"] = str(storages[0])
+
+    processor = values.get("Processor", "")
+    cpus = distinct_values(processor, CPU_RE)
+    if len(cpus) == 1:
+        out["cpu_model"] = re.sub(r"\s+", " ", cpus[0]).strip()
+
     return out
-
-
-def parse_other(text: str) -> Dict[str, Any]:
-    out: Dict[str, Any] = {}
-    weight = WEIGHT_RE.search(text)
-    if weight:
-        out["weight_kg"] = weight.group(1)
-    battery = BATTERY_RE.search(text)
-    if battery:
-        out["battery_wh"] = battery.group(1)
-    ram = RAM_RE.search(text)
-    if ram:
-        out["ram_gb"] = ram.group(1)
-        out["ram_type"] = ram.group(2).upper()
-    storage = STORAGE_RE.search(text)
-    if storage:
-        out["storage_gb"] = str(int(storage.group(1)) * 1024)
-    cpu = CPU_RE.search(text)
-    if cpu:
-        out["cpu_model"] = re.sub(r"\s+", " ", cpu.group(1)).strip()
-    return out
-
-
-# =============================================================================
-# Row resolution
-# =============================================================================
 
 
 def family_code(sku: str) -> str:
-    """ASUS retail part numbers are `<family>-<config>[-<region>]`."""
-    parts = sku.split("-")
-    return parts[0] if parts else sku
+    """ASUS retail part numbers are ``<family>-<config>[-<region>]``."""
+    return sku.split("-")[0] if sku else sku
 
 
-async def verify_asus(
+def normalize_cpu(value: str) -> str:
+    """Normalise a processor description for comparison.
+
+    "Snapdragon® X Elite X1E 78 100 Processor" and
+    "Snapdragon X Elite X1E-78-100" must compare equal.
+    """
+    text = value.lower().replace("®", "").replace("™", "")
+    text = re.sub(r"\bprocessor\b", "", text)
+    return re.sub(r"[^a-z0-9]", "", text)
+
+
+async def verify_row(
     client: httpx.AsyncClient, row: Dict[str, str], techspec_url: str
 ) -> Dict[str, Any]:
     adapter = AsusAdapter(client)
@@ -231,52 +308,81 @@ async def verify_asus(
         return {"status": "unconfirmed", "reason": "specification table not found"}
 
     code = family_code(row["sku_code"])
-    column = table.column(code)
-    if column is None:
-        # Fall back to a prefix match: a family may be reported as
-        # "UX3407NA-CG" for a request of "UX3407NA".
-        candidates = [c for c in table.columns if c.name.startswith(code)]
-        column = candidates[0] if candidates else None
-    if column is None:
+    candidates = table.columns_with_prefix(code)
+    if not candidates:
+        # The manufacturer's family code and the catalog's family code can
+        # differ in length ("UM5606" vs "UM5606QA"), so also try the other
+        # direction before giving up.
+        candidates = [
+            table._column(name)
+            for name in table.order
+            if name.startswith(code) or code.startswith(name)
+        ]
+    if not candidates:
         return {
             "status": "unconfirmed",
             "reason": f"part number {code} not present in the specification table",
-            "available": [c.name for c in table.columns],
+            "available": list(table.order),
         }
 
-    values = {k: v for k, v in column.values.items() if v}
-    observed: Dict[str, Any] = {}
-    if "Display" in values:
-        observed.update(parse_display(values["Display"]))
-    for key, source_key in (
-        ("Weight", "weight"),
-        ("Battery", "battery"),
-        ("Memory", "memory"),
-        ("Storage", "storage"),
-        ("Processor", "cpu"),
-    ):
-        if key in values:
-            observed.update(parse_other(values[key]) if key != "Processor" else {})
-            if key == "Processor":
-                cpu = CPU_RE.search(values[key])
-                if cpu:
-                    observed["cpu_model"] = re.sub(r"\s+", " ", cpu.group(1)).strip()
-    if "Battery" in values:
-        battery = BATTERY_RE.search(values["Battery"])
-        if battery:
-            observed["battery_wh"] = battery.group(1)
+    # A family can appear in the table several times with different processor
+    # options. Pick the column that matches the processor the catalog row
+    # claims, and refuse to guess when the match is not unique.
+    if len(candidates) > 1:
+        wanted = normalize_cpu(row.get("cpu_model", ""))
+        matches = [c for c in candidates if wanted and wanted in normalize_cpu(c.values.get("Processor", ""))]
+        if len(matches) != 1:
+            # The part number and the processor may simply disagree: the
+            # processor the catalog claims may belong to a different family
+            # code on the same page. That is a contradiction, not an
+            # ambiguity, and it is worth reporting.
+            elsewhere = [
+                c for c in table.columns
+                if wanted and wanted in normalize_cpu(c.values.get("Processor", ""))
+            ]
+            if elsewhere:
+                return {
+                    "status": "confirmed",
+                    "source_url": table.source_url,
+                    "part_number": candidates[0].name,
+                    "observed": {},
+                    "conflicts": [
+                        {
+                            "field": "cpu_model",
+                            "catalog": row.get("cpu_model", ""),
+                            "manufacturer": (
+                                f"{elsewhere[0].name} lists this processor; "
+                                f"{candidates[0].name} does not"
+                            ),
+                        }
+                    ],
+                }
+            return {
+                "status": "unconfirmed",
+                "reason": (
+                    f"part number {code} appears {len(candidates)} times in the "
+                    "specification table and the processor does not identify one column"
+                ),
+                "candidates": [c.name for c in candidates],
+            }
+        column = matches[0]
+    else:
+        column = candidates[0]
 
+    observed = parse_column(column)
     conflicts = []
     for field_name, value in observed.items():
-        current = row.get(field_name, "").strip()
+        current = (row.get(field_name) or "").strip()
         if not current:
             continue
         try:
             same = abs(float(current) - float(value)) < 0.051
         except (TypeError, ValueError):
-            same = current.lower() == str(value).lower()
+            same = normalize_cpu(current) == normalize_cpu(str(value))
         if not same:
-            conflicts.append({"field": field_name, "catalog": current, "manufacturer": value})
+            conflicts.append(
+                {"field": field_name, "catalog": current, "manufacturer": value}
+            )
 
     return {
         "status": "confirmed",
@@ -287,11 +393,6 @@ async def verify_asus(
     }
 
 
-# =============================================================================
-# Main
-# =============================================================================
-
-
 async def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--json", help="write the machine-readable report here")
@@ -300,10 +401,6 @@ async def main() -> int:
 
     with CSV_PATH.open(newline="", encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle))
-
-    # Manufacturer technical specification pages. Each URL was fetched and
-    # confirmed to contain the part number it is used to verify.
-    TECHSPEC_PAGES: Dict[str, str] = {}
 
     results: List[Dict[str, Any]] = []
 
@@ -322,18 +419,14 @@ async def main() -> int:
                 "manufacturer": row["manufacturer"],
                 "model": row["model"],
             }
-            if row["manufacturer"] != "ASUS":
-                entry["status"] = "not-attempted"
-                results.append(entry)
-                continue
             url = TECHSPEC_PAGES.get(row["model"])
             if not url:
-                entry["status"] = "unconfirmed"
-                entry["reason"] = "no specification page registered"
+                entry["status"] = "not-attempted"
+                entry["reason"] = "no manufacturer specification page registered"
                 results.append(entry)
                 continue
             try:
-                entry.update(await verify_asus(client, row, url))
+                entry.update(await verify_row(client, row, url))
             except Exception as exc:  # noqa: BLE001 - report, never crash
                 entry["status"] = "error"
                 entry["reason"] = f"{type(exc).__name__}: {exc}"
@@ -342,9 +435,9 @@ async def main() -> int:
     confirmed = [r for r in results if r.get("status") == "confirmed"]
     conflicts = [r for r in confirmed if r.get("conflicts")]
 
-    print(f"rows checked: {len(results)}")
-    print(f"confirmed against a manufacturer page: {len(confirmed)}")
-    print(f"rows with a contradiction: {len(conflicts)}")
+    print(f"rows checked:            {len(results)}")
+    print(f"confirmed against a page: {len(confirmed)}")
+    print(f"rows contradicting it:   {len(conflicts)}")
     for entry in conflicts:
         print(f"\n  {entry['sku_code']}  ({entry['model']})")
         print(f"    source: {entry.get('source_url')}")

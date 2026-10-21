@@ -1,29 +1,57 @@
-manufacturer:
-  hp:
-    brand: "HP"
-    base_url: "https://www.hp.com"
-    regions:
-      - code: US
-        name: "United States"
-        base_url: "https://www.hp.com/us-en"
-        language: en-US
-        currency: USD
-        category_paths:
-          laptops: "/shop/vwa/laptops"
-        selectors:
-          product_link: "a.product-link"
-          product_name: "h1.product-name"
-          specs_table: "table.specs-table"
-          next_page: "a.next-page"
-      - code: IN
-        name: "India"
-        base_url: "https://www.hp.com/in-en"
-        language: en-IN
-        currency: INR
-        category_paths:
-          laptops: "/shop/vwa/laptops"
-        selectors:
-          product_link: "a.product-link"
-          product_name: "h1.product-name"
-          specs_table: "table.specs-table"
-          next_page: "a.next-page"
+# HP scraper configuration.
+#
+# This file is the source of truth for the HP base URL and for the region
+# list (category paths, rate limit, timeout). CSS selectors live in the
+# scraper code because the site changes them with every build.
+manufacturer: "hp"
+brand: "HP"
+base_url: "https://www.hp.com/"
+user_agent: "VeridianBot/1.0 (+https://veridian.dev; contact@veridian.dev)"
+output_dir: "./output"
+max_concurrent: 2
+retry_attempts: 3
+checkpoint_interval: 10
+
+regions:
+  - code: "us"
+    name: "United States"
+    base_url: "https://www.hp.com/"
+    language: "en"
+    currency: "USD"
+    category_paths:
+      laptops: "/us-en/shop/laptops"
+      desktops: "/us-en/shop/desktops"
+      monitors: "/us-en/shop/monitors"
+      printers: "/us-en/shop/printers"
+      accessories: "/us-en/shop/accessories"
+      workstations: "/us-en/shop/workstations"
+    rate_limit: 0.5
+    timeout: 30
+  - code: "in"
+    name: "India"
+    base_url: "https://www.hp.com/"
+    language: "en"
+    currency: "INR"
+    category_paths:
+      laptops: "/in-en/shop/laptops"
+      desktops: "/in-en/shop/desktops"
+      monitors: "/in-en/shop/monitors"
+      printers: "/in-en/shop/printers"
+      accessories: "/in-en/shop/accessories"
+      workstations: "/in-en/shop/workstations"
+    rate_limit: 0.5
+    timeout: 30
+  - code: "uk"
+    name: "United Kingdom"
+    base_url: "https://www.hp.com/"
+    language: "en"
+    currency: "GBP"
+    category_paths:
+      laptops: "/uk-en/shop/laptops"
+      desktops: "/uk-en/shop/desktops"
+      monitors: "/uk-en/shop/monitors"
+      printers: "/uk-en/shop/printers"
+      accessories: "/uk-en/shop/accessories"
+      workstations: "/uk-en/shop/workstations"
+    rate_limit: 0.5
+    timeout: 30

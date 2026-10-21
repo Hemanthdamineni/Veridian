@@ -7,11 +7,19 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx scripts/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:schema:pg": "node scripts/generate-postgres-schema.mjs",
+    "db:schema:pg --check": "node scripts/generate-postgres-schema.mjs --check",
+    "db:ingest:es": "tsx scripts/ingest-energy-star.ts",
+    "db:components": "tsx scripts/populate-components.ts",
+    "db:audit": "tsx scripts/audit-data.ts",
+    "db:audit:repair": "tsx scripts/audit-data.ts --repair"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

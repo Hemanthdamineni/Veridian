@@ -1,4 +1,4 @@
-import type { SkusQueryParams, SortOption, SkuListItem } from "@/types";
+import type { SkusQueryParams, SortOption, SkuListItem, SkuProvenance } from "@/types";
 
 export function buildSkusQuery(params: SkusQueryParams): Record<string, unknown> {
   const where: Record<string, unknown> = {
@@ -96,17 +96,19 @@ export function buildSkusQuery(params: SkusQueryParams): Record<string, unknown>
     }
   }
 
-  // Provenance tier. The catalog deliberately mixes two tiers of record —
-  // certified configurations that carry a cited source, and reference
-  // configurations that do not — so the tier is an explicit filter.
+  // Provenance tier. The tier is written explicitly by the ingestion path
+  // and stored on the row, so it is read back rather than inferred from the
+  // presence of another record (ADR-005).
   if (params.provenance) {
-    const tiers = params.provenance.split(",").filter(Boolean);
-    const wantCertified = tiers.includes("certified");
-    const wantReference = tiers.includes("reference");
-    if (wantCertified && !wantReference) {
-      where.certifiedSpecs = { some: {} };
-    } else if (wantReference && !wantCertified) {
-      where.certifiedSpecs = { none: {} };
+    const requested = params.provenance.split(",").filter(Boolean);
+    const wanted = requested.filter(
+      (tier) =>
+        tier === "certified" || tier === "manufacturer" || tier === "unverified"
+    );
+    if (wanted.length === 1) {
+      where.provenance = wanted[0];
+    } else if (wanted.length > 1) {
+      where.provenance = { in: wanted };
     }
   }
 
@@ -173,6 +175,8 @@ interface SkuWithRelations {
   batteryWh: number | null;
   os: string;
   buildMaterial: string | null;
+  /** Provenance tier, written by the ingestion path. */
+  provenance: string;
   model: {
     name: string;
     productUrl: string | null;
@@ -185,6 +189,26 @@ interface SkuWithRelations {
   };
   pricing: Array<{ region: string; currency: string; msrp: number }>;
   certifiedSpecs?: Array<{ id: string }>;
+  sources?: Array<{
+    source: string;
+    kind: string;
+    sourceUrl: string | null;
+    observedAt: Date;
+    confidence: number;
+    note: string | null;
+  }>;
+}
+
+/**
+ * Normalise a stored provenance value to one of the three known tiers.
+ * An unknown or missing value is treated as `unverified`: a row whose
+ * provenance cannot be established must never be presented as verified.
+ */
+export function toProvenance(value: string | null | undefined): SkuProvenance {
+  if (value === "certified" || value === "manufacturer" || value === "unverified") {
+    return value;
+  }
+  return "unverified";
 }
 
 /**
@@ -192,9 +216,11 @@ interface SkuWithRelations {
  *
  * - `certified` — the row traces back to a cited certification record with a
  *   stored raw observation and payload hash.
- * - `reference` — the row is a reference configuration with no cited source.
+ * - `manufacturer` — the row was checked against the manufacturer's own
+ *   specification page.
+ * - `unverified` — the row has no cited source.
  */
-export type SkuProvenance = "certified" | "reference";
+export type { SkuProvenance } from "@/types";
 
 export interface PricedSkuLike {
   pricing: Array<{ region: string; msrp: number }>;
@@ -258,7 +284,15 @@ export function formatSkuListItem(sku: SkuWithRelations, region?: string | undef
     batteryWh: sku.batteryWh,
     os: sku.os,
     buildMaterial: sku.buildMaterial,
-    provenance: sku.certifiedSpecs && sku.certifiedSpecs.length > 0 ? "certified" : "reference",
+    provenance: toProvenance(sku.provenance),
+    sources: sku.sources?.map((source) => ({
+      source: source.source,
+      kind: source.kind,
+      sourceUrl: source.sourceUrl,
+      observedAt: source.observedAt.toISOString(),
+      confidence: source.confidence,
+      note: source.note,
+    })),
     price: price
       ? {
           region: price.region,

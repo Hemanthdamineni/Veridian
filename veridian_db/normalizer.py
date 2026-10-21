@@ -985,7 +985,7 @@ class DataNormalizer:
                     name=scraped_variant.name,
                     status=ProductStatus(scraped_variant.status.value) if hasattr(scraped_variant.status, 'value') and scraped_variant.status else ProductStatus.CURRENT,
                     release_date=utcnow(),
-                    color=scraped_variant.specs.get('color', {}).get('raw') if scraped_variant.specs.get('color') else None,
+                    color=self._spec_raw_text((scraped_variant.specs or {}).get('color')),
                     source_urls=[scraped_variant.source_url] if scraped_variant.source_url else [],
                 )
                 self.session.add(variant)
@@ -1003,6 +1003,21 @@ class DataNormalizer:
 
         self.session.commit()
         return variant
+
+    @staticmethod
+    def _spec_raw_text(spec_value) -> Optional[str]:
+        """Raw text of a scraped spec value.
+
+        Scrapers produce ``SpecValue`` objects, but older payloads stored plain
+        dicts, so both shapes have to be supported.
+        """
+        if spec_value is None:
+            return None
+        if hasattr(spec_value, 'raw'):
+            return spec_value.raw
+        if isinstance(spec_value, dict):
+            return spec_value.get('raw')
+        return str(spec_value)
 
     def _normalize_spec(self, variant: ProductVariant, spec_name: str, spec_value_obj, source_url: str = None):
         """Normalize a single spec and store it"""

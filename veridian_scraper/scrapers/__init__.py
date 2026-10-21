@@ -5,7 +5,6 @@ All manufacturer scrapers for laptop data collection.
 """
 
 from .base import BaseScraper, HTTPClient, ScrapingProgress
-from .generic import GenericScraper
 from .asus import AsusScraper
 from .lenovo import LenovoScraper
 from .hp import HPScraper
@@ -28,7 +27,6 @@ __all__ = [
     "BaseScraper",
     "HTTPClient",
     "ScrapingProgress",
-    "GenericScraper",
     "AsusScraper",
     "LenovoScraper",
     "HpScraper",

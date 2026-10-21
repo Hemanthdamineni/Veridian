@@ -40,7 +40,11 @@ export async function GET(request: NextRequest) {
     // have inferred a region from a currency symbol (e.g. ₹ → IN).
     const effectiveRegion = region || parsedFilters.region || "US";
 
-    // Convert camelCase to snake_case for API
+    // Convert camelCase to snake_case for API.
+    //
+    // The sentence supplies the constraints it can express; the explicit
+    // filter parameters (provenance tier, sort order) still apply on top, so
+    // the two ways of searching compose instead of competing.
     const params = {
       cpuBrand: parsedFilters.cpuBrand,
       ramMin: parsedFilters.ramMin,
@@ -53,8 +57,9 @@ export async function GET(request: NextRequest) {
       region: effectiveRegion,
       priceMin: parsedFilters.priceMin,
       priceMax: parsedFilters.priceMax,
+      provenance: searchParams.get("provenance") || undefined,
       q: parsedFilters.q,
-      sort: parsedFilters.sort,
+      sort: searchParams.get("sort") || parsedFilters.sort,
       page,
       limit,
     };
@@ -66,7 +71,7 @@ export async function GET(request: NextRequest) {
 
     const skus = await prisma.sku.findMany({
       where,
-      orderBy: buildOrderBy(parsedFilters.sort),
+      orderBy: buildOrderBy(params.sort),
       skip,
       take: limitNum,
       include: {

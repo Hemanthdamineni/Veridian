@@ -16,6 +16,31 @@ export interface SkuPrice {
   storeUrl?: string | null;
 }
 
+/**
+ * Provenance of a catalog row, written explicitly by the ingestion path
+ * (ADR-005) rather than inferred from the presence of another record.
+ *
+ * - `certified`   — the row traces to a cited certification record with a
+ *   stored raw observation and payload hash.
+ * - `manufacturer` — the row was checked against the manufacturer's own
+ *   specification page, which is cited.
+ * - `unverified`  — the row has no citation. Its figures are reported as-is
+ *   and the UI says so plainly.
+ */
+export type SkuProvenance = "certified" | "manufacturer" | "unverified";
+
+export const PROVENANCE_LABELS: Record<SkuProvenance, string> = {
+  certified: "Certified",
+  manufacturer: "Manufacturer",
+  unverified: "Unverified",
+};
+
+export const PROVENANCE_DESCRIPTIONS: Record<SkuProvenance, string> = {
+  certified: "Carries a cited certification record with a stored source payload.",
+  manufacturer: "Checked against the manufacturer's own specification page.",
+  unverified: "No cited source. Treat these figures as unconfirmed.",
+};
+
 export interface SkuListItem {
   id: string;
   skuCode: string;
@@ -38,11 +63,17 @@ export interface SkuListItem {
   buildMaterial: string | null;
   price: SkuPrice | null;
   storeUrl: string | null;
-  /**
-   * `certified` — the row carries a cited certification record.
-   * `reference` — the row is a reference configuration with no cited source.
-   */
-  provenance: "certified" | "reference";
+  /** Provenance tier, written explicitly by the ingestion path. */
+  provenance: SkuProvenance;
+  /** Every source that describes this configuration. */
+  sources?: Array<{
+    source: string;
+    kind: string;
+    sourceUrl: string | null;
+    observedAt: string;
+    confidence: number;
+    note: string | null;
+  }>;
   catalogVisible?: boolean;
   certifiedSpecs?: Array<{
     source: string;
@@ -82,11 +113,22 @@ export interface SkuDetail extends SkuListItem {
   price: SkuPrice | null;
   pricing: SkuPrice[];
   ports: SkuPort[];
+  /** The shared components this configuration is built around. */
+  components?: SkuComponentLink[];
 }
 
 export interface SkuPort {
   portType: string;
   count: number;
+}
+
+/** A shared component this configuration is built around. */
+export interface SkuComponentLink {
+  id: string;
+  kind: "cpu" | "display" | "storage" | string;
+  name: string;
+  slug: string;
+  role: string;
 }
 
 export interface Pagination {
@@ -106,10 +148,9 @@ export interface SkusResponse {
    */
   availableRegions?: string[];
   /**
-   * How the current result set splits between certified configurations (with a
-   * cited source) and reference configurations (without one).
+   * How the current result set splits across the three provenance tiers.
    */
-  tiers?: { certified: number; reference: number };
+  tiers?: { certified: number; manufacturer: number; unverified: number };
 }
 
 export interface ManufacturerItem {

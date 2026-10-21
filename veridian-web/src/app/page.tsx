@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { buildSkusQuery, buildOrderBy, parsePagination, formatSkuListItem, sortSkusByPrice } from "@/lib/api";
 import { CatalogApp } from "@/components/CatalogApp";
+import { RecommendationPanel } from "@/components/RecommendationPanel";
 
 interface SearchParams {
   cpu_brand?: string; ram_min?: string; storage_min?: string; display_type?: string;
@@ -32,13 +33,17 @@ async function getInitial(params: SearchParams) {
     catalogTotal,
     certifiedTotal,
     certifiedInResults,
+    manufacturerInResults,
+    unverifiedInResults,
     regionRows,
   ] = await Promise.all([
     prisma.sku.count({ where }),
     prisma.manufacturer.count(),
     prisma.sku.count({ where: { catalogVisible: true } }),
-    prisma.sku.count({ where: { catalogVisible: true, certifiedSpecs: { some: {} } } }),
-    prisma.sku.count({ where: { AND: [where, { certifiedSpecs: { some: {} } }] } }),
+    prisma.sku.count({ where: { catalogVisible: true, provenance: "certified" } }),
+    prisma.sku.count({ where: { AND: [where, { provenance: "certified" }] } }),
+    prisma.sku.count({ where: { AND: [where, { provenance: "manufacturer" }] } }),
+    prisma.sku.count({ where: { AND: [where, { provenance: "unverified" }] } }),
     prisma.skuRegionalPricing.findMany({
       distinct: ["region"],
       select: { region: true },
@@ -68,7 +73,11 @@ async function getInitial(params: SearchParams) {
     results,
     availableRegions,
     pagination: { page, limit, totalResults, totalPages: Math.ceil(totalResults / limit) },
-    tiers: { certified: certifiedInResults, reference: totalResults - certifiedInResults },
+    tiers: {
+      certified: certifiedInResults,
+      manufacturer: manufacturerInResults,
+      unverified: unverifiedInResults,
+    },
     stats: {
       catalogTotal,
       certifiedTotal,
@@ -101,9 +110,13 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       <section className="container py-10 sm:py-14" aria-label="Laptop catalog">
         <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="eyebrow mb-2">The catalog</p><h2 className="font-display text-[32px] tracking-[-.035em]">Find your next machine</h2></div>
-          <p className="max-w-xs text-[12px] leading-5 text-[var(--muted)] sm:text-right">Filter by hard constraints. Every result stays tied to its source record.</p>
+          <p className="max-w-xs text-[12px] leading-5 text-[var(--muted)] sm:text-right">Filter by hard constraints, or describe what you need in plain English. Every result stays tied to its source record.</p>
         </div>
         <CatalogApp initial={initial} />
+      </section>
+
+      <section className="container pb-14" aria-label="Recommendations">
+        <RecommendationPanel />
       </section>
     </div>
   );

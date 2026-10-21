@@ -230,10 +230,48 @@ async function main() {
     "Retail-kind price observations not attached to a retailer listing"
   );
 
-  const badPrice = await prisma.priceObservation.count({
-    where: { OR: [{ price: { lt: 1 } }, { price: { gt: 100000 } }] },
+  // Price plausibility is checked per currency. A single global ceiling
+  // would flag every rupee price as impossible, which is exactly the kind of
+  // false alarm that trains people to ignore the report.
+  const priceCeilings: Array<{ currency: string; ceiling: number }> = [
+    { currency: "INR", ceiling: 500000 },
+    { currency: "JPY", ceiling: 1000000 },
+    { currency: "EUR", ceiling: 20000 },
+    { currency: "GBP", ceiling: 20000 },
+    { currency: "USD", ceiling: 100000 },
+  ];
+  const badPrices = await Promise.all(
+    priceCeilings.map(async ({ currency, ceiling }) => ({
+      currency,
+      count: await prisma.priceObservation.count({
+        where: { currency, OR: [{ price: { lt: 1 } }, { price: { gt: ceiling } }] },
+      }),
+    }))
+  );
+  for (const entry of badPrices) {
+    add(
+      `price/out-of-range/${entry.currency}`,
+      "error",
+      entry.count,
+      `Price observations outside a plausible range for ${entry.currency}`
+    );
+  }
+  // A price in a currency we have no ceiling for is not checked rather than
+  // checked against the wrong one.
+  const uncheckedCurrencies = await prisma.priceObservation.groupBy({
+    by: ["currency"],
+    _count: { _all: true },
   });
-  add("price/out-of-range", "error", badPrice, "Price observations outside a plausible range");
+  const known = new Set(priceCeilings.map((entry) => entry.currency));
+  for (const entry of uncheckedCurrencies) {
+    if (known.has(entry.currency)) continue;
+    add(
+      `price/no-plausibility-range/${entry.currency}`,
+      "info",
+      entry._count._all,
+      `Prices in ${entry.currency} are not checked against a plausibility range`
+    );
+  }
 
   const duplicateObservations = await prisma.$queryRaw<
     Array<{ skuId: string; region: string; n: number }>

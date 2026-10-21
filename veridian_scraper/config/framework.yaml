@@ -1,17 +1,25 @@
-manufacturer:
-  framework:
-    brand: "Framework"
-    base_url: "https://frame.work"
-    regions:
-      - code: US
-        name: "United States"
-        base_url: "https://frame.work"
-        language: en-US
-        currency: USD
-        category_paths:
-          laptops: "/laptop"
-        selectors:
-          product_link: "a.product-link"
-          product_name: "h1.product-name"
-          specs_table: "table.specs-table"
-          next_page: "a.next-page"
+# Framework scraper configuration.
+#
+# This file is the source of truth for the Framework base URL and for the region
+# list (category paths, rate limit, timeout). CSS selectors live in the
+# scraper code because the site changes them with every build.
+manufacturer: "framework"
+brand: "Framework"
+base_url: "https://frame.work/"
+user_agent: "VeridianBot/1.0 (+https://veridian.dev; contact@veridian.dev)"
+output_dir: "./output"
+max_concurrent: 2
+retry_attempts: 3
+checkpoint_interval: 10
+
+regions:
+  - code: "us"
+    name: "United States"
+    base_url: "https://frame.work/"
+    language: "en"
+    currency: "USD"
+    category_paths:
+      laptop-13: "/products/laptop-13/"
+      laptop-16: "/products/laptop-16/"
+    rate_limit: 0.5
+    timeout: 30

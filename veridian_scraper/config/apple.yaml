@@ -1,18 +1,29 @@
-manufacturer:
-  apple:
-    brand: "Apple"
-    base_url: "https://www.apple.com"
-    regions:
-      - code: US
-        name: "United States"
-        base_url: "https://www.apple.com"
-        language: en-US
-        currency: USD
-        category_paths:
-          laptops: "/macbook-air"
-          laptops_pro: "/macbook-pro"
-        selectors:
-          product_link: "a.product-link"
-          product_name: "h1.product-name"
-          specs_table: "table.specs-table"
-          next_page: "a.next-page"
+# Apple scraper configuration.
+#
+# This file is the source of truth for the Apple base URL and for the region
+# list (category paths, rate limit, timeout). CSS selectors live in the
+# scraper code because the site changes them with every build.
+manufacturer: "apple"
+brand: "Apple"
+base_url: "https://www.apple.com/"
+user_agent: "VeridianBot/1.0 (+https://veridian.dev; contact@veridian.dev)"
+output_dir: "./output"
+max_concurrent: 1
+retry_attempts: 3
+checkpoint_interval: 5
+
+regions:
+  - code: "us"
+    name: "United States"
+    base_url: "https://www.apple.com/"
+    language: "en"
+    currency: "USD"
+    category_paths:
+      macbook-air: "/shop/buy-mac/macbook-air"
+      macbook-pro: "/shop/buy-mac/macbook-pro"
+      imac: "/shop/buy-mac/imac"
+      mac-mini: "/shop/buy-mac/mac-mini"
+      mac-studio: "/shop/buy-mac/mac-studio"
+      mac-pro: "/shop/buy-mac/mac-pro"
+    rate_limit: 0.3
+    timeout: 30

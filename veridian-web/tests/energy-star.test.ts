@@ -44,8 +44,12 @@ describe("EnergyStarRecord validation — malformed payloads", () => {
   it("accepts a well-formed record", () => {
     const { record, errors } = validateEnergyStarRecord(baseRecord());
     expect(errors).toEqual([]);
-    expect(record?.skuCode).toBe("ES-4711354");
+    // The canonical code is the part number plus a hash of the configuration
+    // signature, so it is stable, human-recognisable and unique.
+    expect(record?.skuCode).toMatch(/^IDEAPAD-VIBE-15AKP12-[0-9a-f]{8}$/);
     expect(record?.certifiedSpecs.ramGb).toBe(32);
+    expect(record?.brand).toBe("Lenovo");
+    expect(record?.seriesName).toBe("IdeaPad Vibe 15");
   });
 
   it("rejects a non-object payload", () => {
@@ -59,9 +63,16 @@ describe("EnergyStarRecord validation — malformed payloads", () => {
     expect(errors).toContain("record must be an object");
   });
 
-  it("rejects a record with an unknown type", () => {
+  it("rejects a record with a product type that is not a laptop", () => {
     const { errors } = validateEnergyStarRecord(baseRecord({ type: "Desktop" }));
-    expect(errors).toContain("type must be Notebook");
+    expect(errors).toContain("type 'Desktop' is not a laptop product type");
+  });
+
+  it("accepts every laptop product type the source publishes", () => {
+    for (const type of ["Notebook", "Two-In-One Notebook", "Ruggedized Notebook"]) {
+      const { errors } = validateEnergyStarRecord(baseRecord({ type }));
+      expect(errors).toEqual([]);
+    }
   });
 
   it("rejects a record missing required identity fields", () => {
@@ -146,13 +157,38 @@ describe("EnergyStar adapter — extraction and variant collisions", () => {
     expect(raw[0].payloadHash).not.toBe(raw[1].payloadHash);
   });
 
-  it("assigns deterministic unique skuCodes per source record id", () => {
+  it("gives the same canonical code to the same configuration every time", () => {
     const adapter = new EnergyStarAdapter();
     const a = adapter.extract([baseRecord()]).records[0];
     const b = adapter.extract([baseRecord({ pd_id: "7" })]).records[0];
-    expect(a.skuCode).toBe("ES-4711354");
-    expect(b.skuCode).toBe("ES-7");
+    // A different source record id for the same machine must not create a
+    // second canonical configuration.
+    expect(a.skuCode).toBe(b.skuCode);
+  });
+
+  it("gives different configurations of one part number different codes", () => {
+    const adapter = new EnergyStarAdapter();
+    const a = adapter.extract([baseRecord()]).records[0];
+    const b = adapter.extract([
+      baseRecord({ pd_id: "7", system_memory_ram_gb: "64.0" }),
+    ]).records[0];
     expect(a.skuCode).not.toBe(b.skuCode);
+  });
+
+  it("uses the marketing model name when the source reports an internal code", () => {
+    const adapter = new EnergyStarAdapter();
+    const record = adapter.extract([
+      baseRecord({
+        pd_id: "9",
+        brand_name: "DELL",
+        model_name: "P112F",
+        model_number: "Dell 15 D15260",
+        additional_model_information: "Dell 15 D15260,Dell Pro Essential 15 PV15260",
+      }),
+    ]).records[0];
+    expect(record.brand).toBe("Dell");
+    expect(record.modelName).toBe("Dell Pro Essential 15 PV15260");
+    expect(record.seriesName).toBe("Dell Pro Essential 15");
   });
 });
 
@@ -222,26 +258,59 @@ describe("EnergyStar ingestion — audited write path", () => {
       const result = await ingestReport(prisma, report);
       expect(result.created).toBe(1);
 
+      const skuCode = report.records[0].skuCode;
       const sku = await prisma.sku.findUnique({
-        where: { skuCode: "ES-4711354" },
-        include: { certifiedSpecs: true, observations: true },
+        where: { skuCode },
+        include: { certifiedSpecs: true, observations: true, sources: true },
       });
       expect(sku).not.toBeNull();
       expect(sku?.cpuBrand).toBe("AMD");
       expect(sku?.ramGb).toBe(32);
       expect(sku?.os).toBe("Windows 11");
       expect(sku?.catalogVisible).toBe(true);
+      // Provenance is written by the ingestion path, never inferred downstream.
+      expect(sku?.provenance).toBe("certified");
+      expect(sku?.mpn).toBe("IdeaPad Vibe 15AKP12");
       expect(sku?.certifiedSpecs).toHaveLength(1);
       expect(sku?.certifiedSpecs[0].energyStarId).toBe(
         "ES_1037540_IdeaPad Vibe 15AKP12_09222026100039_1518519"
       );
       expect(sku?.observations[0].status).toBe("accepted");
+      // Every configuration carries an explicit provenance record.
+      expect(sku?.sources).toHaveLength(1);
+      expect(sku?.sources[0].kind).toBe("certified");
+      expect(sku?.sources[0].sourceUrl).toContain("data.energystar.gov");
 
       // Idempotent: re-ingesting removes none and skips.
       const again = await ingestReport(prisma, report);
       expect(again.created).toBe(0);
+      expect(again.unchanged).toBe(1);
       expect(await prisma.sku.count()).toBe(1);
       expect(await prisma.certifiedSkuSpec.count()).toBe(1);
+    });
+  });
+
+  it("merges two certifications of one configuration into one canonical entry", async () => {
+    const adapter = makeAdapter([
+      baseRecord(),
+      // The same machine, certified again on another date.
+      baseRecord({
+        pd_id: "4711355",
+        date_certified: "2026-09-30T00:00:00.000",
+        energy_star_model_identifier: "ES_1037540_IdeaPad Vibe 15AKP12_09302026100039_1518520",
+      }),
+    ]);
+    const report = await adapter.run(0, 2);
+    expect(report.accepted).toBe(2);
+
+    await withTempDb(async (prisma) => {
+      const result = await ingestReport(prisma, report);
+      expect(result.created).toBe(1);
+      expect(result.merged).toBe(1);
+      expect(await prisma.sku.count()).toBe(1);
+      // Both certification events are kept as immutable observations.
+      expect(await prisma.rawObservation.count({ where: { status: "accepted" } })).toBe(2);
+      expect(await prisma.certifiedSkuSpec.count()).toBe(2);
     });
   });
 

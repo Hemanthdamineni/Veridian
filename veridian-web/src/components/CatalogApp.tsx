@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { FilterPanel } from "@/components/FilterPanel";
+import { PlainLanguageSearch, type ParsedFilters } from "@/components/PlainLanguageSearch";
 import { SkuCard, SkuCardSkeleton } from "@/components/SkuCard";
 import { Pagination } from "@/components/Pagination";
 import { SortSelect } from "@/components/SortSelect";
@@ -20,7 +21,9 @@ interface CatalogResponse {
   results: SkuListItem[];
   pagination: { page: number; limit: number; totalResults: number; totalPages: number };
   availableRegions?: string[];
-  tiers?: { certified: number; reference: number };
+  tiers?: { certified: number; manufacturer: number; unverified: number };
+  /** Only present on the plain-language endpoint. */
+  parsed_filters?: Record<string, string | undefined>;
 }
 
 const LIMIT = 24;
@@ -40,6 +43,7 @@ export function CatalogApp({ initial }: { initial: CatalogResponse }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [parsed, setParsed] = useState<Record<string, string | undefined> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   // Debounce only the text search; every other change fetches immediately.
@@ -49,6 +53,8 @@ export function CatalogApp({ initial }: { initial: CatalogResponse }) {
     return () => clearTimeout(t);
   }, [filters.q]);
 
+  const plainMode = filters.mode === "plain";
+
   const query = useMemo(
     () => filtersToQuery({ ...filters, q: debouncedQ }),
     [filters, debouncedQ]
@@ -56,7 +62,10 @@ export function CatalogApp({ initial }: { initial: CatalogResponse }) {
 
   // Fetch whenever the effective query changes.
   useEffect(() => {
-    const url = `/api/skus${query ? `?${query}&limit=${LIMIT}` : `?limit=${LIMIT}`}`;
+    // In plain-language mode the sentence is sent to the search endpoint,
+    // which parses it into filters and returns them with the results.
+    const endpoint = plainMode ? "/api/search" : "/api/skus";
+    const url = `${endpoint}${query ? `?${query}&limit=${LIMIT}` : `?limit=${LIMIT}`}`;
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -75,6 +84,7 @@ export function CatalogApp({ initial }: { initial: CatalogResponse }) {
         if (!settled) return;
         setData(body);
         if (body.availableRegions?.length) setAvailableRegions(body.availableRegions);
+        if (plainMode) setParsed(body.parsed_filters ?? null);
         setLoading(false);
       })
       .catch((err: unknown) => {
@@ -86,7 +96,7 @@ export function CatalogApp({ initial }: { initial: CatalogResponse }) {
     return () => {
       settled = false;
     };
-  }, [query]);
+  }, [query, plainMode]);
 
   // Keep the address bar in sync so results stay shareable and bookmarkable.
   //
@@ -162,6 +172,19 @@ export function CatalogApp({ initial }: { initial: CatalogResponse }) {
       </aside>
 
       <div className="min-w-0 flex-1">
+        {plainMode && (
+          <div className="surface mb-6 p-6">
+            <PlainLanguageSearch
+              value={filters.q}
+              onChange={(value) => setFilters((f) => ({ ...f, q: value, page: 1 }))}
+              onSubmit={(value) => setFilters((f) => ({ ...f, q: value, page: 1 }))}
+              parsed={(parsed ?? {}) as ParsedFilters}
+              loading={loading}
+              resultCount={data.pagination.totalResults}
+            />
+          </div>
+        )}
+
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p id="results-heading" tabIndex={-1} className="text-[13px] text-[var(--muted)]" role="status" aria-live="polite" aria-atomic="true">
             {loading && data.results.length > 0 ? (
@@ -171,8 +194,13 @@ export function CatalogApp({ initial }: { initial: CatalogResponse }) {
                 <strong className="font-semibold text-[var(--ink)]">{data.pagination.totalResults.toLocaleString()}</strong>{" "}
                 result{data.pagination.totalResults === 1 ? "" : "s"}
                 {data.pagination.totalResults > 0 && <> · page {data.pagination.page} of {data.pagination.totalPages}</>}
-                {data.tiers && data.tiers.certified + data.tiers.reference > 0 && (
-                  <> · {data.tiers.certified.toLocaleString()} certified, {data.tiers.reference.toLocaleString()} reference</>
+                {data.tiers && data.tiers.certified + data.tiers.manufacturer + data.tiers.unverified > 0 && (
+                  <>
+                    {" · "}
+                    {data.tiers.certified.toLocaleString()} certified,{" "}
+                    {data.tiers.manufacturer.toLocaleString()} manufacturer,{" "}
+                    {data.tiers.unverified.toLocaleString()} unverified
+                  </>
                 )}
               </>
             )}

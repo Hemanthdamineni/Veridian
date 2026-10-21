@@ -1,17 +1,25 @@
-manufacturer:
-  lg:
-    brand: "LG"
-    base_url: "https://www.lg.com"
-    regions:
-      - code: US
-        name: "United States"
-        base_url: "https://www.lg.com/us"
-        language: en-US
-        currency: USD
-        category_paths:
-          laptops: "/us/laptops"
-        selectors:
-          product_link: "a.product-link"
-          product_name: "h1.product-name"
-          specs_table: "table.specs-table"
-          next_page: "a.next-page"
+# LG scraper configuration.
+#
+# This file is the source of truth for the LG base URL and for the region
+# list (category paths, rate limit, timeout). CSS selectors live in the
+# scraper code because the site changes them with every build.
+manufacturer: "lg"
+brand: "LG"
+base_url: "https://www.lg.com/"
+user_agent: "VeridianBot/1.0 (+https://veridian.dev; contact@veridian.dev)"
+output_dir: "./output"
+max_concurrent: 2
+retry_attempts: 3
+checkpoint_interval: 10
+
+regions:
+  - code: "us"
+    name: "United States"
+    base_url: "https://www.lg.com/us/"
+    language: "en"
+    currency: "USD"
+    category_paths:
+      laptops: "/laptops/"
+      gram: "/laptops/gram/"
+    rate_limit: 0.5
+    timeout: 30

@@ -60,10 +60,14 @@ export async function GET(request: NextRequest) {
       where["weightKg"] = { lte: requirements.max_weight * 1.2 };
     }
 
-    // Fetch candidate laptops (limit to top 20 for scoring)
+    // Fetch candidate laptops. The candidate set is ordered so the ranking is
+    // reproducible: configurations with a cited source come first, then the
+    // most recently launched. Without an explicit order the query would
+    // return an arbitrary slice and the same request could answer differently.
     const candidates = await prisma.sku.findMany({
       where,
-      take: 20,
+      take: 60,
+      orderBy: [{ launchDate: "desc" }, { createdAt: "desc" }],
       include: {
         model: {
           include: {
@@ -84,7 +88,7 @@ export async function GET(request: NextRequest) {
     const scored = candidates.map((sku) => {
       const laptop = {
         id: sku.id,
-        name: sku.model.name,
+        name: `${sku.model.series.manufacturer.name} ${sku.model.name}`,
         price: sku.pricing[0]?.msrp ?? null,
         currency: sku.pricing[0]?.currency || "USD",
         ram_gb: sku.ramGb,
@@ -95,7 +99,10 @@ export async function GET(request: NextRequest) {
         cpu_brand: sku.cpuBrand,
         brand: sku.model.series.manufacturer.name,
       };
-      return scoreLaptopForRecommendation(laptop, requirements);
+      return {
+        ...scoreLaptopForRecommendation(laptop, requirements),
+        provenance: sku.provenance,
+      };
     });
 
     // Sort by score and take top N

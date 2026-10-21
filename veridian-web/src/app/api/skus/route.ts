@@ -60,16 +60,19 @@ export async function GET(request: NextRequest) {
     const region = params.region || "US";
 
     // Get total count for pagination
-    const [totalResults, regionRows, certifiedCount] = await Promise.all([
-      prisma.sku.count({ where }),
-      prisma.skuRegionalPricing.findMany({
-        distinct: ["region"],
-        select: { region: true },
-        orderBy: { region: "asc" },
-      }),
-      // How the current result set splits between the two data tiers.
-      prisma.sku.count({ where: { AND: [where, { certifiedSpecs: { some: {} } }] } }),
-    ]);
+    const [totalResults, regionRows, certifiedCount, manufacturerCount, unverifiedCount] =
+      await Promise.all([
+        prisma.sku.count({ where }),
+        prisma.skuRegionalPricing.findMany({
+          distinct: ["region"],
+          select: { region: true },
+          orderBy: { region: "asc" },
+        }),
+        // How the current result set splits across the three provenance tiers.
+        prisma.sku.count({ where: { AND: [where, { provenance: "certified" }] } }),
+        prisma.sku.count({ where: { AND: [where, { provenance: "manufacturer" }] } }),
+        prisma.sku.count({ where: { AND: [where, { provenance: "unverified" }] } }),
+      ]);
     const availableRegions = regionRows.map((r) => r.region);
 
     let skus;
@@ -92,6 +95,16 @@ export async function GET(request: NextRequest) {
           },
           pricing: { where: { region } },
           certifiedSpecs: { select: { id: true }, take: 1 },
+          sources: {
+            select: {
+              source: true,
+              kind: true,
+              sourceUrl: true,
+              observedAt: true,
+              confidence: true,
+              note: true,
+            },
+          },
         },
       });
 
@@ -126,6 +139,16 @@ export async function GET(request: NextRequest) {
           },
           pricing: { where: { region } },
           certifiedSpecs: { select: { id: true }, take: 1 },
+          sources: {
+            select: {
+              source: true,
+              kind: true,
+              sourceUrl: true,
+              observedAt: true,
+              confidence: true,
+              note: true,
+            },
+          },
         },
       });
     }
@@ -143,7 +166,11 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(totalResults / limit),
       },
       availableRegions,
-      tiers: { certified: certifiedCount, reference: totalResults - certifiedCount },
+      tiers: {
+        certified: certifiedCount,
+        manufacturer: manufacturerCount,
+        unverified: unverifiedCount,
+      },
     };
 
     return NextResponse.json(response);

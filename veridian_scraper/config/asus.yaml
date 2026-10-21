@@ -1,16 +1,35 @@
+# ASUS scraper configuration.
+#
+# This file is the source of truth for the ASUS base URL and for the region
+# list (category paths, rate limit, timeout). CSS selectors live in the
+# scraper code because the site changes them with every build.
 manufacturer: "asus"
 brand: "ASUS"
-base_url: "https://www.asus.com"
-user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+base_url: "https://www.asus.com/"
+user_agent: "VeridianBot/1.0 (+https://veridian.dev; contact@veridian.dev)"
 output_dir: "./output"
-max_concurrent: 3
+max_concurrent: 2
 retry_attempts: 3
 checkpoint_interval: 10
 
 regions:
+  - code: "us"
+    name: "United States"
+    base_url: "https://www.asus.com/us/"
+    language: "en"
+    currency: "USD"
+    category_paths:
+      laptops: "/laptops/"
+      displays-desktops: "/displays-desktops/"
+      monitors: "/monitors/"
+      motherboards-components: "/motherboards-components/"
+      networking-iot-servers: "/networking-iot-servers/"
+      accessories: "/accessories/"
+    rate_limit: 0.5
+    timeout: 30
   - code: "in"
     name: "India"
-    base_url: "https://www.asus.com/in"
+    base_url: "https://www.asus.com/in/"
     language: "en"
     currency: "INR"
     category_paths:
@@ -19,17 +38,48 @@ regions:
       monitors: "/monitors/"
       motherboards-components: "/motherboards-components/"
       networking-iot-servers: "/networking-iot-servers/"
-      tablets: "/tablets/"
-      phones: "/phones/"
       accessories: "/accessories/"
-    selectors:
-      product_grid: ".ProductList__grid, .products-grid, .product-list"
-      product_card: ".ProductCard, .product-item, .product-card"
-      product_link: 'a[href*="/laptops/"], a[href*="/displays-desktops/"], a[href*="/monitors/"]'
-      techspec_link: 'a[href*="/techspec"], a[href*="specifications"]'
-      variant_names: '.TechSpec__itemName__an9aU .pdName, .TechSpec__modelName, .model-name, .variant-name'
-      spec_rows: '.TechSpec__rowTable__1LR9D, .TechSpec__row, .spec-row, tr.spec-row'
-      spec_name: '.rowTableTitle, .TechSpec__rowTableTitle__3GLj4, .TechSpec__rowTitle, .spec-title, th'
-      spec_values: '.TechSpec__rowTableItems__KYWXp, .TechSpec__rowTableItems, .spec-value, td'
-    rate_limit: 1.0
+    rate_limit: 0.5
+    timeout: 30
+  - code: "uk"
+    name: "United Kingdom"
+    base_url: "https://www.asus.com/uk/"
+    language: "en"
+    currency: "GBP"
+    category_paths:
+      laptops: "/laptops/"
+      displays-desktops: "/displays-desktops/"
+      monitors: "/monitors/"
+      motherboards-components: "/motherboards-components/"
+      networking-iot-servers: "/networking-iot-servers/"
+      accessories: "/accessories/"
+    rate_limit: 0.5
+    timeout: 30
+  - code: "de"
+    name: "Germany"
+    base_url: "https://www.asus.com/de/"
+    language: "de"
+    currency: "EUR"
+    category_paths:
+      laptops: "/laptops/"
+      displays-desktops: "/displays-desktops/"
+      monitors: "/monitors/"
+      motherboards-components: "/motherboards-components/"
+      networking-iot-servers: "/networking-iot-servers/"
+      accessories: "/accessories/"
+    rate_limit: 0.5
+    timeout: 30
+  - code: "fr"
+    name: "France"
+    base_url: "https://www.asus.com/fr/"
+    language: "fr"
+    currency: "EUR"
+    category_paths:
+      laptops: "/laptops/"
+      displays-desktops: "/displays-desktops/"
+      monitors: "/monitors/"
+      motherboards-components: "/motherboards-components/"
+      networking-iot-servers: "/networking-iot-servers/"
+      accessories: "/accessories/"
+    rate_limit: 0.5
     timeout: 30

@@ -164,7 +164,10 @@ export function validateEnergyStarRecord(raw: unknown): { record: NormalizedReco
 
   const brandCanonical = canonicalBrand(brand);
   const canonicalModelName = resolveModelName(model, additional);
-  const seriesName = deriveSeriesName(brandCanonical, canonicalModelName, additional);
+  // The series is derived from the name the source reported, not from the
+  // resolved marketing name, so that a chassis code still yields the family
+  // the source grouped it under.
+  const seriesName = deriveSeriesName(brandCanonical, model, additional);
 
   const signature = configurationSignature({
     cpuModel,
