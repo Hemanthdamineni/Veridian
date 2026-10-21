@@ -6,346 +6,35 @@
  * database, never from a stored summary, so the report cannot drift from the
  * data it describes.
  *
+ * The checks themselves live in `src/lib/data-quality.ts`, which the admin
+ * dashboard API reads too. This file is the CLI front end: it runs the
+ * shared checks, optionally repairs empty structural rows, and prints the
+ * result. There is one implementation of every check, not two copies that
+ * drift apart.
+ *
  * Usage:
  *   npm run db:audit              # human-readable report
  *   npm run db:audit -- --json    # machine-readable report
  */
 
 import { prisma } from "../src/lib/db";
-
-interface Finding {
-  check: string;
-  severity: "error" | "warning" | "info";
-  count: number;
-  detail: string;
-  samples: string[];
-}
-
-const findings: Finding[] = [];
-
-function add(
-  check: string,
-  severity: Finding["severity"],
-  count: number,
-  detail: string,
-  samples: string[] = []
-) {
-  if (count > 0) findings.push({ check, severity, count, detail, samples: samples.slice(0, 5) });
-}
+import { runDataQualityAudit } from "../src/lib/data-quality";
 
 async function main() {
-  const [
-    skuCount,
-    visibleSkus,
-    manufacturerCount,
-    seriesCount,
-    modelCount,
-    certifiedSpecs,
-    rawObservations,
-    rejectedObservations,
-    sources,
-    priceObservations,
-    regionalPricing,
-    components,
-    skuComponents,
-    sellers,
-    listings,
-  ] = await Promise.all([
-    prisma.sku.count(),
-    prisma.sku.count({ where: { catalogVisible: true } }),
-    prisma.manufacturer.count(),
-    prisma.series.count(),
-    prisma.model.count(),
-    prisma.certifiedSkuSpec.count(),
-    prisma.rawObservation.count(),
-    prisma.rawObservation.count({ where: { status: "rejected" } }),
-    prisma.skuSource.count(),
-    prisma.priceObservation.count(),
-    prisma.skuRegionalPricing.count(),
-    prisma.component.count(),
-    prisma.skuComponent.count(),
-    prisma.seller.count(),
-    prisma.retailerListing.count(),
-  ]);
+  const audit = await runDataQualityAudit();
 
-  // --- Provenance -----------------------------------------------------------
-  const byProvenance = await prisma.sku.groupBy({ by: ["provenance"], _count: { _all: true } });
-  const provenanceMap = Object.fromEntries(
-    byProvenance.map((row) => [row.provenance, row._count._all])
-  ) as Record<string, number>;
-
-  // A configuration that claims certification but has no certified spec row
-  // is claiming a provenance it cannot back up.
-  const uncertifiedButClaimed = await prisma.sku.count({
-    where: { provenance: "certified", certifiedSpecs: { none: {} } },
-  });
-  add(
-    "provenance/unsupported-claim",
-    "error",
-    uncertifiedButClaimed,
-    "Rows declare provenance 'certified' but carry no certified specification record"
-  );
-
-  // A configuration with a certified spec row must declare the certified tier.
-  const certifiedButUndeclared = await prisma.sku.count({
-    where: { provenance: { not: "certified" }, certifiedSpecs: { some: {} } },
-  });
-  add(
-    "provenance/undeclared",
-    "error",
-    certifiedButUndeclared,
-    "Rows carry a certified specification record but do not declare the 'certified' provenance"
-  );
-
-  // Every row must have at least one explicit provenance record.
-  const withoutSource = await prisma.sku.count({ where: { sources: { none: {} } } });
-  add(
-    "provenance/missing",
-    "error",
-    withoutSource,
-    "Rows carry no explicit provenance record"
-  );
-
-  // --- Duplicates -----------------------------------------------------------
-  // Grouping is done through Prisma rather than raw SQL so the audit runs
-  // unchanged on SQLite and PostgreSQL, whose table names differ.
-  const duplicateSkuCodes = await prisma.sku.groupBy({
-    by: ["skuCode"],
-    _count: { _all: true },
-    having: { skuCode: { _count: { gt: 1 } } },
-  });
-  add(
-    "duplicates/sku-code",
-    "error",
-    duplicateSkuCodes.length,
-    "Part numbers used by more than one canonical configuration"
-  );
-
-  // Two configurations of the same model that share a specification
-  // signature but carry different part numbers. These are usually regional or
-  // alternate part numbers for the same machine, and sometimes genuinely
-  // different machines the source describes with the same coarse fields.
-  // The part number is the stronger discriminator, so they are reported for
-  // review rather than merged automatically.
-  const alternatePartNumbers = await prisma.sku.groupBy({
-    by: [
-      "modelId",
-      "cpuBrand",
-      "cpuModel",
-      "cpuCores",
-      "ramGb",
-      "storageType",
-      "displaySizeIn",
-      "displayRefreshHz",
-      "batteryWh",
-    ],
-    _count: { _all: true },
-    having: { modelId: { _count: { gt: 1 } } },
-  });
-  const affectedModels = new Set(alternatePartNumbers.map((row) => row.modelId));
-  add(
-    "identity/alternate-part-numbers",
-    "info",
-    affectedModels.size,
-    "Models holding several part numbers with the same specification signature (kept separate on purpose)"
-  );
-
-  // --- Orphans --------------------------------------------------------------
-  const orphanSeries = await prisma.series.count({ where: { models: { none: {} } } });
-  add("integrity/empty-series", "warning", orphanSeries, "Series rows with no models");
-
-  const orphanModels = await prisma.model.count({ where: { skus: { none: {} } } });
-  add("integrity/empty-model", "warning", orphanModels, "Model rows with no configurations");
-
-  const orphanManufacturers = await prisma.manufacturer.count({
-    where: { series: { none: {} } },
-  });
-  add(
-    "integrity/empty-manufacturer",
-    "warning",
-    orphanManufacturers,
-    "Manufacturer rows with no series"
-  );
-
-  // --- Impossible or suspicious values --------------------------------------
-  const badRam = await prisma.sku.count({ where: { OR: [{ ramGb: { lt: 1 } }, { ramGb: { gt: 512 } }] } });
-  add("values/ram", "error", badRam, "Configurations with an impossible RAM capacity");
-
-  const badWeight = await prisma.sku.count({
-    where: { OR: [{ weightKg: { lt: 0.3 } }, { weightKg: { gt: 5 } }] },
-  });
-  add("values/weight", "error", badWeight, "Configurations with an impossible weight");
-
-  const badBattery = await prisma.sku.count({
-    where: { OR: [{ batteryWh: { lt: 5 } }, { batteryWh: { gt: 300 } }] },
-  });
-  add("values/battery", "error", badBattery, "Configurations with an impossible battery capacity");
-
-  const badDisplay = await prisma.sku.count({
-    where: { OR: [{ displaySizeIn: { lt: 8 } }, { displaySizeIn: { gt: 24 } }] },
-  });
-  add("values/display-size", "error", badDisplay, "Configurations with an impossible display size");
-
-  const badRefresh = await prisma.sku.count({
-    where: { OR: [{ displayRefreshHz: { lt: 24 } }, { displayRefreshHz: { gt: 500 } }] },
-  });
-  add("values/refresh-rate", "error", badRefresh, "Configurations with an impossible refresh rate");
-
-  const badCores = await prisma.sku.count({
-    where: { OR: [{ cpuCores: { lt: 1 } }, { cpuCores: { gt: 128 } }] },
-  });
-  add("values/cpu-cores", "error", badCores, "Configurations with an impossible CPU core count");
-
-  // --- Coverage -------------------------------------------------------------
-  // A source occasionally records a placeholder instead of a product ("UPLOAD
-  // TO EPA", "Same as basic model"). Such a row describes no product and must
-  // not sit in the catalog as if it did.
-  const placeholderModels = await prisma.model.findMany({
-    where: {
-      OR: [
-        { name: { equals: "UPLOAD TO EPA" } },
-        { name: { contains: "Same as basic model" } },
-        { name: { contains: "can be 0-9" } },
-        { name: { contains: "or blank" } },
-        { name: { equals: "Unknown" } },
-      ],
-    },
-    select: { name: true, series: { select: { manufacturer: { select: { name: true } } } } },
-  });
-  add(
-    "coverage/placeholder-model",
-    "warning",
-    placeholderModels.length,
-    "Models whose recorded name is a source placeholder rather than a product",
-    placeholderModels.map((m) => `${m.series.manufacturer.name} · ${m.name}`)
-  );
-
-  const missingCpu = await prisma.sku.count({ where: { cpuModel: "" } });
-  add("coverage/cpu-model", "error", missingCpu, "Configurations with no CPU model");
-
-  const missingOs = await prisma.sku.count({ where: { os: "" } });
-  add("coverage/os", "error", missingOs, "Configurations with no operating system");
-
-  const missingSeries = await prisma.sku.count({
-    where: { model: { series: { name: "" } } },
-  });
-  add("coverage/series", "error", missingSeries, "Configurations with no series name");
-
-  const missingProvenanceUrl = await prisma.skuSource.count({ where: { sourceUrl: null } });
-  add(
-    "coverage/source-url",
-    "warning",
-    missingProvenanceUrl,
-    "Provenance records with no source URL to check the value against"
-  );
-
-  // --- Prices ---------------------------------------------------------------
-  const priceWithoutSource = await prisma.priceObservation.count({
-    where: { sourceUrl: null },
-  });
-  add(
-    "price/no-source-url",
-    "warning",
-    priceWithoutSource,
-    "Price observations with no source URL (reference values, not live retailer prices)"
-  );
-
-  const priceWithoutListing = await prisma.priceObservation.count({
-    where: { listingId: null, kind: "retail" },
-  });
-  add(
-    "price/no-listing",
-    "warning",
-    priceWithoutListing,
-    "Retail-kind price observations not attached to a retailer listing"
-  );
-
-  // Price plausibility is checked per currency. A single global ceiling
-  // would flag every rupee price as impossible, which is exactly the kind of
-  // false alarm that trains people to ignore the report.
-  const priceCeilings: Array<{ currency: string; ceiling: number }> = [
-    { currency: "INR", ceiling: 500000 },
-    { currency: "JPY", ceiling: 1000000 },
-    { currency: "EUR", ceiling: 20000 },
-    { currency: "GBP", ceiling: 20000 },
-    { currency: "USD", ceiling: 100000 },
-  ];
-  const badPrices = await Promise.all(
-    priceCeilings.map(async ({ currency, ceiling }) => ({
-      currency,
-      count: await prisma.priceObservation.count({
-        where: { currency, OR: [{ price: { lt: 1 } }, { price: { gt: ceiling } }] },
-      }),
-    }))
-  );
-  for (const entry of badPrices) {
-    add(
-      `price/out-of-range/${entry.currency}`,
-      "error",
-      entry.count,
-      `Price observations outside a plausible range for ${entry.currency}`
-    );
-  }
-  // A price in a currency we have no ceiling for is not checked rather than
-  // checked against the wrong one.
-  const uncheckedCurrencies = await prisma.priceObservation.groupBy({
-    by: ["currency"],
-    _count: { _all: true },
-  });
-  const known = new Set(priceCeilings.map((entry) => entry.currency));
-  for (const entry of uncheckedCurrencies) {
-    if (known.has(entry.currency)) continue;
-    add(
-      `price/no-plausibility-range/${entry.currency}`,
-      "info",
-      entry._count._all,
-      `Prices in ${entry.currency} are not checked against a plausibility range`
-    );
-  }
-
-  const duplicateObservations = await prisma.priceObservation.groupBy({
-    by: ["skuId", "region", "price", "timestamp", "sourceName"],
-    _count: { _all: true },
-    having: { skuId: { _count: { gt: 1 } } },
-  });
-  add(
-    "price/duplicate-observation",
-    "warning",
-    duplicateObservations.length,
-    "Identical price observations recorded more than once (breaks append-only semantics)"
-  );
-
-  // --- Raw observations -----------------------------------------------------
-  const rejectedWithoutReason = await prisma.rawObservation.count({
-    where: { status: "rejected", errors: null },
-  });
-  add(
-    "ingestion/rejected-without-reason",
-    "error",
-    rejectedWithoutReason,
-    "Rejected source records stored without a reason"
-  );
-
-  const acceptedWithoutSku = await prisma.rawObservation.count({
-    where: { status: "accepted", skuId: null },
-  });
-  add(
-    "ingestion/accepted-without-sku",
-    "error",
-    acceptedWithoutSku,
-    "Accepted source records not linked to a canonical configuration"
-  );
-
-  // --- Components -----------------------------------------------------------
-  const componentsWithoutAlias = await prisma.component.count({
-    where: { aliases: { none: {} } },
-  });
-  add(
-    "components/no-alias",
-    "info",
-    componentsWithoutAlias,
-    "Components with no observed alias recorded"
-  );
+  // Only checks that actually found something are reported as findings.
+  // A check that holds is not a finding; the dashboard reports it separately
+  // so a reader can tell "measured and clean" from "not measured".
+  const findings = audit.checks
+    .filter((check) => check.count > 0)
+    .map((check) => ({
+      check: check.id,
+      severity: check.severity,
+      count: check.count,
+      detail: check.message,
+      samples: check.samples,
+    }));
 
   // --- Report ---------------------------------------------------------------
   // Optionally remove empty structural rows. They carry no information and
@@ -376,24 +65,8 @@ async function main() {
 
   const report = {
     generatedAt: new Date().toISOString(),
-    totals: {
-      skus: skuCount,
-      visibleSkus,
-      manufacturers: manufacturerCount,
-      series: seriesCount,
-      models: modelCount,
-      certifiedSpecs,
-      rawObservations,
-      rejectedObservations,
-      skuSourceRecords: sources,
-      priceObservations,
-      regionalPricing,
-      components,
-      skuComponentLinks: skuComponents,
-      sellers,
-      retailerListings: listings,
-    },
-    provenance: provenanceMap,
+    totals: audit.totals,
+    provenance: audit.provenance,
     repaired,
     findings,
   };
@@ -408,7 +81,7 @@ async function main() {
       console.log(`  ${key.padEnd(24)} ${value}`);
     }
     console.log("\nPROVENANCE");
-    for (const [key, value] of Object.entries(provenanceMap)) {
+    for (const [key, value] of Object.entries(audit.provenance)) {
       console.log(`  ${key.padEnd(24)} ${value}`);
     }
     console.log("\nFINDINGS");
