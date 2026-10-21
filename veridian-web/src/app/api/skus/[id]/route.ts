@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { toProvenance } from "@/lib/api";
 
 // Force dynamic rendering
 export const dynamic = "force-dynamic";
@@ -42,6 +43,17 @@ export async function GET(
         pricing: true,
         ports: true,
         certifiedSpecs: true,
+        sources: {
+          select: {
+            source: true,
+            kind: true,
+            sourceUrl: true,
+            observedAt: true,
+            confidence: true,
+            note: true,
+          },
+        },
+        components: { include: { component: true } },
       },
     });
 
@@ -54,9 +66,29 @@ export async function GET(
     return NextResponse.json({
       id: sku.id,
       skuCode: sku.skuCode,
+      partNumber: sku.mpn,
+      upc: sku.upc,
+      productType: sku.productType,
       modelName: sku.model.name,
       seriesName: sku.model.series.name,
       manufacturerName: sku.model.series.manufacturer.name,
+      // The provenance tier is a written field, not an inference.
+      provenance: toProvenance(sku.provenance),
+      sources: sku.sources.map((source) => ({
+        source: source.source,
+        kind: source.kind,
+        sourceUrl: source.sourceUrl,
+        observedAt: source.observedAt.toISOString(),
+        confidence: source.confidence,
+        note: source.note,
+      })),
+      components: sku.components.map((link) => ({
+        id: link.component.id,
+        kind: link.component.kind,
+        name: link.component.canonicalName,
+        slug: link.component.slug,
+        role: link.role,
+      })),
       cpuBrand: sku.cpuBrand,
       cpuModel: sku.cpuModel,
       cpuCores: sku.cpuCores,
