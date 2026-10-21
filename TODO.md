@@ -25,9 +25,9 @@ marked done.
 | Source rows rejected, with reasons | 44 | `npm run db:audit` |
 | Shared components | 477 | `npm run db:audit` |
 | Configuration ↔ component links | 3,359 | `npm run db:audit` |
-| Web test suites | 88 passing (Vitest) | `npm test` |
-| Python test suite | 117 passing (pytest) | `pytest` |
-| Build routes | 28 | `npm run build` |
+| Web test suites | 108 passing (Vitest) | `npm test` |
+| Python test suite | 124 passing (pytest) | `pytest` |
+| Build routes | 35 | `npm run build` |
 | CI | `.github/workflows/ci.yml` (lint, types, tests, build, live PostgreSQL ingestion) | |
 
 **Product rule:** the catalog mixes three tiers of record. `Certified` rows
@@ -65,7 +65,8 @@ tier a row belongs to.
 - [x] **Task 1.4.7:** `GET /api/recommendations` — scored matching
 - [x] **Task 1.4.8:** `GET /api/components`, `GET /api/components/:slug` — the knowledge graph
 - [x] **Task 1.4.9:** `POST /api/admin/skus`, `GET /api/admin/stats` (bearer/session auth)
-- [x] **Task 1.4.10:** `POST /api/refresh`, `GET /api/alerts`, `GET /api/contributions` — deliberately **503-gated** until the pipeline/auth they depend on exists
+- [x] **Task 1.4.10:** `POST /api/refresh` — the ingestion bridge, admin-authenticated, running the audited path
+- [x] **Task 1.4.11:** `GET /api/alerts`, `GET /api/contributions` — deliberately **503-gated** until the auth they depend on exists
 
 ### Story 1.5: Frontend Filter UI ✅
 - [x] **Task 1.5.1:** Filter panel (processor, RAM, storage, display, refresh, weight, battery, touch, price range, source tier, price region)
@@ -163,12 +164,22 @@ tier a row belongs to.
 - [ ] **Task 3.4.3:** User-facing alert CRUD (blocked on Epic 5 auth — endpoint returns 503)
 - [ ] **Task 3.4.4:** Dispatch scheduler
 
-### Story 3.5: Live Retailer Prices 🔴 NOT STARTED
-- [ ] **Task 3.5.1:** A retailer API integration with a credential-free source
-- [ ] **Task 3.5.2:** Affiliate/product API integrations (Best Buy, Amazon, eBay)
-- [ ] **Task 3.5.3:** Fallback scrapers for retailers without APIs
-- **Note:** until one of these ships, all displayed prices are reference MSRP
-  and are labelled as such.
+### Story 3.5: Live Prices 🟡 INFRASTRUCTURE READY
+- [x] **Task 3.5.1:** A price source contract (`PriceSource`) with the evidence
+  class carried on every observation
+- [x] **Task 3.5.2:** A reader that takes a price only from schema.org `Product`
+  markup, never from a price string in a rendered page
+- [x] **Task 3.5.3:** A refresh CLI over a configurable source list
+  (`data/family-price-sources.csv`)
+- [x] **Task 3.5.4:** Manufacturer list prices read from ASUS product pages and
+  recorded against the product *family* with the page they came from
+- [ ] **Task 3.5.5:** A retailer API integration (Best Buy, Amazon, eBay) —
+  these need credentials
+- [ ] **Task 3.5.6:** Per-configuration retail prices, with the listing, the
+  seller and the timestamp that make a retail price meaningful
+- **Note:** a "starting at" price is never attached to a single configuration,
+  because it is not that configuration's price. Every price the system shows
+  is labelled a reference value.
 
 ---
 
@@ -232,11 +243,16 @@ tier a row belongs to.
 - [x] **Task 6.2.4:** `GET /api/components` and `GET /api/components/:slug`
 - [x] **Task 6.2.5:** Cross-links from every product page into the graph
 
-### Story 6.3: Public Developer API 🔴
-- [x] **Task 6.3.1:** `ApiKey` model
-- [ ] **Task 6.3.2:** API key management UI
-- [ ] **Task 6.3.3:** Rate limiting
-- [ ] **Task 6.3.4:** OpenAPI documentation
+### Story 6.3: Public Developer API ✅
+- [x] **Task 6.3.1:** `ApiKey` model — only the hash is stored
+- [x] **Task 6.3.2:** Key issuance CLI (`npm run db:apikey`); the key is shown once
+- [x] **Task 6.3.3:** Rate limiting — an hourly budget per key, counted in the
+  database so instances share it and a restart does not reset it
+- [x] **Task 6.3.4:** Real endpoints for configurations, manufacturers, the
+  component graph, comparison and recommendations
+- [x] **Task 6.3.5:** An OpenAPI 3.1 description of the contract
+- [x] **Task 6.3.6:** A smoke test that exercises every endpoint, run in CI
+- [ ] **Task 6.3.7:** A key management UI for operators
 
 ### Story 6.4: Data Quality Dashboard ✅
 - [x] **Task 6.4.1:** `npm run db:audit` — measures the catalog and fails on an error-severity finding
@@ -252,7 +268,7 @@ tier a row belongs to.
 | 1 | No live retailer price source — every price shown is reference MSRP | Price filters and price sorting operate on reference values | Epic 3, Story 3.5 |
 | 2 | 41 reference configurations are not independently verified | Their figures may contradict the manufacturer | Epic 2, Story 2.8.3; reported by `npm run db:audit` |
 | 3 | 38 provenance records carry no source URL | The reader cannot check those values against a page | `npm run db:audit`, `coverage/source-url` |
-| 4 | `POST /api/refresh` returns 503 | There is no scheduled ingestion path from the scrapers into the web database | Epic 2, Story 2.7.4 |
+| 4 | The scraper fleet has no scheduled run in CI | Manufacturer data has to be refreshed by hand | Epic 2, Story 2.7.4 |
 | 5 | Twelve of thirteen manufacturers are unverified against their live sites | Their scrapers may extract nothing, as ASUS's did | Epic 2, Story 2.8.3 |
-| 6 | The Python `Seller` / `PriceListing` models still duplicate the Prisma ones | Two stores describe the same thing | Epic 3, Story 3.1 |
+| 6 | The Python `Seller` / `PriceListing` models still duplicate the Prisma ones | Two stores describe the same thing; the boundary is documented but not yet collapsed | Epic 3, Story 3.1 |
 | 7 | No component-to-component or issue-level relationships | "Which laptops are affected by this component issue" is not answerable | Epic 6 |

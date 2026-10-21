@@ -73,37 +73,43 @@ export async function ingestRecord(
     create: { name: brand, slug: slugify(brand) },
   });
 
-  const series = await prisma.series.upsert({
-    where: { manufacturerId_slug: { manufacturerId: manufacturer.id, slug: slugify(record.seriesName) } },
-    update: {},
-    create: {
-      manufacturerId: manufacturer.id,
-      name: record.seriesName,
-      slug: slugify(record.seriesName),
-    },
-  });
-
   // A SKU that already exists for this canonical code is a re-certification
-  // of the same configuration. It keeps the model it was first filed under;
-  // creating a second model row for the same configuration would leave an
-  // empty, unreachable model behind.
+  // of the same configuration. It keeps the model and series it was first
+  // filed under; creating a second series for the same configuration would
+  // leave an empty, unreachable series behind.
   const existingSku = await prisma.sku.findUnique({
     where: { skuCode: record.skuCode },
     select: { id: true, modelId: true },
   });
 
-  const model = existingSku
-    ? { id: existingSku.modelId }
-    : await prisma.model.upsert({
-        where: { seriesId_slug: { seriesId: series.id, slug: slugify(record.modelName) } },
-        update: { launchDate: parseDateIso(record.launchDate) ?? undefined },
-        create: {
-          seriesId: series.id,
-          name: record.modelName,
-          slug: slugify(record.modelName),
-          launchDate: parseDateIso(record.launchDate),
-        },
-      });
+  // The series and the model are only created once the configuration is known
+  // to be new. A re-certification reuses the ones it was first filed under, so
+  // it cannot leave an empty series or model behind.
+  let modelId = existingSku?.modelId;
+  if (!modelId) {
+    const series = await prisma.series.upsert({
+      where: {
+        manufacturerId_slug: { manufacturerId: manufacturer.id, slug: slugify(record.seriesName) },
+      },
+      update: {},
+      create: {
+        manufacturerId: manufacturer.id,
+        name: record.seriesName,
+        slug: slugify(record.seriesName),
+      },
+    });
+    const model = await prisma.model.upsert({
+      where: { seriesId_slug: { seriesId: series.id, slug: slugify(record.modelName) } },
+      update: { launchDate: parseDateIso(record.launchDate) ?? undefined },
+      create: {
+        seriesId: series.id,
+        name: record.modelName,
+        slug: slugify(record.modelName),
+        launchDate: parseDateIso(record.launchDate),
+      },
+    });
+    modelId = model.id;
+  }
 
   const specs = record.certifiedSpecs;
   const ramGb = normalizeRamGb(specs.ramGb);
@@ -130,7 +136,7 @@ export async function ingestRecord(
       productType: record.productType,
     },
     create: {
-      modelId: model.id,
+      modelId,
       skuCode: record.skuCode,
       cpuBrand,
       cpuModel: specs.cpuModel ?? record.modelName,

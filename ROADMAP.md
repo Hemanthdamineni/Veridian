@@ -26,9 +26,10 @@ certification records · 477 shared components with 3,359 configuration links ·
 0 duplicate part numbers · 0 impossible values · 0 rows without a provenance
 record.
 
-**Verified engineering baseline:** types clean · lint clean · 88 web tests ·
-117 Python tests · 28 build routes · CI on every push and pull request, with
-a job that ingests into a live PostgreSQL server and asserts the result.
+**Verified engineering baseline:** types clean · lint clean (no warnings) ·
+108 web tests · 124 Python tests · 35 build routes · CI on every push and
+pull request, with a job that ingests into a live PostgreSQL server, audits
+the result and exercises the public API end to end.
 
 ---
 
@@ -41,7 +42,7 @@ a job that ingests into a live PostgreSQL server and asserts the result.
 | 3. Price Intelligence | Price tracking, history, alerts | **P2** | 🟡 Domain engine and schema built; no live retailer feed |
 | 4. AI & Search | NL filters, recommendations, smart search | **P3** | 🟡 Rule-based NL and recommendations, both now in the UI |
 | 5. Community | User contributions, reputation, verification | **P4** | 🔴 Not started (models only) |
-| 6. Platform Scale | Multi-category, public API, partnerships | **P5** | 🟡 Component graph and schema abstraction landed |
+| 6. Platform Scale | Multi-category, public API, partnerships | **P5** | 🟡 Component graph, public API and schema abstraction landed |
 
 ---
 
@@ -96,9 +97,12 @@ a job that ingests into a live PostgreSQL server and asserts the result.
 - 3.4 Alert engine (below_price, lowest_ever, pct_off) ✅
 - 3.5 Notification service (email, telegram, discord, web push) ✅
 - 3.6 Price history UI on the SKU detail page ✅
-- 3.7 Live retailer price source 🔴 — **the single highest-value remaining
-  work.** Every price in the system today is a manufacturer suggested price
-  from the reference dataset, and is labelled as such.
+- 3.7 Price sources 🟡 — the source contract, the structured-data reader,
+  the refresh CLI and the append-only history are in place, and four product
+  families carry a manufacturer list price read from the manufacturer's own
+  page. A per-configuration *retail* price still needs a retailer feed, which
+  needs credentials. Every price shown is labelled a reference value.
+- 3.8 `POST /api/refresh` ✅ — the ingestion bridge, admin-authenticated
 
 ---
 
@@ -136,8 +140,9 @@ a job that ingests into a live PostgreSQL server and asserts the result.
   exist, so adding a product class does not require rewriting the platform
 - 6.2 Component knowledge graph ✅ — 477 shared components, 3,359 links,
   browsable at `/components` and served by `/api/components`
-- 6.3 Public developer API 🔴 — API key model exists, no rate limiting or
-  OpenAPI document
+- 6.3 Public developer API ✅ — API keys issued through a CLI and stored only
+  as a hash, an hourly budget per key counted in the database, real
+  endpoints, and an OpenAPI 3.1 description of the contract
 - 6.4 Data quality dashboard ✅ — `npm run db:audit` measures the catalog and
   fails on an error-severity finding
 - 6.5 Lifecycle tracking (successors, discontinuations) 🔴
@@ -148,8 +153,8 @@ a job that ingests into a live PostgreSQL server and asserts the result.
 ## Recommended Build Order
 
 ```
-Now        A live retailer price source — the largest remaining gap
-           between the product promise and the reality
+Now        A per-configuration retail price feed — the largest remaining
+           gap between the product promise and the reality
 Then       Extend manufacturer verification beyond ASUS, so the unverified
            tier shrinks toward zero
 Then       Accounts (Auth.js) → unlocks alerts and contributions
