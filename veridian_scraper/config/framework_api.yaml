@@ -1,0 +1,50 @@
+# Framework official feed configuration.
+#
+# VERIFIED 2026-10-21: Framework publishes no reachable official product feed.
+# The shop (frame.work) sits behind a Cloudflare challenge that answers 403 to
+# the honest Veridian agent, so its robots.txt cannot be read and the
+# collector refuses the whole host. The documentation host (guides.frame.work)
+# publishes a robots.txt and answers 200, but it carries repair guides, not a
+# product specification feed.
+#
+# This file records the endpoints that were probed, so the next reviewer does
+# not have to repeat the search, and so the collector reports the real reason
+# instead of "successful with zero rows".
+manufacturer: "framework_api"
+brand: "Framework"
+base_url: "https://frame.work/"
+user_agent: "VeridianBot/1.0 (+https://veridian.dev; contact@veridian.dev)"
+robots_user_agent: "VeridianBot/1.0 (+https://veridian.dev; contact@veridian.dev)"
+output_dir: "./output"
+max_concurrent: 1
+retry_attempts: 3
+checkpoint_interval: 10
+
+official_feed:
+  kind: "unavailable"
+  status: "unavailable"
+  reason: >-
+    frame.work answers HTTP 403 with a Cloudflare interstitial for
+    robots.txt, so the site's policy cannot be read and every path on the
+    host is refused. A Cloudflare challenge is an access control and is never
+    bypassed.
+  # Every endpoint that was probed, with the kind of payload it would carry.
+  candidates:
+    - url: "https://frame.work/products.json"
+      kind: "json"
+      note: "Shopify product feed of the official store; unreachable, the host policy is unreadable."
+    - url: "https://frame.work/sitemap.xml"
+      kind: "xml"
+      note: "Shopify sitemap index of the official store; unreachable, the host policy is unreadable."
+    - url: "https://guides.frame.work/sitemap.xml"
+      kind: "xml"
+      note: "Documentation host: reachable, but it publishes repair guides and no product specification feed."
+
+regions:
+  - code: "us"
+    name: "United States"
+    base_url: "https://frame.work/"
+    language: "en"
+    currency: "USD"
+    rate_limit: 0.5
+    timeout: 30

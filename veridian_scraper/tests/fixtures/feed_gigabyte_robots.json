@@ -1,0 +1,12 @@
+{
+  "_source": "https://www.gigabyte.com/robots.txt",
+  "_truncated": "Real response bodies, truncated to 600 characters.",
+  "robots_url": "https://www.gigabyte.com/robots.txt",
+  "robots_status": 403,
+  "robots_content_type": "text/html",
+  "robots_body": "<HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access Denied</H1>\n \nYou don't have permission to access \"http&#58;&#47;&#47;www&#46;gigabyte&#46;com&#47;robots&#46;txt\" on this server.<P>\nReference&#32;&#35;18&#46;fe23017&#46;1792603218&#46;f8474b5a\n<P>https&#58;&#47;&#47;errors&#46;edgesuite&#46;net&#47;18&#46;fe23017&#46;1792603218&#46;f8474b5a</P>\n</BODY>\n</HTML>\n",
+  "feed_url": "https://www.gigabyte.com/sitemap.xml",
+  "feed_status": 403,
+  "feed_content_type": "text/html",
+  "feed_body": "<HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access Denied</H1>\n \nYou don't have permission to access \"http&#58;&#47;&#47;www&#46;gigabyte&#46;com&#47;sitemap&#46;xml\" on this server.<P>\nReference&#32;&#35;18&#46;fe23017&#46;1792603218&#46;f8475251\n<P>https&#58;&#47;&#47;errors&#46;edgesuite&#46;net&#47;18&#46;fe23017&#46;1792603218&#46;f8475251</P>\n</BODY>\n</HTML>\n"
+}

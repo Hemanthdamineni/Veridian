@@ -1,0 +1,74 @@
+# Lenovo PSREF official API scraper configuration.
+#
+# Lenovo publishes its complete product specification reference as a JSON API
+# on psref.lenovo.com. The site publishes no robots.txt (the request answers
+# 404), which RFC 9309 defines as "no restrictions", so the collector may read
+# the API. The API is token protected: a short lived JWT is requested from
+# /api/home/auth/issue and sent as a bearer token on every call.
+#
+# This file is the source of truth for the API endpoints, the search terms
+# that stand in for product categories, and the region list.
+manufacturer: "lenovo_api"
+brand: "Lenovo"
+base_url: "https://psref.lenovo.com/"
+user_agent: "VeridianBot/1.0 (+https://veridian.dev; contact@veridian.dev)"
+robots_user_agent: "VeridianBot/1.0 (+https://veridian.dev; contact@veridian.dev)"
+output_dir: "./output"
+max_concurrent: 1
+retry_attempts: 3
+checkpoint_interval: 10
+
+official_feed:
+  kind: "json-api"
+  # The API rejects calls without a bearer token, so a token is requested
+  # once per run and reused until it expires. The token endpoint answers 403
+  # unless the request carries the Origin of the site the API belongs to.
+  auth:
+    method: "POST"
+    path: "/api/home/auth/issue"
+    body: {}
+    origin: "https://psref.lenovo.com"
+  endpoints:
+    # Product discovery: a search returns the product family together with the
+    # machine types (the part numbers) it covers.
+    search: "/api/search/DefinitionFilterAndSearch/Suggest"
+    # The full product tree (classification -> line -> series -> product).
+    catalog: "/api/ph/ProductCategoryTree"
+    # One product: name, line, series and the published specification PDF.
+    product_info: "/api/product/Info/GetInfoByKey"
+    # The complete specification table of one product, as structured JSON.
+    spec_data: "/api/product/Compare/LoadSpecData"
+  # The canonical page of a product, used as the source URL of the record.
+  product_path: "/product/{product_key}"
+  search:
+    limit: 500
+  # Every category is one search term. The classification filter keeps only
+  # the products of the requested class (for example "Laptops").
+  categories:
+    - name: "ThinkPad"
+      slug: "thinkpad"
+      search_term: "ThinkPad"
+      classification: "Laptops"
+      category_type: "laptops"
+    - name: "Legion"
+      slug: "legion"
+      search_term: "Legion"
+      classification: "Laptops"
+      category_type: "laptops"
+    - name: "Yoga"
+      slug: "yoga"
+      search_term: "Yoga"
+      classification: "Laptops"
+      category_type: "laptops"
+  # Upper bound on the products collected per category, so a demonstration run
+  # stays polite. Set to 0 to collect every product of the search.
+  max_products: 25
+
+regions:
+  - code: "us"
+    name: "United States"
+    base_url: "https://psref.lenovo.com/"
+    language: "en"
+    currency: "USD"
+    rate_limit: 0.5
+    timeout: 30

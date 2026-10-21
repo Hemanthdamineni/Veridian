@@ -1,0 +1,300 @@
+{
+  "_source": "https://psref.lenovo.com/api/product/Compare/LoadSpecData?ProductKey=ThinkPad_X13_Detachable_Gen_1",
+  "_truncated": "Not truncated: the complete response for one product.",
+  "code": 1,
+  "data": {
+    "Classification": "Laptops",
+    "GeneralSpecData": [
+      {
+        "ProductID": "2846",
+        "ProductName": "ThinkPad X13 Detachable Gen 1",
+        "OverViewPicUrl": "",
+        "GeneralSpecJson": "{\"ProductID\":\"2846\",\"ProductName\":\"ThinkPad X13 Detachable Gen 1\",\"data\":{\"ProductID\":2846,\"OverViewData\":{\"OVP\":[{\"OVPC\":\"Headphone / microphone combo jack (3.5mm)\",\"OVPS\":\"1\",\"OVCS\":\"0\"},{\"OVPC\":\"Thunderbolt 4, with USB PD 15-65W & DP 2.1\",\"OVPS\":\"2\",\"OVCS\":\"0\"},{\"OVPC\":\"Volume button\",\"OVPS\":\"3\",\"OVCS\":\"0\"},{\"OVPC\":\"Power button\",\"OVPS\":\"4\",\"OVCS\":\"0\"},{\"OVPC\":\"Thunderbolt 4, with USB PD 15-65W & DP 2.1\",\"OVPS\":\"5\",\"OVCS\":\"0\"},{\"OVPC\":\"Kensington Nano Security Slot\",\"OVPS\":\"6\",\"OVCS\":\"0\"}],\"OVN\":[{\"OVNC\":\"Folio keyboard shown on above image is for demo only. It is available on selected models.\",\"OVNS\":\"1\"}]},\"SpecData\":[{\"L1\":\"Performance\",\"L1No\":1,\"L2\":[{\"L2\":\"Processor\",\"L2No\":40,\"Features\":[{\"FName\":\"Processor Family\",\"FNo\":1,\"FVs\":[{\"FVGID\":\"F686A1F4-F2B7-4D30-A232-7397DFBDCA0B\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Intel Core&trade; Ultra 5 / 7 Processor (Series 3)\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Processor\",\"FNo\":2,\"FVs\":[{\"FVGID\":\"B812EFB0-2DBE-44EB-8ED2-67FC54658155\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"Processor Name\",\"AttNo\":1,\"AttV\":\"Core Ultra 5 332\"},{\"Att\":\"Cores\",\"AttNo\":2,\"AttV\":\"6 (2 P-core + 4 LP E-core)\"},{\"Att\":\"Threads\",\"AttNo\":3,\"AttV\":\"6\"},{\"Att\":\"Base Frequency\",\"AttNo\":4,\"AttV\":\"P-core 2.5GHz / LP E-core 1.9GHz\"},{\"Att\":\"Max Frequency\",\"AttNo\":5,\"AttV\":\"P-core 4.4GHz / LP E-core 3.3GHz\"},{\"Att\":\"Cache\",\"AttNo\":6,\"AttV\":\"12MB Intel&reg; Smart Cache\"},{\"Att\":\"Processor Graphics\",\"AttNo\":9,\"AttV\":\"Intel&reg; Graphics, up to 18 TOPS\"},{\"Att\":\"NPU\",\"AttNo\":10,\"AttV\":\"Up to 46 TOPS\"}]}]},{\"FVGID\":\"2778D3A5-A16B-46FD-8C4A-EE6B85D73265\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"Processor Name\",\"AttNo\":1,\"AttV\":\"Core Ultra 5 335\"},{\"Att\":\"Cores\",\"AttNo\":2,\"AttV\":\"8 (4 P-core + 4 LP E-core)\"},{\"Att\":\"Threads\",\"AttNo\":3,\"AttV\":\"8\"},{\"Att\":\"Base Frequency\",\"AttNo\":4,\"AttV\":\"P-core 2.2GHz / LP E-core 1.6GHz\"},{\"Att\":\"Max Frequency\",\"AttNo\":5,\"AttV\":\"P-core 4.6GHz / LP E-core 3.4GHz\"},{\"Att\":\"Cache\",\"AttNo\":6,\"AttV\":\"12MB Intel&reg; Smart Cache\"},{\"Att\":\"Processor Graphics\",\"AttNo\":9,\"AttV\":\"Intel&reg; Graphics, up to 40 TOPS\"},{\"Att\":\"NPU\",\"AttNo\":10,\"AttV\":\"Up to 47 TOPS\"}]}]},{\"FVGID\":\"E6C39FB9-EDF0-4B7C-A213-78C55AA28073\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"Processor Name\",\"AttNo\":1,\"AttV\":\"Core Ultra 7 365\"},{\"Att\":\"Cores\",\"AttNo\":2,\"AttV\":\"8 (4 P-core + 4 LP E-core)\"},{\"Att\":\"Threads\",\"AttNo\":3,\"AttV\":\"8\"},{\"Att\":\"Base Frequency\",\"AttNo\":4,\"AttV\":\"P-core 2.4GHz / LP E-core 1.8GHz\"},{\"Att\":\"Max Frequency\",\"AttNo\":5,\"AttV\":\"P-core 4.8GHz / LP E-core 3.6GHz\"},{\"Att\":\"Cache\",\"AttNo\":6,\"AttV\":\"12MB Intel&reg; Smart Cache\"},{\"Att\":\"Processor Graphics\",\"AttNo\":9,\"AttV\":\"Intel&reg; Graphics, up to 40 TOPS\"},{\"Att\":\"NPU\",\"AttNo\":10,\"AttV\":\"Up to 49 TOPS\"}]}]}],\"FNote\":[],\"Optional\":\"1\"}],\"L2Note\":null},{\"L2\":\"AI (Artificial Intelligence)\",\"L2No\":45,\"Features\":[{\"FName\":\"AI PC Category\",\"FNo\":3,\"FVs\":[{\"FVGID\":\"8BE19EAF-3DA0-442A-AE3E-71B037D00A41\",\"FVGNote\":null,\"FVGNoteAtt\":[{\"FeatureValueNote\":\"Copilot+ PCs have at least 16GB RAM, 256GB storage, and a NPU that runs 40+ TOPs to run the latest AI tools build-in latest Windows&reg; 11 to accelerate productivity and creativity.\",\"NoteAttributeGUID\":\"\",\"NoteAttributeName\":\"\"}],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Copilot+ PC\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"NPU\",\"FNo\":5,\"FVs\":[{\"FVGID\":\"ECBBB818-8375-4B4A-8D9C-B87AB3D4420A\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Up to 49 TOPS\"}]}]}],\"FNote\":[],\"Optional\":\"0\"}],\"L2Note\":null},{\"L2\":\"Operating System\",\"L2No\":50,\"Features\":[{\"FName\":\"Operating System\",\"FNo\":6,\"FVs\":[{\"FVGID\":\"CD98C89B-B53A-4493-907A-73E6B2A75A60\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Windows&reg; 11 Pro\"}]}]},{\"FVGID\":\"AB42AD0A-4B67-4373-B7E8-2138B56FF644\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Windows&reg; 11 Home\"}]}]},{\"FVGID\":\"9F70991D-0646-4ED2-A404-BE19870A017C\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"No preload operating system\"}]}]}],\"FNote\":[],\"Optional\":\"1\"}],\"L2Note\":null},{\"L2\":\"Graphics\",\"L2No\":60,\"Features\":[{\"FName\":\"Graphics\",\"FNo\":7,\"FVs\":[{\"FVGID\":\"E3E64772-6F3F-4CE2-B763-3164D81EA78E\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"Graphics\",\"AttNo\":1,\"AttV\":\"Intel&reg; Graphics\"},{\"Att\":\"Type\",\"AttNo\":2,\"AttV\":\"Integrated\"},{\"Att\":\"Memory\",\"AttNo\":3,\"AttV\":\"Shared\"},{\"Att\":\"Key Features\",\"AttNo\":9,\"AttV\":\"DirectX&reg; 12 Ultimate\"}]}]}],\"FNote\":[],\"Optional\":\"0\"}],\"L2Note\":null},{\"L2\":\"Monitor Support\",\"L2No\":70,\"Features\":[{\"FName\":\"Monitor Support\",\"FNo\":8,\"FVs\":[{\"FVGID\":\"A7099F97-3B0C-4464-A9FF-16E0FAEBFF4E\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Supports up to 3 independent displays (native display and 2 external monitors via Thunderbolt&trade;)\\n• Thunderbolt&trade; supports up to 8K@60Hz\"}]}]}],\"FNote\":[\"Refresh rates >60hz also supported, however max resolution will be limited. 8K resolution support needs 2 display pipes. That is, simultaneous display number will “-1” when 8K resolution displayed.\"],\"Optional\":\"0\"}],\"L2Note\":null},{\"L2\":\"Chipset\",\"L2No\":80,\"Features\":[{\"FName\":\"Chipset\",\"FNo\":9,\"FVs\":[{\"FVGID\":\"2F82D63C-09DD-417D-A164-B7671B298346\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Intel&reg; SoC (System on Chip) platform\"}]}]}],\"FNote\":[],\"Optional\":\"0\"}],\"L2Note\":null},{\"L2\":\"Memory\",\"L2No\":90,\"Features\":[{\"FName\":\"Max Memory\",\"FNo\":10,\"FVs\":[{\"FVGID\":\"D6656D9C-F193-4BE0-ADCE-31F55D587A56\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"16GB soldered memory, not upgradable\"}]}]},{\"FVGID\":\"9728DAE5-B1E7-416D-985A-355A056B4989\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"32GB soldered memory, not upgradable\"}]}]},{\"FVGID\":\"8FC2015F-A437-472C-9E46-F9DEF5157A90\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"64GB soldered memory, not upgradable\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Memory Slots\",\"FNo\":11,\"FVs\":[{\"FVGID\":\"1ADF9914-9EE0-4FF2-A3DD-B5D5EC469C0A\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Memory soldered to systemboard, no slots, dual-channel\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Memory Type\",\"FNo\":12,\"FVs\":[{\"FVGID\":\"CE66B54F-B13A-43A5-A718-6E68888A28A2\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"LPDDR5X-7467\"}]}]}],\"FNote\":[\"Installed memory is actually LPDDR5X-8533 but runs as LPDDR5X-7467 due to platform limitation.\"],\"Optional\":\"0\"}],\"L2Note\":null},{\"L2\":\"Storage\",\"L2No\":100,\"Features\":[{\"FName\":\"Max Storage Support\",\"FNo\":14,\"FVs\":[{\"FVGID\":\"29981049-DA86-4036-8288-8CD48B440374\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"One drive, up to 1TB M.2 2242 SSD\"}]}]}],\"FNote\":[\"The storage capacity supported is based on the test results with current Lenovo&reg; storage offerings.\"],\"Optional\":\"0\"},{\"FName\":\"Storage Slot\",\"FNo\":15,\"FVs\":[{\"FVGID\":\"4678F52B-645C-4C88-8FF7-624DEC20D53F\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"One M.2 2242 PCIe&reg; 4.0 x4 slot\"}]}]}],\"FNote\":[\"The actual data transfer rate of the following PCIe&reg; interface also depends on the capabilities of the connected PCIe&reg; device. The listed values represent theoretical maximums.\\nPCIe&reg; 3.0 (x2 / x4): 2 GB/s (16 Gbps) / 4 GB/s (32 Gbps);\\nPCIe&reg; 4.0 (x2 / x4): 4 GB/s (32 Gbps) / 8 GB/s (64 Gbps);\\nPCIe&reg; 5.0 (x2 / x4): 8 GB/s (64 Gbps) / 16 GB/s (128 Gbps).\"],\"Optional\":\"0\"},{\"FName\":\"Storage Type\",\"FNo\":16,\"FVs\":[{\"FVGID\":\"D771318E-A8D8-4B01-AF8E-7FB7E7A32C7D\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"Disk Type\",\"AttNo\":1,\"AttV\":\"M.2 2242 SSD\"},{\"Att\":\"Interface\",\"AttNo\":2,\"AttV\":\"PCIe&reg; NVMe&reg;, PCIe&reg; 4.0 x4\"},{\"Att\":\"Offering\",\"AttNo\":4,\"AttV\":\"256GB / 512GB / 1TB\"},{\"Att\":\"Security\",\"AttNo\":6,\"AttV\":\"Opal 2.0\"}]}]}],\"FNote\":[],\"Optional\":\"0\"}],\"L2Note\":null},{\"L2\":\"Removable Storage\",\"L2No\":110,\"Features\":[{\"FName\":\"Card Reader\",\"FNo\":19,\"FVs\":[{\"FVGID\":\"DEFF17DC-4EEF-4B7F-97B4-79260DCD9E0F\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"No card reader\"}]}]}],\"FNote\":[],\"Optional\":\"0\"}],\"L2Note\":null},{\"L2\":\"Multi-Media\",\"L2No\":120,\"Features\":[{\"FName\":\"Audio Chip\",\"FNo\":20,\"FVs\":[{\"FVGID\":\"1F0624F4-5C87-450F-933E-8BE85344F880\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"SoundWire&reg;, Cirrus Logic&reg; CS42L45 codec\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Speakers\",\"FNo\":21,\"FVs\":[{\"FVGID\":\"CA7CC1FD-8BEB-4FB4-9760-E0FF903AE7B8\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Stereo speakers, 2W x2, Dolby Atmos&reg;\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Microphone\",\"FNo\":22,\"FVs\":[{\"FVGID\":\"E76CFA3C-3463-4CDB-B430-E7D74D254420\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Dual-microphone array, Elevoc Voice\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Camera\",\"FNo\":23,\"FVs\":[{\"FVGID\":\"4B0706C6-FE9E-49B2-A7CD-2E6E72374EA1\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Front 5.0MP + IR discrete, with privacy shutter, vHDR, fixed focus\\nRear 8.0MP, autofocus\"}]}]}],\"FNote\":[],\"Optional\":\"0\"}],\"L2Note\":null},{\"L2\":\"Sensor\",\"L2No\":130,\"Features\":[{\"FName\":\"Sensors\",\"FNo\":24,\"FVs\":[{\"FVGID\":\"65F527BD-F6D0-4E89-802A-0832ECB7B0B1\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Accelerometer sensor\"}]}]},{\"FVGID\":\"98E11F34-6325-4C3E-ABD7-2C755D86273F\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Gyroscope sensor\"}]}]},{\"FVGID\":\"3447D085-A532-4E5A-80A4-11E2DD97518B\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Hall sensor\"}]}]}],\"FNote\":[],\"Optional\":\"0\"}],\"L2Note\":null},{\"L2\":\"Battery\",\"L2No\":140,\"Features\":[{\"FName\":\"Battery\",\"FNo\":25,\"FVs\":[{\"FVGID\":\"7B454A39-3DD1-4063-AE99-BCB09F124A80\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"45Wh Rechargeable Li-ion Battery, supports Rapid Charge (charge up to 80% in 1hr) with 65W AC adapter\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Max Battery Life\",\"FNo\":27,\"FVs\":[{\"FVGID\":\"187216A2-A2B3-4B0D-A846-4DAAED3CF56B\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"MobileMark30@250nits: 10.97 hr\"}]}]}],\"FNote\":[\"All battery life claims are approximate maximum and based on results using the MobileMark&reg; 2014, MobileMark&reg; 2018, MobileMark&reg; 25, MobileMark&reg; 30, JEITA 2.0, JEITA 3.0, continuous 1080p video playback (with 150nits brightness and default volume level) or Google Power Load Test (PLT) battery-life benchmark tests. Actual battery life will vary depending on many factors such as product configuration and usage, software use, wireless functionality, power management settings, and screen brightness. The maximum capacity of the battery will decrease with time and use.\"],\"Optional\":\"0\"}],\"L2Note\":null},{\"L2\":\"Power Adapter\",\"L2No\":150,\"Features\":[{\"FName\":\"Power Adapter\",\"FNo\":28,\"FVs\":[{\"FVGID\":\"F9EF785A-69C2-4159-9809-843F689D16EA\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"65W USB-C&reg; (2-pin) AC adapter, supports PD 3.0, 100-240V, 50-60Hz\"}]}]},{\"FVGID\":\"E42DB2EF-2828-49A8-B9BD-BFCA6601552B\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"65W USB-C&reg; (3-pin) AC adapter, supports PD 3.0, 100-240V, 50-60Hz\"}]}]},{\"FVGID\":\"EFEDECBA-DB98-4984-9615-E12E6B4F4D19\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"65W USB-C&reg; nano GaN (2-pin, wall-mount) AC adapter, supports PD 3.0, 100-240V, 50-60Hz\"}]}]},{\"FVGID\":\"5EF1FC7F-B3E8-4B02-B81D-DF7AC9F63588\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"65W USB-C&reg; nano GaN (3-pin, wall-mount) AC adapter, supports PD 3.0, 100-240V, 50-60Hz\"}]}]},{\"FVGID\":\"85603376-C96B-4051-ACDD-9E191CC62F11\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"65W USB-C&reg; slim GaN (2-pin) AC adapter, supports PD 3.0, 100-240V, 50-60Hz\"}]}]},{\"FVGID\":\"6694084D-08F1-4027-86B6-4BAE9A15A0BC\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"65W USB-C&reg; slim GaN (3-pin) AC adapter, supports PD 3.0, 100-240V, 50-60Hz\"}]}]},{\"FVGID\":\"429FBD28-7099-4697-B0D1-7FF41C7ED7C7\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"No power adapter\"}]}]}],\"FNote\":[\"AC adapter offerings depend on the country.\"],\"Optional\":\"1\"}],\"L2Note\":null}]},{\"L1\":\"Design\",\"L1No\":2,\"L2\":[{\"L2\":\"Display\",\"L2No\":1,\"Features\":[{\"FName\":\"Display\",\"FNo\":30,\"FVs\":[{\"FVGID\":\"3ACEB0D1-8696-47F1-A667-A1E78308C401\",\"FVGNote\":null,\"FVGNoteAtt\":[{\"FeatureValueNote\":\"IPS (in-plane switching) technology may refer to IPS, PLS, ADS, AHVA, AAS.\",\"NoteAttributeGUID\":\"7BBF1438-9CC3-4775-8B3D-D4B9A7B8E2AE\",\"NoteAttributeName\":\"Type\"}],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"Size\",\"AttNo\":1,\"AttV\":\"13\\\"\"},{\"Att\":\"Resolution\",\"AttNo\":2,\"AttV\":\"2.8K (2880x1920)\"},{\"Att\":\"Touch\",\"AttNo\":3,\"AttV\":\"Multi-touch\"},{\"Att\":\"Type\",\"AttNo\":4,\"AttV\":\"IPS\"},{\"Att\":\"Brightness\",\"AttNo\":5,\"AttV\":\"500nits\"},{\"Att\":\"Surface\",\"AttNo\":6,\"AttV\":\"Anti-glare, Anti-reflection, Anti-smudge\"},{\"Att\":\"Aspect Ratio\",\"AttNo\":7,\"AttV\":\"3:2\"},{\"Att\":\"Contrast Ratio\",\"AttNo\":8,\"AttV\":\"1500:1\"},{\"Att\":\"Color Gamut\",\"AttNo\":9,\"AttV\":\"100% sRGB\"},{\"Att\":\"Refresh Rate\",\"AttNo\":10,\"AttV\":\"120Hz\"},{\"Att\":\"Viewing Angle (L/R/U/D)\",\"AttNo\":11,\"AttV\":\"89° / 89° / 89° / 89°\"},{\"Att\":\"Key Features\",\"AttNo\":12,\"AttV\":\"Eyesafe&reg; Certified 2.0\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Touchscreen\",\"FNo\":31,\"FVs\":[{\"FVGID\":\"400B7EF4-88D3-4BC5-83B5-F7EC8871216A\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"In-cell multi-touch, supports 10-point touch\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Screen-to-Body Ratio\",\"FNo\":32,\"FVs\":[{\"FVGID\":\"CFE20FCC-3A9C-4A4D-A47D-D397C87E3903\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"82.1%\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Color Calibration\",\"FNo\":33,\"FVs\":[{\"FVGID\":\"28BEFC78-B8F1-4BB8-847E-4AB75841E1A1\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"AICCP color calibration\"}]}]}],\"FNote\":[],\"Optional\":\"0\"}],\"L2Note\":null},{\"L2\":\"Input Device\",\"L2No\":3,\"Features\":[{\"FName\":\"Pen\",\"FNo\":35,\"FVs\":[{\"FVGID\":\"931D3CF4-E550-4680-9DB9-1BCCD0C47AC3\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Lenovo&reg; Slim Pen 2, supports tilt detection, magnetic attachment, on-board garaged, charged in ThinkPad&reg; X13 Detachable Folio Keyboard via pogo pins.\"}]}]},{\"FVGID\":\"0F5D4C08-B451-4569-A1EC-9408CDF46DCC\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"No pen bundled (purchase separately)\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Keyboard\",\"FNo\":36,\"FVs\":[{\"FVGID\":\"AAB8E722-94A3-4595-BE89-FE2A10DF8E8D\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"ThinkPad&reg; X13 Detachable Folio Keyboard\"}]}]},{\"FVGID\":\"0FC3C148-CECD-47BF-ACE2-91A20B4BFE0F\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"No keyboard\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Keyboard Backlight\",\"FNo\":37,\"FVs\":[{\"FVGID\":\"AF691F8A-EB7A-4A01-A684-90F66196149A\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"LED backlight\"}]}]},{\"FVGID\":\"958E88E2-F823-4318-BEED-74476A083B0A\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"None\"}]}]}],\"FNote\":[],\"Optional\":\"0\"}],\"L2Note\":null},{\"L2\":\"Mechanical\",\"L2No\":4,\"Features\":[{\"FName\":\"Dimensions (WxDxH)\",\"FNo\":41,\"FVs\":[{\"FVGID\":\"41F83433-8BDD-410C-B6D8-77F9B8179DBA\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"Models\",\"AttNo\":1,\"AttV\":\"Tablet\"},{\"Att\":\"Dimensions\",\"AttNo\":2,\"AttV\":\"290 x 210 x 9.3 mm (11.42 x 8.27 x 0.37 inches)\"}]}]},{\"FVGID\":\"7205321B-027E-4F0A-BE76-FD02FEF4A89B\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"Models\",\"AttNo\":1,\"AttV\":\"Tablet with folio keyboard\"},{\"Att\":\"Dimensions\",\"AttNo\":2,\"AttV\":\"290 x 215 x 15.2 mm (11.42 x 8.46 x 0.60 inches)\"}]}]}],\"FNote\":[\"The system dimensions may vary depending on configurations.\"],\"Optional\":\"0\"},{\"FName\":\"Weight\",\"FNo\":43,\"FVs\":[{\"FVGID\":\"55608010-07E4-4927-9284-5978B9412427\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"Models\",\"AttNo\":1,\"AttV\":\"Tablet\"},{\"Att\":\"Weight\",\"AttNo\":2,\"AttV\":\"Around 0.89 kg (1.96 lbs)\"}]}]},{\"FVGID\":\"A830628C-C7EE-41E3-9C47-3DDF95248078\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"Models\",\"AttNo\":1,\"AttV\":\"Tablet with folio keyboard\"},{\"Att\":\"Weight\",\"AttNo\":2,\"AttV\":\"Around 1.25 kg (2.76 lbs)\"}]}]}],\"FNote\":[\"The system weight is approximate and based on results in Lenovo&reg; lab, which varies depending on the source of component, variance of the distribution of each component, and manufacturing process. It may not be the exact weight for each specific model.\"],\"Optional\":\"0\"},{\"FName\":\"Case Color\",\"FNo\":45,\"FVs\":[{\"FVGID\":\"49F27840-502B-463B-96EA-7FF8352DD267\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Black\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Case Material\",\"FNo\":46,\"FVs\":[{\"FVGID\":\"FA748B16-B56D-45FA-A7B7-397538EBD1E5\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Magnesium-aluminium\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Others\",\"FNo\":49,\"FVs\":[{\"FVGID\":\"FFB52FC6-24AF-42A5-9E32-56E9EF7CF9A7\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Hinge open angle: 170°+/-3°\"}]}]},{\"FVGID\":\"9723271D-48AF-4B94-B892-EE865A346190\",\"FVGNote\":null,\"FVGNoteAtt\":[{\"FeatureValueNote\":\"Location service is only available for WWAN models.\",\"NoteAttributeGUID\":\"\",\"NoteAttributeName\":\"\"}],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Location service: GPS / GLONASS / Galileo / Beidou / A-GPS\"}]}]}],\"FNote\":[],\"Optional\":\"0\"}],\"L2Note\":null}]},{\"L1\":\"Connectivity\",\"L1No\":3,\"L2\":[{\"L2\":\"Network\",\"L2No\":1,\"Features\":[{\"FName\":\"WLAN + Bluetooth\",\"FNo\":50,\"FVs\":[{\"FVGID\":\"2615AA69-A3A8-4955-AE2B-B8EE95D75F05\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Intel&reg; Wi-Fi&reg; 7 BE211, 802.11be 2x2 Wi-Fi&reg; + Bluetooth&reg; 5.4 (Bluetooth&reg; 6.0 hardware ready), Intel&reg; vPro&reg; technology support\"}]}]}],\"FNote\":[\"Wi-Fi&reg; operation (including Wi-Fi&reg; 6, Wi-Fi&reg; 6E, Wi-Fi&reg; 7, etc.) is subject to the regulatory requirements of each country.\\nBluetooth&reg; may operate at a lower version than hardware design depending on the factors such as operating system, driver, etc.\"],\"Optional\":\"0\"},{\"FName\":\"WWAN\",\"FNo\":51,\"FVs\":[{\"FVGID\":\"6BC149AA-3DF2-4A53-B5BA-03A6A534566E\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Snapdragon&reg; X61 5G Modem-RF System, Sub-6 GHz, M.2 card, with embedded eSIM functionality\"}]}]},{\"FVGID\":\"76B6BC4F-277F-43EC-A42C-724325E392DC\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"No support\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"SIM Card\",\"FNo\":52,\"FVs\":[{\"FVGID\":\"035BF529-59E4-4D72-9EB0-867C42C3A1E6\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"No physical SIM card included\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Ethernet\",\"FNo\":53,\"FVs\":[{\"FVGID\":\"EA255C8A-747B-4DF9-B588-11ECE5F92DF3\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"No onboard Ethernet\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"NFC\",\"FNo\":54,\"FVs\":[{\"FVGID\":\"EB725019-BC82-4F03-9077-F9572962315B\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Near Field Communication\"}]}]},{\"FVGID\":\"17DE0D01-3215-44CD-99D2-A0C87AD3C149\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"No support\"}]}]}],\"FNote\":[],\"Optional\":\"0\"}],\"L2Note\":null},{\"L2\":\"Ports\",\"L2No\":2,\"Features\":[{\"FName\":\"Standard Ports\",\"FNo\":55,\"FVs\":[{\"FVGID\":\"04E0A4F8-B1C6-4D88-8C06-22F6BF5568F8\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"2x Thunderbolt&trade; 4, with USB PD 15-65W and DisplayPort&trade; 2.1\"}]}]},{\"FVGID\":\"7652ABD6-212F-4FC7-BB1B-EBAE4D84C4ED\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"1x Headphone / microphone combo jack (3.5mm)\"}]}]},{\"FVGID\":\"42B40E4C-2E53-4C6B-8BAB-BA2DA194F420\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"1x Pogo pin connector (8-point)\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Optional Ports\",\"FNo\":56,\"FVs\":[{\"FVGID\":\"BFA89FB8-785C-491E-9313-7EFF3DFEF0B2\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"1x Nano-SIM card slot (WWAN support models)\"}]}]}],\"FNote\":[],\"Optional\":\"0\"}],\"L2Note\":\"The transfer speed of the ports will vary and, depending on many factors, such as the processing speed of the host device, file attributes and other factors related to system configuration and your operating environment, will be slower than theoretical speed.\"},{\"L2\":\"Docking\",\"L2No\":3,\"Features\":[{\"FName\":\"Docking\",\"FNo\":57,\"FVs\":[{\"FVGID\":\"5863E9E0-E8E6-4E74-B82A-D60F09205705\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Various docking solutions supported via Thunderbolt&trade; / USB-C&reg;.\\nFor more compatible docking solutions, please visit <a href=\\\"https://psref.lenovo.com/accessories/?category=Docking&system=ThinkPad%20X13%20Detachable%20Gen%201\\\" target=\\\"_blank\\\"><u>Docking for ThinkPad&reg; X13 Detachable Gen 1</u></a>\"}]}]}],\"FNote\":[],\"Optional\":\"0\"}],\"L2Note\":null}]},{\"L1\":\"Security & Privacy\",\"L1No\":4,\"L2\":[{\"L2\":\"Security\",\"L2No\":1,\"Features\":[{\"FName\":\"ThinkShield\",\"FNo\":59,\"FVs\":[{\"FVGID\":\"07CA5FE2-B840-4E20-9653-1F5FEAC413DD\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":0,\"AttV\":\"ThinkShield is a comprehensive security solution that encompasses hardware, software, and supply chain components. For more details, visit <a href=\\\"https://www.lenovo.com/us/en/software/thinkshield/\\\"target=\\\"_blank\\\"><u>here</u></a>\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Security Chip\",\"FNo\":60,\"FVs\":[{\"FVGID\":\"9FE6EAEC-01EC-4C6F-9A8E-0696EDA3B965\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Discrete TPM 2.0, TCG certified\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Physical Locks\",\"FNo\":61,\"FVs\":[{\"FVGID\":\"9B2CCF09-6196-477D-BC9F-0EA1DFAF758D\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Kensington Nano Security Slot&trade;, 2.65 x 6.15 mm\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Fingerprint Reader\",\"FNo\":63,\"FVs\":[{\"FVGID\":\"02D97B57-913B-4470-BCFB-73CF0C1EA4CA\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Touch style fingerprint reader on folio keyboard, match-on-chip\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"BIOS Security\",\"FNo\":64,\"FVs\":[{\"FVGID\":\"C0788815-E519-4A8B-8E18-1401868D7C11\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Hard disk password\"}]}]},{\"FVGID\":\"3237AF55-35E2-404B-B48D-0D3B27C6ACFD\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Power-on password\"}]}]},{\"FVGID\":\"E37C39A4-8B31-4619-B037-201993CB265D\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Supervisor password\"}]}]},{\"FVGID\":\"5DA90E52-5169-44CA-BCBF-8193BF371A44\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"System management password\"}]}]},{\"FVGID\":\"B538C788-9516-4D5C-881D-28863F9B83A4\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Self-healing BIOS\"}]}]},{\"FVGID\":\"0D7BB4A6-088E-45AF-81A1-C6A55CEE4C3B\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"More BIOS security features, please visit <a href=\\\"https://download.lenovo.com/bsco/index.html#/graphicalsimulator/thinkpad%20X13%20Detachable%20Gen1%20(21U6,21U7)\\\"><u>BIOS Simulator</u></a>\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Other Security\",\"FNo\":65,\"FVs\":[{\"FVGID\":\"552767B2-C844-4BAA-BD7B-B36D162B6716\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Camera privacy shutter\"}]}]},{\"FVGID\":\"48B70A98-B05F-4245-9F6A-35E89B58F77E\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"IR camera for Windows&reg; Hello (facial recognition)\"}]}]}],\"FNote\":[],\"Optional\":\"0\"}],\"L2Note\":null}]},{\"L1\":\"Manageability\",\"L1No\":5,\"L2\":[{\"L2\":\"System Management\",\"L2No\":1,\"Features\":[{\"FName\":\"System Management\",\"FNo\":66,\"FVs\":[{\"FVGID\":\"F821E58E-8A85-41A9-AC41-1D182DF11E0A\",\"FVGNote\":null,\"FVGNoteAtt\":[{\"FeatureValueNote\":\"Intel&reg; vPro&reg; offers a superset of DASH’s defined capabilities.\",\"NoteAttributeGUID\":\"\",\"NoteAttributeName\":\"\"}],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Intel&reg; vPro&reg; Enterprise\"}]}]},{\"FVGID\":\"886840A4-B93B-4956-9927-0A52EF848A6B\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Non-vPro&reg;\"}]}]}],\"FNote\":[\"Intel&reg; vPro&reg; platform require an eligible Intel&reg; processor, a supported operating system, Intel&reg; LAN and/or WLAN silicon, firmware enhancements, and other hardware and software necessary to deliver the manageability use cases, security features, system performance, and stability that define the platform. See <a href=\\\"https://www.intel.com/content/www/us/en/architecture-and-technology/vpro/overview.html\\\" target=\\\"_blank\\\"><u>Intel&reg; vPro&reg; Platform</u></a> for details.\"],\"Optional\":\"0\"}],\"L2Note\":null}]},{\"L1\":\"Service\",\"L1No\":6,\"L2\":[{\"L2\":\"Warranty\",\"L2No\":1,\"Features\":[{\"FName\":\"Base Warranty\",\"FNo\":67,\"FVs\":[{\"FVGID\":\"42E4BA29-FD93-457C-A221-05A72FCDD0D1\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"1-year courier or carry-in service\"}]}]},{\"FVGID\":\"0B87CC03-078B-4C18-BD64-DDCF2A1D9EC8\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"3-year (1-yr battery) courier or carry-in service\"}]}]},{\"FVGID\":\"75F7F6BC-E26A-42CB-AA14-E9454707CCA5\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"3-year (1-yr battery) limited onsite service\"}]}]},{\"FVGID\":\"A0FD86CD-0B34-4CF3-B9D5-97AC7D487170\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"No base warranty\"}]}]}],\"FNote\":[\"The warranty upgrades may be bundled with some models, please check the \\\"Included upgrade\\\" column in the specific model's configurations. For more service extensions, please go to <a href=\\\"https://smartfind.lenovo.com/\\\" target=\\\"_blank\\\"><u>https://smartfind.lenovo.com/</u></a>.  To learn more details of warranty policy, please access  <a href=\\\"https://support.lenovo.com/warrantylookup/warrantypolicy\\\" target=\\\"_blank\\\"><u>https://support.lenovo.com/warrantylookup/warrantypolicy</u></a>.\"],\"Optional\":\"1\"}],\"L2Note\":null}]},{\"L1\":\"Accessories\",\"L1No\":7,\"L2\":[{\"L2\":\"Bundled Accessories\",\"L2No\":1,\"Features\":[{\"FName\":\"Bundled Accessories\",\"FNo\":68,\"FVs\":[{\"FVGID\":\"CA48255D-4533-4C7B-93BB-F941DF1C1E5B\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Lenovo&reg; USB-C&reg; to Ethernet Adapter (1Gbps)\"}]}]},{\"FVGID\":\"34FC4F1C-D323-448F-B41A-0034375AA67B\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Lenovo&reg; USB-C&reg; to HDMI&reg; Adapter\"}]}]},{\"FVGID\":\"55A88372-29A3-497C-AAB9-0C45F1D8DE81\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Lenovo&reg; USB-C&reg; to VGA Adapter\"}]}]},{\"FVGID\":\"F03AAF7C-EE58-4FEF-A4CC-953DC2FC7294\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"ThinkPad&reg; X13 Detachable Folio Keyboard\"}]}]},{\"FVGID\":\"7374C05A-DE50-4DC5-A7F9-383D749F4D07\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"None\"}]}]}],\"FNote\":[\"For more compatible accessory solutions, please visit <a href=\\\"https://psref.lenovo.com/accessories/?system=ThinkPad%20X13%20Detachable%20Gen%201\\\" target=\\\"_blank\\\"><u>Accessories for ThinkPad&reg; X13 Detachable Gen 1</u></a>.\"],\"Optional\":\"2\"}],\"L2Note\":null}]},{\"L1\":\"Operating Requirements\",\"L1No\":8,\"L2\":[{\"L2\":\"Operating Environment\",\"L2No\":1,\"Features\":[{\"FName\":\"Temperature\",\"FNo\":69,\"FVs\":[{\"FVGID\":\"3600C1E2-B57F-436A-ACC2-A2936E323902\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Operating: 5°C (41°F) to 35°C (95°F)\"}]}]},{\"FVGID\":\"B79AD714-4132-4502-B809-024AA784951D\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Storage and transportation in original shipping packaging: -20°C (-4°F) to 60°C (140°F)\"}]}]},{\"FVGID\":\"7185D956-A2AC-4F2E-9EE4-4ECA4BB249D2\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Storage without package: 5°C (41°F) to 43°C (109°F)\"}]}]}],\"FNote\":[\"When you charge the battery, its temperature must be no lower than 10°C (50°F).\"],\"Optional\":\"0\"},{\"FName\":\"Relative Humidity\",\"FNo\":70,\"FVs\":[{\"FVGID\":\"98C41955-306D-4E18-807F-FF18ED0A15D1\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Operating: 8% to 95% at wet-bulb temperature 23°C (73°F)\"}]}]},{\"FVGID\":\"CEC577CF-01C2-4D8B-A6F4-D62D7987CAD7\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Storage and transportation: 5% to 95% at wet-bulb temperature 27°C (81°F)\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Altitude\",\"FNo\":71,\"FVs\":[{\"FVGID\":\"95C1842A-7118-41C5-9190-EA7F54359EB9\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Maximum altitude (without pressurization): 3048 m (10,000 ft)\"}]}]}],\"FNote\":[],\"Optional\":\"0\"}],\"L2Note\":null}]},{\"L1\":\"Environmental\",\"L1No\":9,\"L2\":[{\"L2\":\"Sustainability\",\"L2No\":0,\"Features\":[{\"FName\":\"Material\",\"FNo\":72,\"FVs\":[{\"FVGID\":\"782956A8-5AA9-43A7-834D-3E88DAF8E41E\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Top cover: 90% (Mg), Mg/Al Hybrid Use recycled content\\nKickstand: 100% recycled Aluminum Alloy\\nB-bezel: 50% PCC\\nKeyboard folio C-cover: PC+40%GF with 30% PCC\\nKeyboard folio D-cover: PC+25%GF with 30% PCC\\nKeycaps (backlit): 85% PCC\\nSpeaker enclosure: 90%+ PCC plastic\\nBattery: 100% recycled cobalt\\nBattery frame: 90%+ PCC plastic\"}]}]}],\"FNote\":[\"PCC: Post Consumer Content, recycled materials from customers.\"],\"Optional\":\"0\"}],\"L2Note\":null}]},{\"L1\":\"Certifications\",\"L1No\":10,\"L2\":[{\"L2\":\"Green Certifications\",\"L2No\":1,\"Features\":[{\"FName\":\"Green Certifications\",\"FNo\":74,\"FVs\":[{\"FVGID\":\"70946252-75B0-4B73-AFDA-CBF525F8F3DE\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"ENERGY STAR&reg; 9.0\"}]}]},{\"FVGID\":\"25D3A96D-AE71-4297-B465-8DC58033CEAC\",\"FVGNote\":null,\"FVGNoteAtt\":[{\"FeatureValueNote\":\"EPEAT is registered where applicable, please visit <a href=\\\"https://www.epeat.net/\\\" target=\\\"_blank\\\"><u>epeat.net</u></a> for registration status by country.\",\"NoteAttributeGUID\":\"\",\"NoteAttributeName\":\"\"}],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"EPEAT 2.0 Gold Registered\"}]}]},{\"FVGID\":\"DF2EC3CB-E93E-4D46-989C-125A8344573B\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"ErP Lot 6/26\"}]}]},{\"FVGID\":\"B415FFAD-7625-45BA-9E3C-4570B8FA13E6\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"RoHS compliant\"}]}]},{\"FVGID\":\"076CAA7E-5614-4D7B-ACBA-93F2A218B40D\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"TCO Certified, generation 10\"}]}]}],\"FNote\":[\"EPEAT registration and ENERGY STAR&reg; certification are optional and only available on the models with preloaded OS. Please visit <a href=\\\"https://www.epeat.net/\\\" target=\\\"_blank\\\"><u>epeat.net</u></a> and <a href=\\\"https://www.energystar.gov/\\\" target=\\\"_blank\\\"><u>energystar.gov</u></a> for more information.\"],\"Optional\":\"0\"}],\"L2Note\":\"The items listed under the \\\"Green Certifications\\\" section may not only refer to certification but also registration or self-declaration. For ESG & regulatory compliance documents, please visit <a href=\\\"https://compliance.lenovo.com/\\\" target=\\\"_blank\\\"><u>https://compliance.lenovo.com</u></a>.\"},{\"L2\":\"Other Certifications\",\"L2No\":2,\"Features\":[{\"FName\":\"Mil-Spec Test\",\"FNo\":75,\"FVs\":[{\"FVGID\":\"EF0FBEA6-4275-4F20-BCB7-C00B0DBFC998\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"MIL-STD-810H military test passed\"}]}]}],\"FNote\":[],\"Optional\":\"0\"},{\"FName\":\"Other Certifications\",\"FNo\":76,\"FVs\":[{\"FVGID\":\"BEE980CF-F6B5-4A3B-9ED0-F6BE55E00D03\",\"FVGNote\":null,\"FVGNoteAtt\":[],\"FVGs\":[{\"FVGItem\":[{\"Att\":\"DefaultDescription\",\"AttNo\":1,\"AttV\":\"Eyesafe&reg; Certified 2.0\"}]}]}],\"FNote\":[],\"Optional\":\"0\"}],\"L2Note\":null}]}]},\"CreateTime\":\"2026-06-30 10:32:06\",\"ModifyTime\":\"2026-09-14 17:09:38\"}",
+        "DimensionDiagram": "https://psrefstuff.lenovo.com/syspool//sys/image/DimensionDiagram/Tablet.png"
+      }
+    ],
+    "StructureTotalData": [
+      {
+        "Level1Name": "Performance",
+        "Level2Items": [
+          {
+            "Level2Name": "Processor",
+            "SpecFeatureName": [
+              "Processor Family",
+              "Processor"
+            ]
+          },
+          {
+            "Level2Name": "AI (Artificial Intelligence)",
+            "SpecFeatureName": [
+              "AI PC Category",
+              "AI Performance",
+              "NPU"
+            ]
+          },
+          {
+            "Level2Name": "Operating System",
+            "SpecFeatureName": [
+              "Operating System"
+            ]
+          },
+          {
+            "Level2Name": "Graphics",
+            "SpecFeatureName": [
+              "Graphics"
+            ]
+          },
+          {
+            "Level2Name": "Monitor Support",
+            "SpecFeatureName": [
+              "Monitor Support"
+            ]
+          },
+          {
+            "Level2Name": "Chipset",
+            "SpecFeatureName": [
+              "Chipset"
+            ]
+          },
+          {
+            "Level2Name": "Memory",
+            "SpecFeatureName": [
+              "Max Memory",
+              "Memory Slots",
+              "Memory Type",
+              "Memory Protection"
+            ]
+          },
+          {
+            "Level2Name": "Storage",
+            "SpecFeatureName": [
+              "Max Storage Support",
+              "Storage Slot",
+              "Storage Type",
+              "RAID"
+            ]
+          },
+          {
+            "Level2Name": "Removable Storage",
+            "SpecFeatureName": [
+              "Optical",
+              "Card Reader"
+            ]
+          },
+          {
+            "Level2Name": "Multi-Media",
+            "SpecFeatureName": [
+              "Audio Chip",
+              "Speakers",
+              "Microphone",
+              "Camera"
+            ]
+          },
+          {
+            "Level2Name": "Sensor",
+            "SpecFeatureName": [
+              "Sensors"
+            ]
+          },
+          {
+            "Level2Name": "Battery",
+            "SpecFeatureName": [
+              "Battery",
+              "Battery Life",
+              "Max Battery Life"
+            ]
+          },
+          {
+            "Level2Name": "Power Adapter",
+            "SpecFeatureName": [
+              "Power Adapter"
+            ]
+          },
+          {
+            "Level2Name": "Special Features",
+            "SpecFeatureName": [
+              "Special Features"
+            ]
+          }
+        ]
+      },
+      {
+        "Level1Name": "Design",
+        "Level2Items": [
+          {
+            "Level2Name": "Display",
+            "SpecFeatureName": [
+              "Display",
+              "Touchscreen",
+              "Screen-to-Body Ratio",
+              "Color Calibration"
+            ]
+          },
+          {
+            "Level2Name": "Multi-mode",
+            "SpecFeatureName": [
+              "Multi-mode"
+            ]
+          },
+          {
+            "Level2Name": "Input Device",
+            "SpecFeatureName": [
+              "Pen",
+              "Keyboard",
+              "Keyboard Backlight",
+              "UltraNav",
+              "Touchpad",
+              "Controls"
+            ]
+          },
+          {
+            "Level2Name": "Mechanical",
+            "SpecFeatureName": [
+              "Dimensions (WxDxH)",
+              "Packaging Dimensions (WxDxH)",
+              "Weight",
+              "Packaging Weight",
+              "Case Color",
+              "Case Material",
+              "Surface Treatment",
+              "System Lighting",
+              "Others"
+            ]
+          }
+        ]
+      },
+      {
+        "Level1Name": "Connectivity",
+        "Level2Items": [
+          {
+            "Level2Name": "Network",
+            "SpecFeatureName": [
+              "WLAN + Bluetooth",
+              "WWAN",
+              "SIM Card",
+              "Ethernet",
+              "NFC"
+            ]
+          },
+          {
+            "Level2Name": "Ports",
+            "SpecFeatureName": [
+              "Standard Ports",
+              "Optional Ports"
+            ]
+          },
+          {
+            "Level2Name": "Docking",
+            "SpecFeatureName": [
+              "Docking"
+            ]
+          },
+          {
+            "Level2Name": "Monitor Cable",
+            "SpecFeatureName": [
+              "Monitor Cable"
+            ]
+          }
+        ]
+      },
+      {
+        "Level1Name": "Security & Privacy",
+        "Level2Items": [
+          {
+            "Level2Name": "Security",
+            "SpecFeatureName": [
+              "ThinkShield",
+              "Security Chip",
+              "Physical Locks",
+              "Smart Card Reader",
+              "Fingerprint Reader",
+              "BIOS Security",
+              "Other Security"
+            ]
+          }
+        ]
+      },
+      {
+        "Level1Name": "Manageability",
+        "Level2Items": [
+          {
+            "Level2Name": "System Management",
+            "SpecFeatureName": [
+              "System Management"
+            ]
+          }
+        ]
+      },
+      {
+        "Level1Name": "Service",
+        "Level2Items": [
+          {
+            "Level2Name": "Warranty",
+            "SpecFeatureName": [
+              "Base Warranty"
+            ]
+          }
+        ]
+      },
+      {
+        "Level1Name": "Accessories",
+        "Level2Items": [
+          {
+            "Level2Name": "Bundled Accessories",
+            "SpecFeatureName": [
+              "Bundled Accessories"
+            ]
+          }
+        ]
+      },
+      {
+        "Level1Name": "Operating Requirements",
+        "Level2Items": [
+          {
+            "Level2Name": "Operating Environment",
+            "SpecFeatureName": [
+              "Temperature",
+              "Relative Humidity",
+              "Altitude"
+            ]
+          }
+        ]
+      },
+      {
+        "Level1Name": "Environmental",
+        "Level2Items": [
+          {
+            "Level2Name": "Sustainability",
+            "SpecFeatureName": [
+              "Material"
+            ]
+          }
+        ]
+      },
+      {
+        "Level1Name": "Certifications",
+        "Level2Items": [
+          {
+            "Level2Name": "Green Certifications",
+            "SpecFeatureName": [
+              "Green Certifications"
+            ]
+          },
+          {
+            "Level2Name": "Other Certifications",
+            "SpecFeatureName": [
+              "Mil-Spec Test",
+              "Other Certifications"
+            ]
+          },
+          {
+            "Level2Name": "ISV Certifications",
+            "SpecFeatureName": [
+              "ISV Certifications"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
