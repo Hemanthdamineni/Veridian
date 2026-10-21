@@ -63,8 +63,10 @@ export function CatalogApp({ initial }: { initial: CatalogResponse }) {
   // Fetch whenever the effective query changes.
   useEffect(() => {
     // In plain-language mode the sentence is sent to the search endpoint,
-    // which parses it into filters and returns them with the results.
-    const endpoint = plainMode ? "/api/search" : "/api/skus";
+    // which parses it into filters and returns them with the results. The
+    // search endpoint requires a query, so an empty sentence falls back to
+    // the catalog endpoint rather than asking a question it cannot answer.
+    const endpoint = plainMode && debouncedQ.trim() ? "/api/search" : "/api/skus";
     const url = `${endpoint}${query ? `?${query}&limit=${LIMIT}` : `?limit=${LIMIT}`}`;
     abortRef.current?.abort();
     const ctrl = new AbortController();
@@ -82,7 +84,14 @@ export function CatalogApp({ initial }: { initial: CatalogResponse }) {
       })
       .then((body) => {
         if (!settled) return;
-        setData(body);
+        // The search endpoint does not return the provenance breakdown or the
+        // region list. Keeping the last known values means the reader does
+        // not lose them by switching to plain-language mode.
+        setData((previous) => ({
+          ...body,
+          tiers: body.tiers ?? previous.tiers,
+          availableRegions: body.availableRegions ?? previous.availableRegions,
+        }));
         if (body.availableRegions?.length) setAvailableRegions(body.availableRegions);
         if (plainMode) setParsed(body.parsed_filters ?? null);
         setLoading(false);
@@ -96,7 +105,7 @@ export function CatalogApp({ initial }: { initial: CatalogResponse }) {
     return () => {
       settled = false;
     };
-  }, [query, plainMode]);
+  }, [query, plainMode, debouncedQ]);
 
   // Keep the address bar in sync so results stay shareable and bookmarkable.
   //
