@@ -3,6 +3,11 @@
 # This file is the source of truth for the Apple base URL and for the region
 # list (category paths, rate limit, timeout). CSS selectors live in the
 # scraper code because the site changes them with every build.
+#
+# Verified live on 2026-10-21: the store page of a family publishes the
+# schema.org Product block with the family price range, and the technical
+# specifications live on the family's own "/specs/" page, which is listed
+# below per family.
 manufacturer: "apple"
 brand: "Apple"
 base_url: "https://www.apple.com/"
@@ -11,6 +16,15 @@ output_dir: "./output"
 max_concurrent: 1
 retry_attempts: 3
 checkpoint_interval: 5
+
+# Technical specification page of every product family.
+specs_paths:
+  macbook-air: "/macbook-air/specs/"
+  macbook-pro: "/macbook-pro/specs/"
+  imac: "/imac/specs/"
+  mac-mini: "/mac-mini/specs/"
+  mac-studio: "/mac-studio/specs/"
+  mac-pro: "/mac-pro/specs/"
 
 regions:
   - code: "us"
@@ -25,5 +39,5 @@ regions:
       mac-mini: "/shop/buy-mac/mac-mini"
       mac-studio: "/shop/buy-mac/mac-studio"
       mac-pro: "/shop/buy-mac/mac-pro"
-    rate_limit: 0.3
+    rate_limit: 0.5
     timeout: 30

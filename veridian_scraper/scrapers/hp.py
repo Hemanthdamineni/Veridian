@@ -1,22 +1,49 @@
 """
 Veridian Scraper - HP Scraper Implementation
+
+What HP actually publishes (verified live on 2026-10-21 against the India
+store, ``https://www.hp.com/in-en/shop``):
+
+* One store page per *configuration*: the product URL carries the HP order
+  code, e.g. ``/in-en/shop/products/laptops/hp-omnibook-3-laptop-ai-14-
+  ht0218tu-e5sm2pa-acj`` for the SKU ``E5SM2PA#ACJ``.
+* The technical specifications are **server rendered**. They live in the
+  ``data-test-hook`` marked blocks ``@hpstellar/pdp/tech-specs*``. The
+  Tailwind class names next to them are hashed per build (``GJ-GM_gh``), so
+  only the hooks are used to find the data.
+* The price is server rendered as well: the sale price sits in
+  ``@hpstellar/core/price-block__sale-price--main-price`` and the list price
+  (MRP) in ``@hpstellar/core/price-block__strike-price--main-price``.
+* The datasheet PDF is linked from ``@hpstellar/pdp/tech-specs__downloads``.
+
+Access notes (all measured, not assumed):
+
+* ``https://www.hp.com/us-en/shop/pdp/...`` and the US store category pages
+  accept the connection but never answer (0 bytes, >150 s) for the honest
+  ``VeridianBot`` agent, and so do the ``support.hp.com`` product-spec pages.
+  The scraper therefore reports those fetches as failures instead of
+  pretending to have collected anything.
+* ``https://www.hp.com/us-en/shop/app/api/...`` (the store's GraphQL API) is
+  ``Disallow``-ed by HP's robots.txt, so it is never requested.
+* The store renders only the first page of a listing server-side; deeper
+  pages are fetched with the same ``?page=`` URL, which robots.txt allows.
 """
 
 import asyncio
 import re
-import xml.etree.ElementTree as ET
-from typing import AsyncIterator, List, Dict, Any, Optional
+from typing import AsyncIterator, List, Dict, Any, Optional, Tuple
 from urllib.parse import urljoin, urlparse
 
+import httpx
 from bs4 import BeautifulSoup
 
 from .base import (
-    BaseScraper, ScraperConfig, RegionConfig, apply_yaml_config,
-    Product, ProductVariant, ProductCategory, ProductStatus,
-    SpecValue, SpecParser,
+    BaseScraper, ScraperConfig, RegionConfig, apply_yaml_config, get_config_manager,
+    Product, ProductVariant, ProductCategory,
+    SpecValue,
     generate_product_id, generate_variant_id,
-    canonicalize_url, extract_canonical_key,
-    clean_text, parse_spec_field
+    canonicalize_url,
+    clean_text
 )
 
 
@@ -29,7 +56,9 @@ class HPScraper(BaseScraper):
         'monitors': ProductCategory.MONITORS,
         'printers': ProductCategory.ACCESSORIES,
         'accessories': ProductCategory.ACCESSORIES,
-        'workstations': ProductCategory.DESKTOPS,
+        'workstations': ProductCategory.WORKSTATIONS,
+        'tablets': ProductCategory.TABLETS,
+        'ink--toner---paper': ProductCategory.ACCESSORIES,
     }
 
     SERIES_MAPPING = {
@@ -45,61 +74,153 @@ class HPScraper(BaseScraper):
         'prodesk': 'ProDesk',
         'chromebook': 'Chromebook',
         'omnibook': 'OmniBook',
+        'dragonfly': 'Dragonfly',
+        'hyperx': 'HyperX',
     }
+
+    # Stable hooks on the live HP store product page.
+    #
+    # The store is a React application whose Tailwind class names are hashed
+    # per build (``GJ-GM_gh``, ``Fn-Fo_gh``), so every selector below is a
+    # ``data-test-hook`` attribute, which HP keeps literal.
+    TECH_SPECS_SECTION = '[data-test-hook="@hpstellar/pdp/tech-specs"]'
+    TECH_SPECS_HIGHLIGHTS = '[data-test-hook="@hpstellar/pdp/tech-specs-highlights"]'
+    TECH_SPECS_HIGHLIGHT_DESC = '[data-test-hook="@hpstellar/pdp/tech-specs-highlight-description"]'
+    TECH_SPECS_DETAILED = '[data-test-hook="@hpstellar/pdp/tech-specs-detailed-specs"]'
+    TECH_SPECS_GROUP = '[data-test-hook="@hpstellar/pdp/tech-specs__detailedSpecWithSubSpecs"]'
+    TECH_SPECS_DOWNLOADS = '[data-test-hook="@hpstellar/pdp/tech-specs__downloads"]'
+    PRICE_SALE = '[data-test-hook="@hpstellar/core/price-block__sale-price--main-price"]'
+    PRICE_LIST = '[data-test-hook="@hpstellar/core/price-block__strike-price--main-price"]'
+    TYPOGRAPHY = '[data-test-hook="@hpstellar/core/typography"]'
+
+    # HP order codes look like ``E5SM2PA#ACJ`` (product code, "#", config).
+    SKU_PATTERN = re.compile(r'^[A-Z0-9]{4,12}#[A-Z0-9]{0,6}$')
+
+    # Currency symbols the store renders, mapped to ISO codes.
+    CURRENCY_SYMBOLS = {
+        '₹': 'INR',
+        '€': 'EUR',
+        '£': 'GBP',
+        '$': 'USD',
+        '¥': 'JPY',
+    }
+
+    # Specification key standardization - HP row names to Veridian keys.
+    SPEC_KEY_MAPPING = {
+        'operating system': 'os',
+        'processor': 'processor',
+        'processor family': 'processor_family',
+        'processor core': 'processor_cores',
+        'processor cache': 'processor_cache',
+        'chipset': 'chipset',
+        'neural processing unit': 'neural_processor',
+        'memory': 'memory',
+        'memory layout (slots & size)': 'memory_layout',
+        'memory note': 'memory_note',
+        'memory and storage': 'memory_and_storage',
+        'internal storage': 'storage',
+        'storage': 'storage',
+        'display': 'display',
+        'touchscreen': 'touchscreen',
+        'aspect ratio': 'aspect_ratio',
+        'brightness': 'brightness',
+        'color gamut': 'color_gamut',
+        'screen-to-body ratio (without speakers)': 'screen_to_body_ratio',
+        'flicker-free': 'flicker_free',
+        'graphics': 'graphics',
+        'graphics (integrated)': 'graphics',
+        'ports': 'ports',
+        'wireless': 'network',
+        'audio': 'audio',
+        'keyboard': 'keyboard',
+        'pointing device': 'pointing_device',
+        'weight': 'weight',
+        'package weight': 'package_weight',
+        'dimensions (w x d x h)': 'dimensions',
+        'package dimensions (w x d x h)': 'package_dimensions',
+        'battery type': 'battery',
+        'battery life': 'battery_life',
+        'battery life video playback': 'battery_life_video',
+        'battery recharge time': 'battery_recharge_time',
+        'power supply type': 'power_supply',
+        'camera': 'camera',
+        'product color': 'color',
+        'color': 'color',
+        'product design': 'design',
+        'manufacturer warranty': 'warranty',
+        'support service included': 'support_service',
+        'security management': 'security',
+        'software included': 'software',
+        'cloud service': 'cloud_service',
+    }
+
+    # Rows that carry no product data: trademark boilerplate, icon URLs and
+    # bare footnote references.
+    SKIP_ROWS = frozenset({
+        'trademark information',
+        'power supply type icon',
+        'battery type footnote number',
+    })
+
+    # Groups that hold legal or importer information instead of technical
+    # data.
+    SKIP_GROUPS = frozenset({
+        'legal information',
+        'product information',
+    })
 
     def __init__(self, config: ScraperConfig, region: RegionConfig):
         super().__init__(config, region)
 
         self.selectors = {
-            'product_grid': '.product-grid, .product-list, .product-tiles',
-            'product_card': '.product-tile, .product-card, .product-item',
-            'product_link': 'a[href*="/products/"]',
-            'techspec_link': 'a[href*="/specifications"], a[href*="/specs"]',
-            'variant_names': '.variant-name, .model-name, [data-variant]',
-            'spec_rows': '.spec-row, .specification-row, tr',
-            'spec_name': '.spec-label, .spec-name, th',
-            'spec_values': '.spec-value, .spec-data, td',
+            'product_link': 'a[href*="/shop/products/"]',
+            'techspec_section': self.TECH_SPECS_SECTION,
+            'techspec_highlights': self.TECH_SPECS_HIGHLIGHTS,
+            'techspec_highlight_desc': self.TECH_SPECS_HIGHLIGHT_DESC,
+            'techspec_detailed': self.TECH_SPECS_DETAILED,
+            'techspec_group': self.TECH_SPECS_GROUP,
+            'techspec_downloads': self.TECH_SPECS_DOWNLOADS,
+            'price_sale': self.PRICE_SALE,
+            'price_list': self.PRICE_LIST,
+            'typography': self.TYPOGRAPHY,
         }
 
         if region.selectors:
             self.selectors.update(region.selectors)
 
+        # Run limits live in the YAML because the store serves a fixed number
+        # of products per listing page and a full catalogue run is a
+        # multi-hour job.
+        manager = get_config_manager()
+        mfg_config = manager.get_manufacturer_config('hp') or {}
+        self.max_listing_pages = max(1, int(mfg_config.get('max_listing_pages', 1)))
+        self.max_products_per_category = int(mfg_config.get('max_products_per_category', 12))
+
+        # Set once a region stops answering; the remaining categories of that
+        # region are then skipped instead of timing out one by one.
+        self._region_unreachable = False
+
+    # ------------------------------------------------------------------
+    # Categories and series
+    # ------------------------------------------------------------------
+
     def get_category_from_url(self, url: str) -> ProductCategory:
-        """Map URL to product category using keyword matching"""
-        url_lower = url.lower()
-
-        # Check for category keywords in URL (check specific categories first)
-        if any(kw in url_lower for kw in ['monitor', 'display']):
-            return ProductCategory.MONITORS
-        elif any(kw in url_lower for kw in ['mouse', 'keyboard', 'headset', 'dock', 'adapter', 'cable', 'case', 'bag']):
-            return ProductCategory.ACCESSORIES
-        elif any(kw in url_lower for kw in ['printer', 'ink', 'toner', 'printhead', 'designjet']):
-            return ProductCategory.ACCESSORIES  # PRINTERS not in enum
-        elif any(kw in url_lower for kw in ['elitedesk', 'prodesk', 'pavilion-desktop', 'envy-desktop']):
-            return ProductCategory.DESKTOPS
-        elif any(kw in url_lower for kw in ['zbook', 'z-desktop', 'z2', 'workstation']):
-            return ProductCategory.WORKSTATIONS
-        elif any(kw in url_lower for kw in ['probook', 'elitebook', 'pavilion', 'envy', 'spectre', 'victus', 'chromebook', 'omnibook', 'notebook']):
-            return ProductCategory.LAPTOPS
-        elif 'omen' in url_lower:
-            # OMEN could be laptop or monitor - check for monitor keywords first
-            if any(kw in url_lower for kw in ['monitor', 'display']):
-                return ProductCategory.MONITORS
-            return ProductCategory.LAPTOPS
-
+        """Map a store product URL to a Veridian product category."""
+        parts = [p for p in urlparse(url).path.strip('/').split('/') if p]
+        if 'products' in parts:
+            index = parts.index('products')
+            if index + 1 < len(parts):
+                segment = parts[index + 1].lower()
+                if segment in self.CATEGORY_MAPPING:
+                    return self.CATEGORY_MAPPING[segment]
         return ProductCategory.UNKNOWN
 
     def get_series_from_url(self, url: str) -> str:
-        parsed = urlparse(url)
-        path_parts = [p for p in parsed.path.strip('/').split('/') if p]
-
-        # Check path parts for series keywords (slug contains series name)
-        for part in path_parts:
-            part_lower = part.lower()
-            for key, value in self.SERIES_MAPPING.items():
-                if key in part_lower:
-                    return value
-
+        """Read the HP series out of the product slug."""
+        slug = self._slug_of(url)
+        for key, value in self.SERIES_MAPPING.items():
+            if key in slug:
+                return value
         return ""
 
     async def discover_categories(self) -> List[Dict[str, str]]:
@@ -115,12 +236,12 @@ class HPScraper(BaseScraper):
                 })
         else:
             default_categories = [
-                ('laptops', '/laptops/'),
-                ('desktops', '/desktops/'),
-                ('monitors', '/monitors/'),
-                ('printers', '/printers/'),
-                ('accessories', '/accessories/'),
-                ('workstations', '/workstations/'),
+                ('laptops', '/shop/laptops'),
+                ('desktops', '/shop/desktops'),
+                ('monitors', '/shop/monitors'),
+                ('printers', '/shop/printers'),
+                ('accessories', '/shop/accessories'),
+                ('workstations', '/shop/workstations'),
             ]
             for cat_name, cat_path in default_categories:
                 categories.append({
@@ -132,166 +253,131 @@ class HPScraper(BaseScraper):
 
         return categories
 
+    # ------------------------------------------------------------------
+    # Discovery
+    # ------------------------------------------------------------------
+
     async def discover_products(self, category_url: str, category_info: Dict) -> AsyncIterator[str]:
-        """Discover products using sitemap for comprehensive coverage"""
+        """Discover product URLs from a store listing page.
 
-        # Use HP's sitemap to find all product URLs
-        sitemap_urls = [
-            'https://www.hp.com/sitemap-us-en-pdp.xml',  # US English product detail pages
-        ]
+        The store renders the first page of every listing server-side; deeper
+        pages use the same path with a ``page`` query parameter.
+        """
+        if self._region_unreachable:
+            self.logger.warning(
+                "Skipping %s: the HP store did not answer earlier in this region",
+                category_url,
+            )
+            return
 
-        # Add category-specific filtering
-        category_slug = category_info.get('slug', '').lower()
+        expected_category = category_info.get('slug', '')
+        seen: set = set()
+        found: List[str] = []
 
-        for sitemap_url in sitemap_urls:
-            try:
-                self.logger.info(f"Fetching sitemap: {sitemap_url}")
-                response = await self.http_client.get(sitemap_url)
-                if response.status_code != 200:
-                    continue
-
-                # Parse XML
-                import io
-                root = ET.parse(io.StringIO(response.text)).getroot()
-                namespace = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
-
-                product_urls = set()
-                for url_elem in root.findall('.//ns:url/ns:loc', namespace):
-                    url = url_elem.text
-                    if url and self._is_product_url(url) and self._matches_category(url, category_slug):
-                        product_urls.add(canonicalize_url(url))
-
-                self.logger.info(f"Found {len(product_urls)} product URLs in sitemap for category {category_slug}")
-
-                for url in sorted(product_urls):
-                    yield url
-
-            except Exception as e:
-                self.logger.error(f"Failed to fetch sitemap {sitemap_url}: {e}")
-                continue
-
-        # Fallback: use category page pagination if sitemap fails
-        async for url in self._discover_products_pagination(category_url, category_info):
-            yield url
-
-    async def _discover_products_pagination(self, category_url: str, category_info: Dict) -> AsyncIterator[str]:
-        """Fallback: discover products using pagination"""
-        page = 1
-        max_pages = 50
-
-        while page <= max_pages:
-            if page == 1:
-                page_url = category_url
-            else:
-                separator = '&' if '?' in category_url else '?'
-                page_url = f"{category_url}{separator}page={page}"
+        for page in range(1, self.max_listing_pages + 1):
+            separator = '&' if '?' in category_url else '?'
+            page_url = category_url if page == 1 else f"{category_url}{separator}page={page}"
 
             try:
                 soup = await self.http_client.get_soup(page_url)
-            except Exception as e:
-                self.logger.error(f"Failed to fetch {page_url}: {e}")
+            except Exception as exc:
+                if self._is_transport_failure(exc):
+                    # The store accepted the connection and then went silent.
+                    # One such failure means the whole region is unusable, so
+                    # the remaining categories are skipped instead of waiting
+                    # for every timeout again.
+                    self._region_unreachable = True
+                    self.logger.error("HP store did not answer for %s: %s", page_url, exc)
+                    return
+                self.logger.error("Failed to fetch %s: %s", page_url, exc)
                 break
 
-            product_urls = set()
+            page_urls = set()
+            for link in soup.select(self.selectors['product_link']):
+                href = link.get('href')
+                if not href:
+                    continue
+                full_url = urljoin(self.region.base_url, href)
+                if self._is_product_url(full_url):
+                    page_urls.add(canonicalize_url(full_url))
 
-            for selector in [
-                self.selectors['product_link'],
-                'a[href*="/products/"]',
-                '.product-tile a',
-                '.product-card a',
-            ]:
-                links = soup.select(selector)
-                for link in links:
-                    href = link.get('href')
-                    if href:
-                        full_url = urljoin(self.region.base_url, href)
-                        if self._is_product_url(full_url):
-                            product_urls.add(canonicalize_url(full_url))
+            new_urls = {u for u in page_urls if u not in seen}
+            if not new_urls:
+                break
+            seen.update(new_urls)
+            found.extend(sorted(new_urls))
 
-            if not product_urls:
+            if len(found) >= self.max_products_per_category:
                 break
 
-            self.logger.debug(f"Found {len(product_urls)} products on page {page}")
-
-            for url in sorted(product_urls):
-                yield url
-
-            page += 1
             await asyncio.sleep(0.5)
 
-    def _matches_category(self, url: str, category_slug: str) -> bool:
-        """Check if URL matches the category"""
-        url_lower = url.lower()
-        category_keywords = {
-            'laptops': ['probook', 'elitebook', 'zbook', 'pavilion', 'envy', 'spectre', 'omen', 'victus', 'chromebook', 'omnibook', 'notebook'],
-            'desktops': ['elitedesk', 'prodesk', 'pavilion-desktop', 'envy-desktop'],
-            'workstations': ['zbook', 'z-desktop', 'z2', 'workstation'],
-            'monitors': ['monitor', 'display'],
-            'accessories': ['mouse', 'keyboard', 'headset', 'dock', 'adapter', 'cable', 'case', 'bag'],
-            'printers': ['printer', 'ink', 'toner', 'printhead', 'designjet'],
-        }
+        for url in found[:self.max_products_per_category]:
+            yield url
 
-        if category_slug in category_keywords:
-            return any(kw in url_lower for kw in category_keywords[category_slug])
-        return True  # If no specific mapping, include all
+    @staticmethod
+    def _is_transport_failure(exc: Exception) -> bool:
+        """Is this a network level failure (timeout, reset, DNS)?
+
+        The HTTP client retries such failures and finally raises a
+        ``RetryError``, so the original error has to be looked up.
+        """
+        if isinstance(exc, httpx.TransportError):
+            return True
+        last_attempt = getattr(exc, 'last_attempt', None)
+        if last_attempt is not None:
+            inner = last_attempt.exception()
+            return isinstance(inner, httpx.TransportError)
+        return False
 
     def _is_product_url(self, url: str) -> bool:
-        parsed = urlparse(url)
-        path = parsed.path.lower()
+        """A store product page lives under ``/shop/products/<category>/<slug>``."""
+        parts = [p for p in urlparse(url).path.strip('/').split('/') if p]
+        if 'products' not in parts:
+            return False
+        index = parts.index('products')
+        if index + 2 >= len(parts):
+            return False
+        excluded = ('compare', 'review', 'cart', 'checkout', 'account', 'support')
+        return not any(word in parts[index + 2] for word in excluded)
 
-        # Product URLs contain /pdp/ or /mlp/ or /products/
-        has_product = '/pdp/' in path or '/mlp/' in path or '/products/' in path
+    @staticmethod
+    def _slug_of(url: str) -> str:
+        parts = [p for p in urlparse(url).path.strip('/').split('/') if p]
+        return parts[-1].lower() if parts else ""
 
-        # Exclude non-product pages
-        exclude_patterns = [
-            '/compare', '/review', '/buy', '/support/', '/drivers/',
-            '/cart/', '/checkout/', '/account/', '/login/', '/register/',
-            '/search/', '/sitemap/', '/xml', '.pdf', '.jpg', '.png',
-            '/care-packs/', '/ink--toner', '/paper/',
-        ]
-
-        is_excluded = any(pattern in path for pattern in exclude_patterns)
-
-        return has_product and not is_excluded
+    # ------------------------------------------------------------------
+    # Product extraction
+    # ------------------------------------------------------------------
 
     async def extract_product(self, url: str, category_info: Dict) -> Optional[Product]:
-        self.logger.debug(f"Extracting product: {url}")
+        self.logger.debug("Extracting product: %s", url)
 
         try:
             soup = await self.http_client.get_soup(url)
-        except Exception as e:
-            self.logger.error(f"Failed to fetch product page {url}: {e}")
+        except Exception as exc:
+            self.logger.error("Failed to fetch product page %s: %s", url, exc)
             return None
 
-        # Extract data from JSON-LD
-        json_ld_data = self._extract_json_ld(soup)
+        product_name = self._extract_product_name(soup, url)
+        sku = self._extract_sku(soup)
+        specs = self._extract_tech_specs(soup)
+        sale_price, list_price, currency = self._extract_prices(soup)
 
-        product_name = json_ld_data.get('name') or self._extract_product_name(soup, url)
-        series = self.get_series_from_url(url)
-        category = self.get_category_from_url(url)
-        subcategory = category_info.get('slug', '')
-
-        # Build variants from JSON-LD data (works for ProductGroup pages)
-        variants = self._extract_variants_from_json_ld(json_ld_data, url)
-
-        # Extract specs from JSON-LD
-        specs = self._extract_specs_from_json_ld(json_ld_data)
-
-        # If no variants/specs from JSON-LD, try GraphQL PDP API
-        if not variants or not specs:
-            graphql_specs, graphql_variants = await self._extract_from_graphql_pdp(url)
-
-            if graphql_specs and not specs:
-                specs = graphql_specs
-
-            if graphql_variants and not variants:
-                variants = graphql_variants
-
-        if not variants:
-            variants = [self._create_base_variant(url, product_name)]
-
-        canonical_key = extract_canonical_key(url, 'hp')
+        family_slug = self._family_slug(url, sku)
+        canonical_key = family_slug if family_slug.startswith('hp-') else f"hp-{family_slug}"
         product_id = generate_product_id('hp', canonical_key)
+
+        variant_name = sku or product_name
+        variant = ProductVariant(
+            variant_id=generate_variant_id('hp', canonical_key, variant_name),
+            name=variant_name,
+            sku=sku,
+            specs=specs,
+            price=sale_price,
+            currency=currency,
+            source_url=canonicalize_url(url),
+        )
 
         product = Product(
             product_id=product_id,
@@ -299,431 +385,419 @@ class HPScraper(BaseScraper):
             manufacturer='hp',
             brand='HP',
             name=product_name,
-            category=category,
-            series=series,
-            subcategory=subcategory,
+            category=self.get_category_from_url(url),
+            series=self.get_series_from_url(url),
+            subcategory=category_info.get('slug', ''),
             url=canonicalize_url(url),
             region=self.region.code,
-            variants=variants,
+            variants=[variant],
             source_urls=[canonicalize_url(url)],
-            msrp=json_ld_data.get('price'),
-            currency=json_ld_data.get('currency', 'USD'),
+            msrp=list_price,
+            currency=currency,
+            family_id=canonical_key,
         )
 
-        # Add base product specs to the first variant if no specs found there
-        if specs and variants:
-            for k, v in specs.items():
-                if k not in variants[0].specs:
-                    variants[0].specs[k] = v
+        datasheet = self._extract_datasheet_url(soup)
+        if datasheet:
+            product.add_source_url(datasheet)
 
         return product
 
-    async def _extract_from_graphql_pdp(self, url: str) -> tuple[Dict[str, SpecValue], List[ProductVariant]]:
-        """Extract specs and variants from GraphQL PDP API"""
-        specs = {}
-        variants = []
-
-        try:
-            # Build GraphQL PDP URL from product URL
-            # Expected format: /us-en/shop/pdp/product-slug
-            parsed = urlparse(url)
-            path = parsed.path.strip('/')
-
-            # Extract the pdp/... part
-            if '/pdp/' in path:
-                # Get everything from /pdp/ onwards
-                pdp_idx = path.index('/pdp/')
-                pdp_slug = path[pdp_idx + 1:]  # Skip leading /
-            elif path.startswith('pdp/'):
-                pdp_slug = path
-            else:
-                return specs, variants
-
-            import urllib.parse
-            encoded = urllib.parse.quote(pdp_slug, safe='')
-            graphql_url = f'https://www.hp.com/us-en/shop/app/api/web/graphql/page/{encoded}/async'
-
-            resp = await self.http_client.get(graphql_url)
-            if resp.status_code != 200:
-                return specs, variants
-
-            data = resp.json()
-            components = data.get('data', {}).get('page', {}).get('pageComponents', {})
-
-            # Extract specs from pdpTechSpecs
-            if 'pdpTechSpecs' in components:
-                tech_specs = components['pdpTechSpecs']
-                specs = self._parse_graphql_tech_specs(tech_specs)
-
-            # Extract catentryId for potential variant extraction
-            catentry_id = None
-            if 'pdpAccessories' in components:
-                catentry_id = components['pdpAccessories'].get('catentryId')
-
-            # If we have catentryId, try to get variants from ConfigureView GraphQL
-            if catentry_id:
-                graphql_variants = await self._extract_variants_from_configureview(catentry_id)
-                variants.extend(graphql_variants)
-
-        except Exception as e:
-            self.logger.debug(f"GraphQL PDP extraction failed for {url}: {e}")
-
-        return specs, variants
-
-    def _parse_graphql_tech_specs(self, tech_specs: Dict) -> Dict[str, SpecValue]:
-        """Parse GraphQL pdpTechSpecs into SpecValue dict"""
-        specs = {}
-        technical_specs = tech_specs.get('technical_specifications', [])
-
-        for spec_item in technical_specs:
-            name = spec_item.get('name', '')
-            values = spec_item.get('value', [])
-
-            if not name or not values:
-                continue
-
-            # Extract text value (first value's first element)
-            value_text = ''
-            if values and isinstance(values, list):
-                first_val = values[0]
-                if isinstance(first_val, dict) and 'value' in first_val:
-                    val_list = first_val['value']
-                    if isinstance(val_list, list) and val_list:
-                        value_text = val_list[0]
-
-            if value_text:
-                # Clean HTML tags
-                import re
-                value_text = re.sub(r'<[^>]+>', '', value_text)
-                value_text = re.sub(r'\s+', ' ', value_text).strip()
-                specs[name] = parse_spec_field(name, value_text)
-
-        return specs
-
-    async def _extract_variants_from_configureview(self, catentry_id: str) -> List[ProductVariant]:
-        """Extract variant configurations from ConfigureView GraphQL"""
-        variants = []
-
-        try:
-            # Build ConfigureView GraphQL URL
-            import urllib.parse
-            config_params = f'langId=-1&storeId=10151&catalogId=10051&catEntryId={catentry_id}&urlLangId=&quantity=1'
-            encoded = urllib.parse.quote(config_params, safe='')
-            graphql_url = f'https://www.hp.com/us-en/shop/app/api/web/graphql/page/ConfigureView%3F{encoded}/async'
-
-            resp = await self.http_client.get(graphql_url)
-            if resp.status_code != 200:
-                return variants
-
-            data = resp.json()
-            components = data.get('data', {}).get('page', {}).get('pageComponents', {})
-
-            # Parse ConfigureView page components for variant data
-            # The actual variant data is in the HTML page, so we may need to fetch the HTML
-            # For now, return empty - the HTML parsing method handles this
-
-        except Exception as e:
-            self.logger.debug(f"ConfigureView GraphQL extraction failed for catentry {catentry_id}: {e}")
-
-        return variants
-
-    def _extract_json_ld(self, soup: BeautifulSoup) -> Dict:
-        """Extract structured data from JSON-LD scripts"""
-        import json
-        result = {}
-
-        scripts = soup.select('script[type="application/ld+json"]')
-        for script in scripts:
-            try:
-                data = json.loads(script.get_text())
-                items = data if isinstance(data, list) else [data]
-
-                # First pass: look for ProductGroup (has variant info and specs)
-                product_group = None
-                product_item = None
-
-                for item in items:
-                    if item.get('@type') == 'ProductGroup':
-                        product_group = item
-                    elif item.get('@type') == 'Product':
-                        product_item = item
-
-                # Prefer ProductGroup for variant data, fall back to Product
-                main_item = product_group or product_item
-
-                if main_item:
-                    result['name'] = main_item.get('name')
-                    result['sku'] = main_item.get('sku') or main_item.get('mpn')
-                    result['description'] = main_item.get('description')
-                    result['varies_by'] = main_item.get('variesBy', [])
-                    result['additional_property'] = main_item.get('additionalProperty', [])
-                    result['has_variant'] = main_item.get('hasVariant', [])
-
-                    # Extract price from offers
-                    offers = main_item.get('offers')
-                    if offers:
-                        if isinstance(offers, list):
-                            for offer in offers:
-                                if offer.get('@type') in ['Offer', 'AggregateOffer']:
-                                    if offer.get('price'):
-                                        result['price'] = float(offer.get('price'))
-                                        result['currency'] = offer.get('priceCurrency', 'USD')
-                                        break
-                        elif isinstance(offers, dict):
-                            if offers.get('price'):
-                                result['price'] = float(offers.get('price'))
-                                result['currency'] = offers.get('priceCurrency', 'USD')
-
-                    # Extract brand
-                    brand = main_item.get('brand')
-                    if isinstance(brand, dict):
-                        result['brand_name'] = brand.get('name')
-                    elif isinstance(brand, str):
-                        result['brand_name'] = brand
-
-                    break  # Found product, stop searching
-            except Exception as e:
-                self.logger.debug(f"Failed to parse JSON-LD: {e}")
-                continue
-
-        return result
-
     def _extract_product_name(self, soup: BeautifulSoup, url: str) -> str:
-        selectors = [
-            'h1.product-title',
-            '.product-name h1',
-            '[data-testid="product-title"]',
-            'h1[itemprop="name"]',
-            '.product-header h1',
-            'h1',
-        ]
-
-        for selector in selectors:
-            elem = soup.select_one(selector)
-            if elem:
-                name = clean_text(elem.get_text())
-                if name and len(name) > 3:
-                    return self._clean_product_name(name)
-
-        parsed = urlparse(url)
-        slug = parsed.path.strip('/').split('/')[-1]
-        return slug.replace('-', ' ').title()
+        for selector in ('h1', 'meta[property="og:title"]'):
+            element = soup.select_one(selector)
+            if element is None:
+                continue
+            if element.name == 'meta':
+                name = clean_text(element.get('content', ''))
+            else:
+                name = clean_text(element.get_text())
+            if name and len(name) > 3:
+                return self._clean_product_name(name)
+        return self._slug_of(url).replace('-', ' ').title()
 
     def _clean_product_name(self, name: str) -> str:
-        import re
         name = re.sub(r'\s*[\(\[].*?[\)\]]\s*$', '', name)
-        name = re.sub(r'\s*-\s*HP.*$', '', name, flags=re.IGNORECASE)
         name = re.sub(r'\s*\|\s*HP.*$', '', name, flags=re.IGNORECASE)
+        name = re.sub(r'\s*-\s*HP Store.*$', '', name, flags=re.IGNORECASE)
         return name.strip()
 
-    def _extract_specs_from_json_ld(self, json_ld_data: Dict) -> Dict[str, SpecValue]:
-        """Extract specs from JSON-LD additionalProperty"""
-        specs = {}
-        additional_props = json_ld_data.get('additional_property', [])
+    def _extract_sku(self, soup: BeautifulSoup) -> str:
+        """Read the HP order code (e.g. ``E5SM2PA#ACJ``) from the page."""
+        specs_section = soup.select_one(self.selectors['techspec_section'])
+        for element in soup.select(self.selectors['typography']):
+            if specs_section is not None and element in specs_section.descendants:
+                continue
+            text = clean_text(element.get_text())
+            if text and self.SKU_PATTERN.match(text):
+                return text
+        return ""
 
-        for prop in additional_props:
-            name = prop.get('name', '')
-            value = prop.get('value', '')
-            if name and value:
-                specs[name] = parse_spec_field(name, value)
+    def _extract_prices(self, soup: BeautifulSoup) -> Tuple[Optional[float], Optional[float], str]:
+        """Return (sale price, list price, currency)."""
+        currency = self.region.currency
+
+        sale_element = soup.select_one(self.selectors['price_sale'])
+        sale_price = self._parse_price(sale_element.get_text()) if sale_element else None
+        if sale_element is not None:
+            currency = self._currency_of(sale_element.get_text(), currency)
+
+        list_element = soup.select_one(self.selectors['price_list'])
+        list_price = self._parse_price(list_element.get_text()) if list_element else None
+        if list_element is not None and sale_price is None:
+            currency = self._currency_of(list_element.get_text(), currency)
+
+        return sale_price, list_price, currency
+
+    def _parse_price(self, text: str) -> Optional[float]:
+        match = re.search(r'([\d,]+(?:\.\d+)?)', clean_text(text))
+        if not match:
+            return None
+        try:
+            return float(match.group(1).replace(',', ''))
+        except ValueError:
+            return None
+
+    def _currency_of(self, text: str, default: str) -> str:
+        for symbol, code in self.CURRENCY_SYMBOLS.items():
+            if symbol in text:
+                return code
+        return default
+
+    def _extract_datasheet_url(self, soup: BeautifulSoup) -> Optional[str]:
+        downloads = soup.select_one(self.selectors['techspec_downloads'])
+        if downloads is None:
+            return None
+        link = downloads.select_one('a[href]')
+        if link is None:
+            return None
+        href = link.get('href')
+        if not href:
+            return None
+        return urljoin(self.region.base_url, href)
+
+    # ------------------------------------------------------------------
+    # Specifications
+    # ------------------------------------------------------------------
+
+    def _extract_tech_specs(self, soup: BeautifulSoup) -> Dict[str, SpecValue]:
+        """Read the technical specification table of the product page.
+
+        The table is server rendered inside the ``tech-specs`` block: one
+        ``detailedSpecWithSubSpecs`` group per topic, each group holding one
+        row per specification (a name cell and a value cell).
+        """
+        specs: Dict[str, SpecValue] = {}
+
+        for group_name, rows in self._spec_groups(soup):
+            if group_name.strip().lower() in self.SKIP_GROUPS:
+                continue
+            for spec_name, value in rows:
+                key = self._standard_spec_key(spec_name, group_name)
+                if key in specs:
+                    # The same row name appears twice inside one group (HP
+                    # publishes a short and a long display line, for example).
+                    # Both values are kept, the second one under a qualified
+                    # key instead of overwriting the first.
+                    key = f"{key}_{self._normalize(group_name)}"
+                specs[key] = self._parse_spec_field(key, value, source_field=spec_name)
 
         return specs
 
-    def _extract_variants_from_json_ld(self, json_ld_data: Dict, base_url: str) -> List[ProductVariant]:
-        """Extract variants from JSON-LD hasVariant data"""
-        variants = []
-        has_variants = json_ld_data.get('has_variant', [])
-        canonical_key = extract_canonical_key(base_url, 'hp')
+    def _spec_groups(self, soup: BeautifulSoup) -> List[Tuple[str, List[Tuple[str, str]]]]:
+        """Return ``[(group title, [(spec name, value)])]`` of the spec table."""
+        groups: List[Tuple[str, List[Tuple[str, str]]]] = []
 
-        for var_data in has_variants:
-            if not isinstance(var_data, dict):
-                continue
+        for group in soup.select(self.selectors['techspec_group']):
+            title = self._group_title(group)
+            rows: List[Tuple[str, str]] = []
 
-            variant_name = var_data.get('sku', '').replace('#', ' ').strip()
-            if not variant_name:
-                variant_name = var_data.get('name', 'Variant')
+            for name_element in group.select(self.selectors['typography']):
+                if name_element.name != 'p':
+                    continue
+                spec_name = clean_text(name_element.get_text())
+                if not spec_name or spec_name.lower() in self.SKIP_ROWS:
+                    continue
+                value = self._row_value(name_element)
+                if not value or self._is_noise(value):
+                    continue
+                rows.append((spec_name, value))
 
-            # Extract variant-specific specs if available
-            variant_specs = {}
-            if 'additionalProperty' in var_data:
-                for prop in var_data['additionalProperty']:
-                    name = prop.get('name', '')
-                    value = prop.get('value', '')
-                    if name and value:
-                        variant_specs[name] = parse_spec_field(name, value)
+            if rows:
+                groups.append((title, rows))
 
-            variant_url = var_data.get('url', base_url)
-            variant_id = generate_variant_id('hp', canonical_key, variant_name)
+        return groups
 
-            variants.append(ProductVariant(
-                variant_id=variant_id,
-                name=variant_name,
-                specs=variant_specs,
-                source_url=canonicalize_url(variant_url)
-            ))
+    def _group_title(self, group) -> str:
+        """The topic of a spec group is its first child that holds no row."""
+        for child in group.find_all(recursive=False):
+            if child.name == 'div' and not child.select(self.selectors['typography']):
+                title = clean_text(child.get_text())
+                if title:
+                    return title
+        return ""
 
-        return variants
+    def _row_value(self, name_element) -> str:
+        """Read the value cell that belongs to a specification name cell."""
+        row = name_element.parent.parent if name_element.parent else None
+        if row is None:
+            return ""
+        cells = [c for c in row.find_all(recursive=False) if c.name in ('div', 'p')]
+        if len(cells) < 2:
+            return ""
+        value = clean_text(cells[1].get_text(" ", strip=True))
+        return self._strip_footnotes(value)
 
-    def _find_techspec_url(self, soup: BeautifulSoup, base_url: str) -> Optional[str]:
-        selectors = [
-            'a[href*="/specifications"]',
-            'a[href*="/specs"]',
-            '.specs-link a',
-        ]
+    @staticmethod
+    def _strip_footnotes(value: str) -> str:
+        """Remove the trailing footnote markers HP appends to a value."""
+        return re.sub(r'\s*\[\d+(?:\s*,\s*\d+)*\]\s*$', '', value).strip()
 
-        for selector in selectors:
-            links = soup.select(selector)
-            for link in links:
-                href = link.get('href')
-                if href:
-                    full_url = urljoin(base_url, href)
-                    if '/specifications' in full_url or '/specs' in full_url:
-                        return canonicalize_url(full_url)
+    @staticmethod
+    def _is_noise(value: str) -> bool:
+        """Values that carry no information: bare URLs and footnote markers."""
+        if value.startswith('http://') or value.startswith('https://'):
+            return True
+        return bool(re.fullmatch(r'\[\d+(?:\s*,\s*\d+)*\]', value))
 
-        return None
+    @staticmethod
+    def _normalize(name: str) -> str:
+        return re.sub(r'[^a-z0-9]+', '_', name.strip().lower()).strip('_')
 
-    async def _extract_variants_from_techspec(self, techspec_url: str) -> List[ProductVariant]:
-        try:
-            soup = await self.http_client.get_soup(techspec_url)
-        except Exception as e:
-            self.logger.error(f"Failed to fetch techspec {techspec_url}: {e}")
-            return []
+    def _standard_spec_key(self, spec_name: str, group_name: str) -> str:
+        """Map an HP row name to a Veridian spec key."""
+        lowered = spec_name.strip().lower()
+        mapped = self.SPEC_KEY_MAPPING.get(lowered)
+        if mapped:
+            return mapped
+        # Fall back to the row name, qualified with the group so that rows
+        # with the same name in different groups do not collide.
+        if group_name:
+            return f"{self._normalize(group_name)}_{self._normalize(spec_name)}"
+        return self._normalize(spec_name)
 
-        variants = []
-        variant_names = self._extract_variant_names(soup)
+    def _parse_spec_field(self, key: str, value: str, source_field: str = None) -> SpecValue:
+        """Parse an HP specification value into a :class:`SpecValue`.
 
-        if not variant_names:
-            return []
+        The shared parser in ``models`` is written for ASUS style values; HP
+        writes "8 GB DDR5-5600 MT/s" and "31.45 x 22.6 x 1.48 cm", which that
+        parser mangles (it splits "MT/s" at the slash and does not read
+        centimetres), so the HP fields are parsed here.
+        """
+        structured = self._extract_structured(key, value)
 
-        spec_rows = soup.select(self.selectors['spec_rows'])
-        variant_specs = {name: {} for name in variant_names}
+        options: List[str] = []
+        is_multi = False
+        if key == 'ports':
+            parts = [part.strip() for part in re.split(r';', value) if part.strip()]
+            if len(parts) > 1:
+                options = parts
+                is_multi = True
 
-        for row in spec_rows:
-            spec_name_elem = row.select_one(self.selectors['spec_name'])
-            if not spec_name_elem:
-                continue
-
-            spec_name = clean_text(spec_name_elem.get_text())
-            if not spec_name or spec_name.lower() in ['model', 'color', 'model name']:
-                continue
-
-            value_containers = row.select(self.selectors['spec_values'])
-
-            for idx, container in enumerate(value_containers):
-                if idx < len(variant_names):
-                    variant_name = variant_names[idx]
-                    value = clean_text(container.get_text())
-                    if value:
-                        value = re.sub(r'\s+', ' ', value)
-                        variant_specs[variant_name][spec_name] = parse_spec_field(spec_name, value)
-
-        import hashlib
-        for variant_name, specs in variant_specs.items():
-            if specs:
-                canonical_key = extract_canonical_key(techspec_url, 'hp')
-                variant_id = generate_variant_id('hp', canonical_key, variant_name)
-                variants.append(ProductVariant(
-                    variant_id=variant_id,
-                    name=variant_name,
-                    specs=specs,
-                    source_url=techspec_url
-                ))
-
-        return variants
-
-    def _extract_variant_names(self, soup: BeautifulSoup) -> List[str]:
-        names = []
-
-        selectors = [
-            '.variant-name',
-            '.model-name',
-            '[data-variant]',
-            'th[data-column]',
-        ]
-
-        for selector in selectors:
-            elems = soup.select(selector)
-            for elem in elems:
-                name = clean_text(elem.get_text() or elem.get('data-variant', ''))
-                if name and name not in names:
-                    names.append(name)
-
-        if not names:
-            headers = soup.select('th[data-column], thead th')
-            for header in headers:
-                name = clean_text(header.get_text())
-                if name and name.lower() not in ['model', 'color', 'specifications', 'features']:
-                    names.append(name)
-
-        return names
-
-    def _extract_variants_from_main(self, soup: BeautifulSoup, url: str) -> List[ProductVariant]:
-        variants = []
-        variant_names = []
-
-        variant_selectors = [
-            '.product-variants select option',
-            '.color-options li',
-            '.config-options li',
-            '[data-variant]',
-        ]
-
-        for selector in variant_selectors:
-            elems = soup.select(selector)
-            for elem in elems:
-                name = clean_text(elem.get_text() or elem.get('data-variant', ''))
-                if name and name not in variant_names:
-                    variant_names.append(name)
-
-        if not variant_names:
-            return [self._create_base_variant(url, "")]
-
-        for variant_name in variant_names:
-            specs = self._extract_basic_specs(soup)
-            canonical_key = extract_canonical_key(url, 'hp')
-            variant_id = generate_variant_id('hp', canonical_key, variant_name)
-            variants.append(ProductVariant(
-                variant_id=variant_id,
-                name=variant_name,
-                specs=specs,
-                source_url=url
-            ))
-
-        return variants
-
-    def _create_base_variant(self, url: str, product_name: str) -> ProductVariant:
-        canonical_key = extract_canonical_key(url, 'hp')
-        variant_id = generate_variant_id('hp', canonical_key, "Base")
-        return ProductVariant(
-            variant_id=variant_id,
-            name="Base",
-            specs={},
-            source_url=url
+        return SpecValue(
+            raw=value,
+            structured=structured if structured else None,
+            unit=self._unit_for(key),
+            is_multi_option=is_multi,
+            options=options,
+            confidence=0.9 if structured else 0.5,
+            source_field=source_field or key,
         )
 
-    def _extract_basic_specs(self, soup: BeautifulSoup) -> Dict[str, SpecValue]:
-        specs = {}
+    def _extract_structured(self, key: str, value: str) -> Optional[Dict[str, Any]]:
+        """Structured data for the HP specification fields."""
+        result: Dict[str, Any] = {}
+        lowered = key.lower()
 
-        spec_selectors = [
-            '.spec-item',
-            '.product-specs li',
-            '.features li',
-            '.specifications li',
-            '.key-specs li',
-        ]
+        if lowered == 'processor':
+            brand = re.search(r'\b(Intel|AMD|Qualcomm|Snapdragon|Apple)\b', value)
+            if brand:
+                result['brand'] = brand.group(1)
+            model = re.search(r'(Core™?\s*\w+\s*\d+|Ryzen™?\s*[\w\s]*?\d+|Snapdragon\s*X?\s*\w+\s*\d+)', value)
+            if model:
+                result['model'] = model.group(1).strip()
+            cores = re.search(r'(\d+)\s*cores?', value, re.IGNORECASE)
+            if cores:
+                result['cores'] = int(cores.group(1))
+            threads = re.search(r'(\d+)\s*threads?', value, re.IGNORECASE)
+            if threads:
+                result['threads'] = int(threads.group(1))
+            boost = re.search(r'up\s+to\s+(\d+(?:\.\d+)?)\s*GHz', value, re.IGNORECASE)
+            if boost:
+                result['boost_freq_ghz'] = float(boost.group(1))
+            base = re.search(r'(\d+(?:\.\d+)?)\s*GHz', value)
+            if base and 'boost_freq_ghz' not in result:
+                result['base_freq_ghz'] = float(base.group(1))
+            cache = re.search(r'(\d+)\s*MB\s*(?:L3\s*)?[Cc]ache', value)
+            if cache:
+                result['cache_mb'] = int(cache.group(1))
 
-        for selector in spec_selectors:
-            items = soup.select(selector)
-            for item in items:
-                text = clean_text(item.get_text())
-                if ':' in text:
-                    parts = text.split(':', 1)
-                    if len(parts) == 2:
-                        name = clean_text(parts[0])
-                        value = clean_text(parts[1])
-                        specs[name] = parse_spec_field(name, value)
+        elif lowered == 'processor_cores':
+            cores = re.search(r'(\d+)', value)
+            if cores:
+                result['cores'] = int(cores.group(1))
 
-        return specs
+        elif lowered == 'processor_cache':
+            cache = re.search(r'(\d+)\s*MB', value, re.IGNORECASE)
+            if cache:
+                result['cache_mb'] = int(cache.group(1))
+
+        elif lowered == 'neural_processor':
+            tops = re.search(r'(\d+(?:\.\d+)?)\s*(?:NPU\s*)?TOPS', value, re.IGNORECASE)
+            if tops:
+                result['npu_tops'] = float(tops.group(1))
+            brand = re.search(r'\b(Intel|AMD|Qualcomm|Apple)\b', value)
+            if brand:
+                result['brand'] = brand.group(1)
+
+        elif lowered == 'memory':
+            capacity = re.search(r'(\d+)\s*GB', value, re.IGNORECASE)
+            if capacity:
+                result['capacity_gb'] = int(capacity.group(1))
+            memory_type = re.search(r'(LPDDR\d+X?|DDR\d+)', value, re.IGNORECASE)
+            if memory_type:
+                result['type'] = memory_type.group(1).upper()
+            speed = re.search(r'(\d+)\s*MT/s', value, re.IGNORECASE)
+            if speed:
+                result['speed_mts'] = int(speed.group(1))
+            modules = re.search(r'\(\s*(\d+)\s*x\s*(\d+)\s*GB\s*\)', value)
+            if modules:
+                result['modules'] = int(modules.group(1))
+                result['module_size_gb'] = int(modules.group(2))
+
+        elif lowered == 'memory_layout':
+            modules = re.search(r'(\d+)\s*x\s*(\d+)\s*GB', value)
+            if modules:
+                result['modules'] = int(modules.group(1))
+                result['module_size_gb'] = int(modules.group(2))
+
+        elif lowered == 'storage':
+            capacity = re.search(r'(\d+)\s*(TB|GB)', value, re.IGNORECASE)
+            if capacity:
+                size = int(capacity.group(1))
+                unit = capacity.group(2).upper()
+                result['capacity_gb'] = size * 1024 if unit == 'TB' else size
+            if re.search(r'NVMe', value, re.IGNORECASE):
+                result['interface'] = 'NVMe'
+            elif re.search(r'SATA', value, re.IGNORECASE):
+                result['interface'] = 'SATA'
+            pcie = re.search(r'PCIe[®\s]*(?:Gen\s*)?(\d+\.?\d*)', value, re.IGNORECASE)
+            if pcie:
+                result['pcie_version'] = pcie.group(1)
+            if re.search(r'M\.?2', value, re.IGNORECASE):
+                result['form_factor'] = 'M.2'
+
+        elif lowered == 'display':
+            size = re.search(r'(\d+(?:\.\d+)?)\s*(?:"|inch)', value, re.IGNORECASE)
+            if size:
+                result['size_inches'] = float(size.group(1))
+            resolution = re.search(r'(\d{3,5})\s*[x×]\s*(\d{3,5})', value)
+            if resolution:
+                result['width_px'] = int(resolution.group(1))
+                result['height_px'] = int(resolution.group(2))
+                result['resolution'] = f"{resolution.group(1)}x{resolution.group(2)}"
+            for panel in ('OLED', 'IPS', 'TN', 'VA', 'Mini LED', 'Micro LED'):
+                if panel.lower() in value.lower():
+                    result['panel_type'] = panel
+                    break
+            nits = re.search(r'(\d+)\s*nits', value, re.IGNORECASE)
+            if nits:
+                result['brightness_nits'] = int(nits.group(1))
+            refresh = re.search(r'(\d+)\s*Hz', value, re.IGNORECASE)
+            if refresh:
+                result['refresh_rate_hz'] = int(refresh.group(1))
+            gamut = re.search(r'([\d.]+%\s*sRGB)', value, re.IGNORECASE)
+            if gamut:
+                result['color_gamut'] = gamut.group(1)
+
+        elif lowered == 'graphics':
+            for brand in ('NVIDIA', 'AMD', 'Intel', 'Qualcomm', 'Apple'):
+                if brand.lower() in value.lower():
+                    result['brand'] = brand
+                    break
+            model = re.search(r'(RTX\s*\d{4}\w*|GTX\s*\d{4}\w*|Radeon\s*[\w\s]+\d{4}\w*|Arc\s*\w+|Iris\s*\w+|UHD\s*\w+)', value)
+            if model:
+                result['model'] = model.group(1).strip()
+            vram = re.search(r'(\d+)\s*GB\s*GDDR', value, re.IGNORECASE)
+            if vram:
+                result['vram_gb'] = int(vram.group(1))
+
+        elif lowered == 'battery':
+            wh = re.search(r'(\d+)\s*Wh', value, re.IGNORECASE)
+            if wh:
+                result['capacity_wh'] = int(wh.group(1))
+            cells = re.search(r'(\d+)\s*-?\s*cell', value, re.IGNORECASE)
+            if cells:
+                result['cells'] = int(cells.group(1))
+
+        elif lowered == 'weight':
+            kg = re.search(r'(\d+(?:\.\d+)?)\s*kg', value, re.IGNORECASE)
+            if kg:
+                result['weight_kg'] = float(kg.group(1))
+            lbs = re.search(r'(\d+(?:\.\d+)?)\s*lbs?', value, re.IGNORECASE)
+            if lbs:
+                result['weight_lbs'] = float(lbs.group(1))
+
+        elif lowered == 'dimensions':
+            cm = re.search(r'(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\s*cm', value)
+            if cm:
+                result['width_mm'] = float(cm.group(1)) * 10
+                result['depth_mm'] = float(cm.group(2)) * 10
+                result['height_mm'] = float(cm.group(3)) * 10
+                result['dimensions_cm'] = f"{cm.group(1)} x {cm.group(2)} x {cm.group(3)}"
+
+        elif lowered == 'network':
+            wifi = re.search(r'Wi-?Fi\s*(\d+(?:\.\d+)?|6E|7)', value, re.IGNORECASE)
+            if wifi:
+                result['wifi_standard'] = f"Wi-Fi {wifi.group(1)}"
+            bluetooth = re.search(r'Bluetooth[®\s]*(\d+(?:\.\d+)?)', value, re.IGNORECASE)
+            if bluetooth:
+                result['bluetooth_version'] = bluetooth.group(1)
+
+        elif lowered == 'camera':
+            if re.search(r'\b1080p\b', value, re.IGNORECASE):
+                result['resolution'] = '1080p'
+            elif re.search(r'\b720p\b', value, re.IGNORECASE):
+                result['resolution'] = '720p'
+            elif re.search(r'\b4K\b', value):
+                result['resolution'] = '4K'
+
+        elif lowered == 'os':
+            result['operating_system'] = value
+
+        return result if result else None
+
+    @staticmethod
+    def _unit_for(key: str) -> Optional[str]:
+        return {
+            'processor': 'GHz',
+            'memory': 'GB',
+            'memory_layout': 'GB',
+            'storage': 'GB',
+            'display': 'inches',
+            'battery': 'Wh',
+            'weight': 'kg',
+            'dimensions': 'mm',
+            'package_dimensions': 'mm',
+        }.get(key.lower())
+
+    def _family_slug(self, url: str, sku: str) -> str:
+        """The family slug of a product URL.
+
+        HP appends the order code to the product slug
+        (``...-ht0218tu-e5sm2pa-acj`` for ``E5SM2PA#ACJ``), so the family slug
+        is the product slug without that suffix. All configurations of one
+        family therefore share a canonical key and end up as the variants of
+        a single product.
+        """
+        slug = self._slug_of(url)
+        if sku:
+            suffix = '-' + sku.lower().replace('#', '-')
+            if slug.endswith(suffix):
+                return slug[:-len(suffix)]
+            if slug.endswith(sku.lower()):
+                return slug[:-len(sku)]
+        return slug
 
 
 def create_hp_config() -> ScraperConfig:
@@ -793,8 +867,6 @@ def create_hp_config() -> ScraperConfig:
         checkpoint_interval=10
     )
 
-    # The YAML configuration is authoritative for the base URL and the
-    # region list (category paths, rate limit, timeout).
     return apply_yaml_config(config)
 
 
