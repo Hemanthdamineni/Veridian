@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # A daily sweep of the manufacturer sources, so that a source which
+    # changes its markup or starts blocking us is noticed rather than
+    # discovered later.
+    - cron: "17 4 * * *"
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -129,3 +134,37 @@ jobs:
 
       - name: Run pytest suite
         run: python -m pytest -q
+
+  scraper-health:
+    name: Scraper fleet health (scheduled)
+    # A scheduled sweep that records what each manufacturer source is doing
+    # right now. It is deliberately non-blocking: a manufacturer that blocks
+    # us, or that has changed its markup, is a fact to record, not a build
+    # to fail. The health report is the artifact.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements-dev.txt
+
+      - name: Run the fleet and record the health report
+        run: |
+          python run_scrapers.py --tier all --report || true
+
+      - name: Upload the health report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraper-health-report
+          path: output/health/
+          if-no-files-found: ignore
+          retention-days: 30
