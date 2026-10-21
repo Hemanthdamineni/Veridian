@@ -88,6 +88,13 @@ model Model {
   discontinued  Boolean  @default(false)
   successorId   String?
   predecessorId String?
+  /// The manufacturer's published starting price for this product family.
+  /// It is a family-level figure, not the price of one configuration, and
+  /// the UI labels it as such.
+  priceFrom       Float?
+  priceFromCurrency String?
+  priceFromUrl   String?
+  priceFromObservedAt DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

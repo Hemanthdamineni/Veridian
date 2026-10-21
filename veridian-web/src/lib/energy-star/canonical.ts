@@ -141,6 +141,11 @@ const PLACEHOLDER_NOTE_PATTERNS = [
   /^the\s*["*]/i,
   /\bdepending on\b/i,
   /\bsame as\b.*\bmodel\b/i,
+  // Notes the source uploads to itself rather than a product identifier.
+  /^upload to epa$/i,
+  /^upload to /i,
+  /^see /i,
+  /^refer to /i,
 ];
 
 /**
@@ -151,6 +156,24 @@ export function isPlaceholderNote(value: string): boolean {
   const v = value.trim();
   if (!v) return true;
   return PLACEHOLDER_NOTE_PATTERNS.some((pattern) => pattern.test(v));
+}
+
+/**
+ * True when a reported model name is an instruction or a legend rather than
+ * the name of a product.
+ *
+ * The source occasionally uploads a record whose model name is a note to
+ * itself — "UPLOAD TO EPA" — or a wildcard legend. Such a record describes no
+ * product, so it is rejected at validation rather than filed in the catalog.
+ */
+export function isPlaceholderModelName(value: string): boolean {
+  const v = value.trim();
+  if (!v) return true;
+  return (
+    /^upload to epa$/i.test(v) ||
+    /^(same as|see |refer to|use )\b/i.test(v) ||
+    /^(n\/?a|not applicable|none|tbd|tbc)$/i.test(v)
+  );
 }
 
 /**
@@ -326,10 +349,11 @@ export function resolveModelName(
     // The source often lists several identifiers: the chassis code it
     // certified, and one or more marketing names. The most specific
     // marketing name is the one a buyer would recognise, so the longest
-    // candidate wins.
+    // candidate wins. A candidate that is a note rather than a name is
+    // never used.
     const candidates = additional.marketingNames
       .map((marketing) => stripEnumerationPrefix(marketing).replace(/\s+/g, " ").trim())
-      .filter((candidate) => candidate.length >= 3)
+      .filter((candidate) => candidate.length >= 3 && !isPlaceholderModelName(candidate))
       .sort((a, b) => b.length - a.length);
     if (candidates.length > 0) return candidates[0];
   }

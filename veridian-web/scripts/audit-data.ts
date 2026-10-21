@@ -197,6 +197,29 @@ async function main() {
   add("values/cpu-cores", "error", badCores, "Configurations with an impossible CPU core count");
 
   // --- Coverage -------------------------------------------------------------
+  // A source occasionally records a placeholder instead of a product ("UPLOAD
+  // TO EPA", "Same as basic model"). Such a row describes no product and must
+  // not sit in the catalog as if it did.
+  const placeholderModels = await prisma.model.findMany({
+    where: {
+      OR: [
+        { name: { equals: "UPLOAD TO EPA" } },
+        { name: { contains: "Same as basic model" } },
+        { name: { contains: "can be 0-9" } },
+        { name: { contains: "or blank" } },
+        { name: { equals: "Unknown" } },
+      ],
+    },
+    select: { name: true, series: { select: { manufacturer: { select: { name: true } } } } },
+  });
+  add(
+    "coverage/placeholder-model",
+    "warning",
+    placeholderModels.length,
+    "Models whose recorded name is a source placeholder rather than a product",
+    placeholderModels.map((m) => `${m.series.manufacturer.name} · ${m.name}`)
+  );
+
   const missingCpu = await prisma.sku.count({ where: { cpuModel: "" } });
   add("coverage/cpu-model", "error", missingCpu, "Configurations with no CPU model");
 

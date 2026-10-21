@@ -9,6 +9,7 @@ import {
   canonicalSkuCode,
   configurationSignature,
   deriveSeriesName,
+  isPlaceholderModelName,
   isPlaceholderNote,
   parseAdditionalModelInfo,
   resolveModelName,
@@ -111,6 +112,12 @@ export function validateEnergyStarRecord(raw: unknown): { record: NormalizedReco
   if (!model) errors.push("model_name is required");
   if (!modelNumber) errors.push("model_number is required");
   if (!energyStarId) errors.push("energy_star_model_identifier is required");
+  // The source occasionally records an instruction or a placeholder legend
+  // instead of a product name. Such a record describes no product, so it is
+  // rejected rather than filed under a name that means nothing.
+  if (model && isPlaceholderModelName(model)) {
+    errors.push(`model_name '${model}' is a source placeholder, not a product name`);
+  }
   for (const [value, key] of [[id, "pd_id"], [brand, "brand_name"], [model, "model_name"], [modelNumber, "model_number"], [energyStarId, "energy_star_model_identifier"]] as const) {
     if (value) cleanIdentity(value, key, errors);
   }

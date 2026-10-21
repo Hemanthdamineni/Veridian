@@ -113,6 +113,16 @@ export interface SkuDetail extends SkuListItem {
   price: SkuPrice | null;
   pricing: SkuPrice[];
   ports: SkuPort[];
+  /**
+   * The manufacturer's published starting price for the whole product family.
+   * It is not the price of this configuration, and the UI says so.
+   */
+  familyPrice?: {
+    price: number;
+    currency: string;
+    url: string | null;
+    observedAt: string | null;
+  } | null;
   /** The shared components this configuration is built around. */
   components?: SkuComponentLink[];
 }

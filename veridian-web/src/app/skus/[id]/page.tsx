@@ -120,6 +120,15 @@ async function getSku(id: string): Promise<SkuDetail | null> {
     discontinued: sku.discontinued,
     productUrl: sku.model.productUrl,
     price: sku.pricing[0] ? { region: sku.pricing[0].region, currency: sku.pricing[0].currency, msrp: sku.pricing[0].msrp } : null,
+    familyPrice:
+      sku.model.priceFrom !== null
+        ? {
+            price: sku.model.priceFrom,
+            currency: sku.model.priceFromCurrency ?? "USD",
+            url: sku.model.priceFromUrl,
+            observedAt: sku.model.priceFromObservedAt?.toISOString() ?? null,
+          }
+        : null,
     pricing: sku.pricing.map((p) => ({ region: p.region, currency: p.currency, msrp: p.msrp })),
     ports: sku.ports.map((p) => ({ portType: p.portType, count: p.count })),
     components: sku.components.map((link) => ({
@@ -333,6 +342,32 @@ export default async function SkuDetailPage({ params }: SkuDetailPageProps) {
               <p className="text-[13px] text-[var(--muted)]">No pricing recorded for this configuration.</p>
             )}
             <p className="mt-4 text-[11px] leading-5 text-[var(--quiet)]">Manufacturer suggested price for each region at our last update — not a live retail price.</p>
+            {sku.familyPrice && (
+              <div className="mt-4 border-t border-[var(--line)] pt-4">
+                <p className="text-[13px] font-medium">
+                  Family list price from{" "}
+                  <span className="font-mono tabular-nums">
+                    {formatPrice(sku.familyPrice.price, sku.familyPrice.currency)}
+                  </span>
+                </p>
+                <p className="mt-1 text-[11px] leading-5 text-[var(--quiet)]">
+                  The manufacturer publishes one starting price for the whole {sku.modelName} family,
+                  not a price for each configuration.{" "}
+                  {sku.familyPrice.url && (
+                    <>
+                      <a
+                        href={sku.familyPrice.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[var(--accent-dark)] underline underline-offset-4"
+                      >
+                        View the page it came from ↗
+                      </a>
+                    </>
+                  )}
+                </p>
+              </div>
+            )}
           </section>
 
           <section className="surface p-6">

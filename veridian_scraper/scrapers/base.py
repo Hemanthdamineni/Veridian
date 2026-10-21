@@ -21,10 +21,11 @@ import time
 import hashlib
 import re
 from abc import ABC, abstractmethod
+from functools import lru_cache
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Set, AsyncIterator, Callable, Tuple
-from urllib.parse import urljoin, urlparse, parse_qs
+from urllib.parse import urljoin, urlparse, parse_qs, unquote
 from urllib.robotparser import RobotFileParser
 from datetime import datetime
 import yaml
@@ -266,6 +267,22 @@ def _origin_of(url: str) -> str:
     return f"{parsed.scheme}://{parsed.netloc}"
 
 
+@lru_cache(maxsize=1024)
+def _compile_robots_pattern(pattern: str) -> re.Pattern:
+    """Compile a robots.txt path pattern into a regular expression.
+
+    RFC 9309 allows ``*`` inside a path and a trailing ``$`` to anchor the
+    match at the end of the path. ``urllib.robotparser`` grew support for
+    those only in Python 3.13, so the pattern is compiled here to keep the
+    behaviour identical on every supported Python version.
+    """
+    end_anchored = pattern.endswith('$')
+    if end_anchored:
+        pattern = pattern[:-1]
+    regex = '.*'.join(re.escape(part) for part in pattern.split('*'))
+    return re.compile('^' + regex + ('$' if end_anchored else ''))
+
+
 class RobotsPolicy:
     """Fetches, caches and evaluates ``robots.txt`` per origin.
 
@@ -278,6 +295,13 @@ class RobotsPolicy:
     The policy is always evaluated for the honest ``VeridianBot`` agent,
     because the rules a site publishes for crawlers are the rules Veridian has
     to obey.
+
+    The file is parsed with :class:`urllib.robotparser.RobotFileParser`, but the
+    decision is taken by the RFC 9309 evaluation implemented below: the
+    stdlib's own ``can_fetch`` behaves differently on Python 3.12 and 3.14
+    (longest match, path wildcards and the meaning of an empty ``Disallow:``
+    all changed), and a compliance check must not depend on the interpreter
+    version.
     """
 
     def __init__(
@@ -290,6 +314,7 @@ class RobotsPolicy:
         self.timeout = timeout
         self._fetcher = fetcher
         self._parsers: Dict[str, Optional[RobotFileParser]] = {}
+        self._errors: Dict[str, RobotsPolicyError] = {}
         self._delays: Dict[str, Optional[float]] = {}
         self._client: Optional[httpx.AsyncClient] = None
         self.logger = logging.getLogger(f"{__name__}.{user_agent.split('/')[0]}")
@@ -325,21 +350,27 @@ class RobotsPolicy:
         2.3.1.3 defines as "everything is allowed". A robots.txt that cannot be
         read (403, 429, 5xx, network error) raises
         :class:`RobotsUnavailableError`: an unknown policy is not permission.
+        The failure is remembered, so a later request for the same origin is
+        refused as well instead of silently falling back to "allowed".
         """
+        if origin in self._errors:
+            raise self._errors[origin]
         if origin in self._parsers:
             return self._parsers[origin]
 
         robots_url = f"{origin}/robots.txt"
         try:
             status, text = await self._fetch(robots_url)
-        except RobotsPolicyError:
+        except RobotsPolicyError as exc:
+            self._errors[origin] = exc
             raise
         except Exception as exc:
-            self._parsers[origin] = None
-            self._delays[origin] = None
-            raise RobotsUnavailableError(
+            error = RobotsUnavailableError(
                 f"robots.txt for {origin} could not be retrieved: {exc}"
-            ) from exc
+            )
+            self._errors[origin] = error
+            self._delays[origin] = None
+            raise error from exc
 
         if status in (404, 410):
             self._parsers[origin] = None
@@ -350,15 +381,116 @@ class RobotsPolicy:
             parser = RobotFileParser()
             parser.parse(text.splitlines())
             self._parsers[origin] = parser
-            delay = parser.crawl_delay(self.user_agent)
-            self._delays[origin] = float(delay) if delay else None
+            self._delays[origin] = self._crawl_delay_of(parser)
             return parser
 
-        self._parsers[origin] = None
-        self._delays[origin] = None
-        raise RobotsUnavailableError(
+        error = RobotsUnavailableError(
             f"robots.txt for {origin} returned HTTP {status}; refusing to fetch"
         )
+        self._errors[origin] = error
+        self._delays[origin] = None
+        raise error
+
+    @staticmethod
+    def _iter_groups(parser: RobotFileParser) -> List[Any]:
+        """All groups of a parsed robots.txt, on every supported Python version.
+
+        Python 3.12 keeps the ``*`` group in ``default_entry`` while 3.14 keeps
+        it in ``entries``, so both places are inspected.
+        """
+        groups: List[Any] = []
+        seen = set()
+        for entry in getattr(parser, 'entries', None) or []:
+            if id(entry) in seen:
+                continue
+            seen.add(id(entry))
+            groups.append(entry)
+        default_entry = getattr(parser, 'default_entry', None)
+        if default_entry is not None and id(default_entry) not in seen:
+            groups.append(default_entry)
+        return groups
+
+    def _matching_groups(self, parser: RobotFileParser) -> List[Any]:
+        """The group(s) that apply to the Veridian agent (RFC 9309 2.2.2).
+
+        The most specific matching user-agent token wins; the ``*`` group is
+        only used when no named group matches.
+        """
+        token = self.user_agent.split('/')[0].strip().lower()
+        best = -1
+        selected: List[Any] = []
+        for group in self._iter_groups(parser):
+            specificity = -1
+            for agent in getattr(group, 'useragents', None) or []:
+                agent = agent.strip().lower()
+                if not agent:
+                    continue
+                if agent == '*':
+                    candidate = 0
+                elif token.startswith(agent):
+                    candidate = len(agent)
+                else:
+                    continue
+                specificity = max(specificity, candidate)
+            if specificity < 0:
+                continue
+            if specificity > best:
+                best = specificity
+                selected = [group]
+            elif specificity == best and not any(g is group for g in selected):
+                selected.append(group)
+        return selected
+
+    @staticmethod
+    def _rules(group: Any) -> List[Tuple[str, bool]]:
+        """(pattern, allow) pairs of a group, decoded for matching."""
+        rules: List[Tuple[str, bool]] = []
+        for rule in getattr(group, 'rulelines', None) or []:
+            pattern = unquote(getattr(rule, 'path', '') or '')
+            rules.append((pattern, bool(getattr(rule, 'allowance', False))))
+        return rules
+
+    def _allows(self, parser: RobotFileParser, url: str) -> bool:
+        """Is the URL allowed by the policy (RFC 9309 2.2)?"""
+        groups = self._matching_groups(parser)
+        if not groups:
+            # No group applies to this agent: access is granted.
+            return True
+
+        parsed = urlparse(url)
+        path = parsed.path or '/'
+        query = parsed.query
+
+        best_length = -1
+        allowed = True
+        for group in groups:
+            for pattern, allow in self._rules(group):
+                if not pattern:
+                    # An empty "Disallow:" means "no restriction".
+                    continue
+                # RFC 9309 matches the path and the query, unless the pattern
+                # is anchored at the end with "$".
+                target = path
+                if query and not pattern.endswith('$'):
+                    target = f"{path}?{query}"
+                if not _compile_robots_pattern(pattern).match(target):
+                    continue
+                length = len(pattern)
+                if length > best_length:
+                    best_length = length
+                    allowed = allow
+                elif length == best_length and allow:
+                    # "Allow" wins a tie against "Disallow".
+                    allowed = True
+        return allowed
+
+    def _crawl_delay_of(self, parser: RobotFileParser) -> Optional[float]:
+        """Crawl delay declared for the Veridian agent, if any."""
+        for group in self._matching_groups(parser):
+            delay = getattr(group, 'delay', None)
+            if delay:
+                return float(delay)
+        return None
 
     async def is_allowed(self, url: str) -> bool:
         """Is this URL permitted for the Veridian agent?"""
@@ -366,7 +498,7 @@ class RobotsPolicy:
         parser = await self._parser_for(origin)
         if parser is None:
             return True
-        return parser.can_fetch(self.user_agent, url)
+        return self._allows(parser, url)
 
     async def crawl_delay(self, url: str) -> Optional[float]:
         """Crawl delay (seconds) declared for this origin, if any."""
@@ -474,7 +606,16 @@ class HTTPClient:
         A page that cannot be fetched is reported to the health tracker, so an
         empty run can never be mistaken for a successful one.
         """
-        await self._respect_robots(url)
+        try:
+            await self._respect_robots(url)
+        except RobotsPolicyError as exc:
+            # The source policy forbids this fetch. Record it as a blocked run
+            # and refuse - the fetch is not attempted at all.
+            if self.health is not None:
+                self.health.record_page_attempt()
+                self.health.record_page_failure(url, exc, kind=SOURCE_FAILURE)
+                self.health.record_blocked(str(exc))
+            raise
 
         if self.health is not None:
             self.health.record_page_attempt()

@@ -20,7 +20,8 @@
     "db:components": "tsx scripts/populate-components.ts",
     "db:audit": "tsx scripts/audit-data.ts",
     "db:audit:repair": "tsx scripts/audit-data.ts --repair",
-    "db:assert": "tsx scripts/assert-catalog.ts"
+    "db:assert": "tsx scripts/assert-catalog.ts",
+    "db:prices": "tsx scripts/refresh-family-prices.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
