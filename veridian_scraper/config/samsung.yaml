@@ -3,6 +3,10 @@
 # This file is the source of truth for the Samsung base URL and for the region
 # list (category paths, rate limit, timeout). CSS selectors live in the
 # scraper code because the site changes them with every build.
+#
+# The Galaxy Book listing is published at /us/galaxybooks/. The older
+# /us/computing/galaxy-book/ path only 302-redirects there, so the canonical
+# path is configured here to avoid the extra hop.
 manufacturer: "samsung"
 brand: "Samsung"
 base_url: "https://www.samsung.com/"
@@ -19,6 +23,6 @@ regions:
     language: "en"
     currency: "USD"
     category_paths:
-      galaxy-book: "computing/galaxy-book/"
+      galaxy-book: "galaxybooks/"
     rate_limit: 0.5
     timeout: 30
