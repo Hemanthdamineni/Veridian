@@ -1,0 +1,60 @@
+# The same product family in a market other than the one the catalog is
+# about. These prices are recorded as regional observations, with the region
+# and the currency the page published, and they never overwrite the family's
+# own list price.
+#
+#   model_slug,manufacturer,region,currency,url
+#
+# The page of every row was fetched and was seen to publish the price in
+# schema.org `Product` markup. The region and the currency agree: a euro
+# price says EUR, a pound price says GBP, a rupee price says INR.
+#
+# A market whose page publishes a family's *lowest* price rather than the
+# price of the specific size is listed against the size that price belongs
+# to. Apple's German, French and Italian shops publish one MacBook Air page
+# for the whole line, so it is listed against the 13-inch family; the
+# 15-inch family is listed only for the markets that publish a page of its
+# own.
+model_slug,manufacturer,region,currency,url
+zenbook-a14-ux3407,ASUS,UK,GBP,https://www.asus.com/uk/laptops/for-home/zenbook/asus-zenbook-a14-ux3407/
+zenbook-a14-ux3407,ASUS,DE,EUR,https://www.asus.com/de/laptops/for-home/zenbook/asus-zenbook-a14-ux3407/
+zenbook-a14-ux3407,ASUS,FR,EUR,https://www.asus.com/fr/laptops/for-home/zenbook/asus-zenbook-a14-ux3407/
+zenbook-a14-ux3407,ASUS,IT,EUR,https://www.asus.com/it/laptops/for-home/zenbook/asus-zenbook-a14-ux3407/
+zenbook-a14-ux3407,ASUS,IN,INR,https://www.asus.com/in/laptops/for-home/zenbook/asus-zenbook-a14-ux3407/
+zenbook-a14-ux3407,ASUS,AU,AUD,https://www.asus.com/au/laptops/for-home/zenbook/asus-zenbook-a14-ux3407/
+zenbook-14-ux3405,ASUS,IN,INR,https://www.asus.com/in/laptops/for-home/zenbook/asus-zenbook-14-oled-ux3405/
+zenbook-14-ux3405,ASUS,AU,AUD,https://www.asus.com/au/laptops/for-home/zenbook/asus-zenbook-14-oled-ux3405/
+zenbook-s-16-um5606,ASUS,UK,GBP,https://www.asus.com/uk/laptops/for-home/zenbook/asus-zenbook-s-16-um5606/
+zenbook-s-16-um5606,ASUS,DE,EUR,https://www.asus.com/de/laptops/for-home/zenbook/asus-zenbook-s-16-um5606/
+zenbook-s-16-um5606,ASUS,FR,EUR,https://www.asus.com/fr/laptops/for-home/zenbook/asus-zenbook-s-16-um5606/
+zenbook-s-16-um5606,ASUS,IT,EUR,https://www.asus.com/it/laptops/for-home/zenbook/asus-zenbook-s-16-um5606/
+zenbook-s-16-um5606,ASUS,IN,INR,https://www.asus.com/in/laptops/for-home/zenbook/asus-zenbook-s-16-um5606/
+zenbook-s-16-um5606,ASUS,AU,AUD,https://www.asus.com/au/laptops/for-home/zenbook/asus-zenbook-s-16-um5606/
+zenbook-duo-ux8406,ASUS,UK,GBP,https://www.asus.com/uk/laptops/for-home/zenbook/asus-zenbook-duo-2024-ux8406/
+zenbook-duo-ux8406,ASUS,IN,INR,https://www.asus.com/in/laptops/for-home/zenbook/asus-zenbook-duo-2024-ux8406/
+zenbook-duo-ux8406,ASUS,AU,AUD,https://www.asus.com/au/laptops/for-home/zenbook/asus-zenbook-duo-2024-ux8406/
+proart-p16-h7606,ASUS,UK,GBP,https://www.asus.com/uk/laptops/for-creators/proart/proart-p16-h7606/
+proart-p16-h7606,ASUS,DE,EUR,https://www.asus.com/de/laptops/for-creators/proart/proart-p16-h7606/
+proart-p16-h7606,ASUS,FR,EUR,https://www.asus.com/fr/laptops/for-creators/proart/proart-p16-h7606/
+proart-p16-h7606,ASUS,IN,INR,https://www.asus.com/in/laptops/for-creators/proart/proart-p16-h7606/
+proart-p16-h7606,ASUS,AU,AUD,https://www.asus.com/au/laptops/for-creators/proart/proart-p16-h7606/
+vivobook-s-14-s3407,ASUS,IN,INR,https://www.asus.com/in/laptops/for-home/vivobook/asus-vivobook-s14-s3407/
+vivobook-s-14-s3407,ASUS,AU,AUD,https://www.asus.com/au/laptops/for-home/vivobook/asus-vivobook-s14-s3407/
+macbook-air-13-m4,Apple,UK,GBP,https://www.apple.com/uk/shop/buy-mac/macbook-air/13-inch
+macbook-air-13-m4,Apple,DE,EUR,https://www.apple.com/de/shop/buy-mac/macbook-air/13-inch
+macbook-air-13-m4,Apple,FR,EUR,https://www.apple.com/fr/shop/buy-mac/macbook-air/13-inch
+macbook-air-13-m4,Apple,IT,EUR,https://www.apple.com/it/shop/buy-mac/macbook-air/13-inch
+macbook-air-13-m4,Apple,IN,INR,https://www.apple.com/in/shop/buy-mac/macbook-air/13-inch
+macbook-air-13-m4,Apple,CA,CAD,https://www.apple.com/ca/shop/buy-mac/macbook-air/13-inch
+macbook-air-13-m4,Apple,AU,AUD,https://www.apple.com/au/shop/buy-mac/macbook-air/13-inch
+macbook-air-15-m4,Apple,UK,GBP,https://www.apple.com/uk/shop/buy-mac/macbook-air/15-inch
+macbook-air-15-m4,Apple,IN,INR,https://www.apple.com/in/shop/buy-mac/macbook-air/15-inch
+macbook-air-15-m4,Apple,CA,CAD,https://www.apple.com/ca/shop/buy-mac/macbook-air/15-inch
+macbook-air-15-m4,Apple,AU,AUD,https://www.apple.com/au/shop/buy-mac/macbook-air/15-inch
+macbook-pro-14-m4-pro,Apple,UK,GBP,https://www.apple.com/uk/shop/buy-mac/macbook-pro
+macbook-pro-14-m4-pro,Apple,DE,EUR,https://www.apple.com/de/shop/buy-mac/macbook-pro
+macbook-pro-14-m4-pro,Apple,FR,EUR,https://www.apple.com/fr/shop/buy-mac/macbook-pro
+macbook-pro-14-m4-pro,Apple,IT,EUR,https://www.apple.com/it/shop/buy-mac/macbook-pro
+macbook-pro-14-m4-pro,Apple,IN,INR,https://www.apple.com/in/shop/buy-mac/macbook-pro
+macbook-pro-14-m4-pro,Apple,CA,CAD,https://www.apple.com/ca/shop/buy-mac/macbook-pro
+macbook-pro-14-m4-pro,Apple,AU,AUD,https://www.apple.com/au/shop/buy-mac/macbook-pro
