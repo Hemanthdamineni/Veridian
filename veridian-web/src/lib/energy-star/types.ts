@@ -21,6 +21,22 @@ export const ENERGY_STAR_SOURCE = {
 
 const ENERGY_STAR_SOURCE_URL = "https://data.energystar.gov/resource/rxdj-2c88.json";
 
+/**
+ * The product category the certification dataset covers.
+ *
+ * `Series.categoryId` is optional in the schema, because the catalog was
+ * laptops-only when it was written. It is not decorative: every series the
+ * certification path creates is filed under this category, so the moment a
+ * second category exists the relation is already populated and the two sets
+ * of rows can be told apart without a migration.
+ */
+export const LAPTOP_CATEGORY = {
+  name: "Laptops",
+  slug: "laptops",
+  description:
+    "Portable computers, from the certification dataset and from the manufacturer pages.",
+};
+
 /** Deterministic, identifiable user agent (ADR-003: no browser impersonation). */
 export const VERIDIAN_USER_AGENT =
   "VeridianBot/1.0 (+https://veridian.dev; contact@veridian.dev)";

@@ -21,6 +21,7 @@ import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
 import { parse } from "csv-parse/sync";
+import { LAPTOP_CATEGORY } from "../src/lib/energy-star/types";
 
 const prisma = new PrismaClient();
 
@@ -88,6 +89,19 @@ function floatOrNull(value: string): number | null {
 async function seed() {
   console.log("Seeding the reference dataset...");
 
+  // The reference dataset is a set of laptops, so it is filed under the same
+  // category as the certification tier. Resolving the category once keeps
+  // the per-row path free of a lookup.
+  const category = await prisma.category.upsert({
+    where: { slug: LAPTOP_CATEGORY.slug },
+    update: { name: LAPTOP_CATEGORY.name, description: LAPTOP_CATEGORY.description },
+    create: {
+      name: LAPTOP_CATEGORY.name,
+      slug: LAPTOP_CATEGORY.slug,
+      description: LAPTOP_CATEGORY.description,
+    },
+  });
+
   const csvPath = path.join(process.cwd(), "data", "laptops.csv");
   const fileContent = fs.readFileSync(csvPath, "utf-8");
   const records = parse(fileContent, {
@@ -134,8 +148,8 @@ async function seed() {
       const slug = slugify(row.series);
       const series = await prisma.series.upsert({
         where: { manufacturerId_slug: { manufacturerId: manufacturerId!, slug } },
-        update: {},
-        create: { manufacturerId: manufacturerId!, name: row.series, slug },
+        update: { categoryId: category.id },
+        create: { manufacturerId: manufacturerId!, name: row.series, slug, categoryId: category.id },
       });
       seriesId = series.id;
       seriesCache.set(seriesKey, series.id);

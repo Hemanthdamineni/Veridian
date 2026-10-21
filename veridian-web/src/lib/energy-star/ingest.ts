@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import { ENERGY_STAR_SOURCE } from "./types";
+import { ENERGY_STAR_SOURCE, LAPTOP_CATEGORY } from "./types";
 import type { IngestionReport, NormalizedRecord, RejectedRecord } from "./types";
 import { canonicalBrand } from "./canonical";
 
@@ -55,7 +55,8 @@ export type IngestOutcome = "created" | "merged" | "unchanged";
 export async function ingestRecord(
   prisma: PrismaClient,
   record: NormalizedRecord,
-  { rawPayload, payloadHash }: { rawPayload: string; payloadHash: string }
+  { rawPayload, payloadHash }: { rawPayload: string; payloadHash: string },
+  categoryId: string
 ): Promise<{ outcome: IngestOutcome; skuId: string }> {
   const existingRaw = await prisma.rawObservation.findFirst({
     where: { source: ENERGY_STAR_SOURCE.name, rawRecordId: record.sourceRecordId },
@@ -91,11 +92,14 @@ export async function ingestRecord(
       where: {
         manufacturerId_slug: { manufacturerId: manufacturer.id, slug: slugify(record.seriesName) },
       },
-      update: {},
+      // The category is assigned on update as well as on create, so a series
+      // that predates the category relation is filed when it is next seen.
+      update: { categoryId: categoryId ?? undefined },
       create: {
         manufacturerId: manufacturer.id,
         name: record.seriesName,
         slug: slugify(record.seriesName),
+        categoryId: categoryId ?? null,
       },
     });
     const model = await prisma.model.upsert({
@@ -270,13 +274,26 @@ export async function ingestReport(prisma: PrismaClient, report: IngestionReport
   let created = 0;
   let merged = 0;
   let unchanged = 0;
+
+  // The category is resolved once per run. It is the same row every time,
+  // so resolving it once keeps the per-record path free of a lookup.
+  const category = await prisma.category.upsert({
+    where: { slug: LAPTOP_CATEGORY.slug },
+    update: { name: LAPTOP_CATEGORY.name, description: LAPTOP_CATEGORY.description },
+    create: {
+      name: LAPTOP_CATEGORY.name,
+      slug: LAPTOP_CATEGORY.slug,
+      description: LAPTOP_CATEGORY.description,
+    },
+  });
+
   for (const record of report.records) {
     const rawRow = report.rawPayloads.find((row) => row.sourceRecordId === record.sourceRecordId);
     if (!rawRow) throw new Error(`Missing raw payload for source record ${record.sourceRecordId}`);
     const result = await ingestRecord(prisma, record, {
       rawPayload: rawRow.payload,
       payloadHash: rawRow.payloadHash,
-    });
+    }, category.id);
     if (result.outcome === "created") created++;
     else if (result.outcome === "merged") merged++;
     else unchanged++;
