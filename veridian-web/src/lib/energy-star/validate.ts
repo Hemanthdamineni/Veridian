@@ -13,7 +13,6 @@ import {
   isPlaceholderNote,
   parseAdditionalModelInfo,
   resolveModelName,
-  stripEnumerationPrefix,
   type AdditionalModelInfo,
 } from "./canonical";
 

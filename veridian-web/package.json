@@ -21,7 +21,9 @@
     "db:audit": "tsx scripts/audit-data.ts",
     "db:audit:repair": "tsx scripts/audit-data.ts --repair",
     "db:assert": "tsx scripts/assert-catalog.ts",
-    "db:prices": "tsx scripts/refresh-family-prices.ts"
+    "db:prices": "tsx scripts/refresh-family-prices.ts",
+    "db:apikey": "tsx scripts/create-api-key.ts",
+    "db:api:smoke": "tsx scripts/api-smoke.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

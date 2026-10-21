@@ -149,7 +149,6 @@ async function main() {
   let cpuComponents = 0;
   let displayComponents = 0;
   let storageComponents = 0;
-  let links = 0;
 
   for (const spec of specs) {
     const sourceUrl = spec.sourceUrl;
@@ -210,7 +209,6 @@ async function main() {
         source: ENERGY_STAR_SOURCE.name,
         sourceUrl,
       });
-      links += 1;
     }
 
     // --- Display class ---------------------------------------------------
@@ -269,7 +267,6 @@ async function main() {
         source: ENERGY_STAR_SOURCE.name,
         sourceUrl,
       });
-      links += 1;
     }
 
     // --- Storage technology ----------------------------------------------
@@ -306,7 +303,6 @@ async function main() {
         source: ENERGY_STAR_SOURCE.name,
         sourceUrl,
       });
-      links += 1;
     }
   }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { authenticateApiKey } from "@/lib/api-key";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,9 @@ export const dynamic = "force-dynamic";
  * better/worse/equivalent indicators.
  */
 export async function GET(request: NextRequest) {
+  const auth = await authenticateApiKey(request);
+  if ("response" in auth) return auth.response;
+
   try {
     const { searchParams } = new URL(request.url);
     const idsParam = searchParams.get("ids");

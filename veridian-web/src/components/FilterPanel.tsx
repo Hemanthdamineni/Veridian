@@ -27,13 +27,15 @@ export function FilterPanel({ state, onChange, onClear, availableRegions }: Filt
           <ModeButton
             active={state.mode === "filters"}
             onClick={() => set({ mode: "filters" })}
-            children="Exact filters"
-          />
+          >
+            Exact filters
+          </ModeButton>
           <ModeButton
             active={state.mode === "plain"}
             onClick={() => set({ mode: "plain" })}
-            children="Plain English"
-          />
+          >
+            Plain English
+          </ModeButton>
         </div>
         {state.mode === "plain" ? (
           <p className="text-[12px] leading-5 text-[var(--muted)]">
@@ -176,7 +178,6 @@ function ModeButton({
     </button>
   );
 }
-
 function toggleInArray(arr: string[], value: string, onNext: (next: string[]) => void) {
   onNext(arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value]);
 }

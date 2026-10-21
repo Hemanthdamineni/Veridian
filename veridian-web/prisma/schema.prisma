@@ -567,7 +567,25 @@ model ApiKey {
   expiresAt  DateTime?
   createdAt  DateTime @default(now())
 
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usage ApiKeyUsage[]
 
   @@index([userId])
+}
+
+/// The rolling hourly request counter for an API key. One row per key per
+/// hour, so the counter is durable and works across server instances
+/// without ever growing without bound.
+model ApiKeyUsage {
+  id          String   @id @default(cuid())
+  apiKeyId    String
+  /// The start of the hour this counter covers.
+  windowStart DateTime
+  count       Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  apiKey ApiKey @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+
+  @@unique([apiKeyId, windowStart])
+  @@index([windowStart])
 }

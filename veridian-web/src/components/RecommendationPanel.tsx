@@ -40,14 +40,22 @@ const USE_CASES: Array<{ id: string; label: string; detail: string }> = [
 
 export function RecommendationPanel() {
   const [useCase, setUseCase] = useState("travel");
-  const [data, setData] = useState<Response | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<{
+    useCase: string;
+    data: Response | null;
+    error: string | null;
+  }>({ useCase: "travel", data: null, error: null });
+
+  // The panel is loading whenever the answer in hand is not the answer for
+  // the use case that is selected. Deriving the flag this way keeps the
+  // effect free of a synchronous state update, which would cause a second
+  // render on every change.
+  const loading = result.useCase !== useCase;
+  const data = loading ? null : result.data;
+  const error = loading ? null : result.error;
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
-    setError(null);
     fetch(`/api/recommendations?use_case=${useCase}&limit=4`, {
       signal: controller.signal,
       headers: { Accept: "application/json" },
@@ -57,13 +65,15 @@ export function RecommendationPanel() {
         return (await response.json()) as Response;
       })
       .then((body) => {
-        setData(body);
-        setLoading(false);
+        setResult({ useCase, data: body, error: null });
       })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
-        setError(err instanceof Error ? err.message : "Could not load recommendations.");
-        setLoading(false);
+        setResult({
+          useCase,
+          data: null,
+          error: err instanceof Error ? err.message : "Could not load recommendations.",
+        });
       });
     return () => controller.abort();
   }, [useCase]);

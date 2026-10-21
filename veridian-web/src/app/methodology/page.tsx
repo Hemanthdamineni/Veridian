@@ -10,7 +10,6 @@ export const dynamic = "force-dynamic";
 
 export default async function MethodologyPage() {
   const [
-    catalogTotal,
     certifiedTotal,
     manufacturerTotal,
     unverifiedTotal,
@@ -21,7 +20,6 @@ export default async function MethodologyPage() {
     linkTotal,
     regionRows,
   ] = await Promise.all([
-    prisma.sku.count({ where: { catalogVisible: true } }),
     prisma.sku.count({ where: { catalogVisible: true, provenance: "certified" } }),
     prisma.sku.count({ where: { catalogVisible: true, provenance: "manufacturer" } }),
     prisma.sku.count({ where: { catalogVisible: true, provenance: "unverified" } }),

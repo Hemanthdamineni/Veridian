@@ -105,6 +105,9 @@ jobs:
       - name: Audit the catalog
         run: npm run db:audit
 
+      - name: Exercise the public API end to end
+        run: npm run db:api:smoke
+
       - name: Assert the catalog is populated
         run: npm run db:assert
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 /**
  * Plain-language search.
@@ -55,7 +55,6 @@ export function PlainLanguageSearch({
   resultCount,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [focused, setFocused] = useState(false);
 
   // "/" focuses the search box, the way a search-first tool should.
   useEffect(() => {
@@ -90,8 +89,6 @@ export function PlainLanguageSearch({
             value={value}
             placeholder="a light 14 inch OLED laptop with 32 GB of RAM"
             onChange={(event) => onChange(event.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
             aria-describedby="plain-language-help"
             autoComplete="off"
           />
