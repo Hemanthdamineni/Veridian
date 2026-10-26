@@ -27,7 +27,7 @@ marked done.
 | Configuration ↔ component links | 3,368 | `npm run db:audit` |
 | Web test suites | 524 passing (Vitest) | `npm test` |
 | Python test suite | 216 passing (pytest) | `pytest` |
-| Build routes | 43 | `npm run build` |
+| Build routes | 45 | `npm run build` |
 | CI | `.github/workflows/ci.yml` (lint, types, tests, build, live PostgreSQL ingestion) | |
 
 **Product rule:** the catalog mixes three tiers of record. `Certified` rows

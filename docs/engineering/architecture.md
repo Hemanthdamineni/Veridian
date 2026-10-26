@@ -29,7 +29,7 @@ determines the schema, the ingestion path, the API shape and the UI.
 
 | Layer | Technology | Notes |
 |---|---|---|
-| Application | Next.js 14 (App Router), React server components | 43 routes |
+| Application | Next.js 14 (App Router), React server components | 45 routes |
 | Language | TypeScript, strict mode | `npm run typecheck` is clean |
 | Styling | Tailwind CSS v4 with a token set in `src/app/globals.css` | No component library |
 | Database | SQLite for local work, PostgreSQL 16 for production | One schema, two projections — §4 |

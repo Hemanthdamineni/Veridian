@@ -444,7 +444,12 @@ async function measuredMetrics(): Promise<{
   values.schemaModels = countSchemaModels();
   values.routeHandlers = countFiles(path.join(WEB_ROOT, "src", "app"), "route.ts");
   values.pages = countFiles(path.join(WEB_ROOT, "src", "app"), "page.tsx");
-  live.push("schemaModels", "routeHandlers", "pages");
+  // Every route handler and page the build compiles is a served route. This
+  // is the filesystem truth; Next's route-table line count can differ by the
+  // meta files (/_not-found, /icon.svg, /robots.txt, /sitemap.xml), which are
+  // not application routes.
+  values.buildRoutes = values.routeHandlers + values.pages;
+  live.push("schemaModels", "routeHandlers", "pages", "buildRoutes");
 
   const web = countWebTests();
   if (web > 0) {

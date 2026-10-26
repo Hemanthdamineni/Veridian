@@ -27,7 +27,7 @@ certification records · 477 shared components with 3,368 configuration links ·
 record.
 
 **Verified engineering baseline:** types clean · lint clean (no warnings) ·
-524 web tests · 216 Python tests · 43 build routes · CI on every push and
+524 web tests · 216 Python tests · 45 build routes · CI on every push and
 pull request, with a job that ingests into a live PostgreSQL server, audits
 the result and exercises the public API end to end.
 
