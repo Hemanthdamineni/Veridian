@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { toProvenance } from "@/lib/api";
+import { CORRECTABLE_FIELDS } from "@/lib/contributions";
 import { PROVENANCE_LABELS } from "@/types";
 import type { SkuDetail } from "@/types";
 import { formatCpu, formatDate, formatPrice, formatStorage, formatWeight } from "@/lib/format";
@@ -16,6 +17,11 @@ const COMPONENT_KIND_LABELS: Record<string, string> = {
   display: "Display",
   storage: "Storage",
 };
+
+/** The reader-facing name of every field a correction can contest. */
+const CORRECTION_FIELD_LABELS: Record<string, string> = Object.fromEntries(
+  CORRECTABLE_FIELDS.map((field) => [field.column, field.label])
+);
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -163,6 +169,14 @@ export default async function SkuDetailPage({ params }: SkuDetailPageProps) {
     select: { price: true, timestamp: true, retailer: true, sourceName: true, sourceUrl: true },
   });
   const hasSynthetic = observations.some((o) => o.sourceName?.toLowerCase().includes("seed") || !o.sourceUrl);
+
+  // Corrections readers have got accepted for this configuration. The value a
+  // correction replaced stays on the record, and it is shown here.
+  const corrections = await prisma.contribution.findMany({
+    where: { skuId: sku.id, status: "approved" },
+    orderBy: { updatedAt: "desc" },
+    include: { user: { select: { name: true } } },
+  });
 
   return (
     <div className="container py-10 sm:py-14">
@@ -324,6 +338,51 @@ export default async function SkuDetailPage({ params }: SkuDetailPageProps) {
               </div>
             </SpecSection>
           )}
+          {corrections.length > 0 && (
+            <SpecSection title="Community corrections">
+              <div className="space-y-3 text-[12px] leading-5 text-[var(--muted)]">
+                <p>
+                  These figures were corrected by readers and checked by a reviewer. A correction is
+                  added to the record next to the source it replaces; the value it replaced is
+                  kept, not erased.
+                </p>
+                <ul className="space-y-2 border-t border-[var(--line)] pt-3">
+                  {corrections.map((correction) => {
+                    const field = correction.field
+                      ? CORRECTION_FIELD_LABELS[correction.field] ?? correction.field
+                      : "a specification";
+                    return (
+                      <li key={correction.id}>
+                        <p>
+                          <strong className="font-semibold text-[var(--ink)]">{field}</strong>
+                          <span className="text-[var(--quiet)]">
+                            {" "}· was {correction.oldValue ?? "not reported"} · now {correction.newValue}
+                          </span>
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-[var(--quiet)]">
+                          Reported by {correction.user.name ?? "an unnamed reader"} ·{" "}
+                          {formatDate(correction.updatedAt.toISOString())}
+                          {correction.evidenceUrl && (
+                            <>
+                              {" · "}
+                              <a
+                                href={correction.evidenceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[var(--accent-dark)] underline underline-offset-4"
+                              >
+                                the source it was checked against ↗
+                              </a>
+                            </>
+                          )}
+                        </p>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </SpecSection>
+          )}
         </div>
 
         <div className="space-y-6">
@@ -404,6 +463,7 @@ export default async function SkuDetailPage({ params }: SkuDetailPageProps) {
             {sku.productUrl && (
               <a href={sku.productUrl} target="_blank" rel="noopener noreferrer" className="btn-primary">View official page ↗</a>
             )}
+            <Link href={`/contribute/${encodeURIComponent(sku.skuCode)}`} className="btn-secondary">Report an error</Link>
             <Link href={`/compare?ids=${sku.id}`} className="btn-secondary">Compare this laptop</Link>
             <Link href="/" className="btn-quiet">Back to catalog</Link>
           </div>
