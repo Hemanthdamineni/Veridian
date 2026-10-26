@@ -3,6 +3,11 @@
 # This file is the source of truth for the HP base URL and for the region
 # list (category paths, rate limit, timeout). CSS selectors live in the
 # scraper code because the site changes them with every build.
+#
+# Verified live on 2026-10-21: the India store answers with the honest
+# Veridian agent, the US and GB stores accept the connection but never send a
+# response, and the store's own GraphQL API is disallowed by HP's robots.txt
+# and is therefore never requested.
 manufacturer: "hp"
 brand: "HP"
 base_url: "https://www.hp.com/"
@@ -12,6 +17,11 @@ max_concurrent: 2
 retry_attempts: 3
 checkpoint_interval: 10
 
+# The store renders the first page of every listing server-side (twelve
+# products). Deeper pages use the same path with a "?page=" parameter.
+max_listing_pages: 1
+max_products_per_category: 12
+
 regions:
   - code: "us"
     name: "United States"
@@ -19,12 +29,12 @@ regions:
     language: "en"
     currency: "USD"
     category_paths:
-      laptops: "/us-en/shop/laptops"
-      desktops: "/us-en/shop/desktops"
-      monitors: "/us-en/shop/monitors"
-      printers: "/us-en/shop/printers"
-      accessories: "/us-en/shop/accessories"
-      workstations: "/us-en/shop/workstations"
+      laptops: "/us-en/shop/listings/laptops"
+      desktops: "/us-en/shop/listings/desktops"
+      monitors: "/us-en/shop/listings/monitors"
+      printers: "/us-en/shop/listings/printers"
+      workstations: "/us-en/shop/listings/workstations"
+      accessories: "/us-en/shop/listings/accessories"
     rate_limit: 0.5
     timeout: 30
   - code: "in"
@@ -33,12 +43,12 @@ regions:
     language: "en"
     currency: "INR"
     category_paths:
-      laptops: "/in-en/shop/laptops"
-      desktops: "/in-en/shop/desktops"
-      monitors: "/in-en/shop/monitors"
-      printers: "/in-en/shop/printers"
-      accessories: "/in-en/shop/accessories"
-      workstations: "/in-en/shop/workstations"
+      laptops: "/in-en/shop/listings/laptops"
+      desktops: "/in-en/shop/listings/desktops"
+      monitors: "/in-en/shop/listings/monitors"
+      printers: "/in-en/shop/listings/printers"
+      workstations: "/in-en/shop/listings/workstations"
+      accessories: "/in-en/shop/listings/accessories"
     rate_limit: 0.5
     timeout: 30
   - code: "uk"
@@ -47,11 +57,11 @@ regions:
     language: "en"
     currency: "GBP"
     category_paths:
-      laptops: "/uk-en/shop/laptops"
-      desktops: "/uk-en/shop/desktops"
-      monitors: "/uk-en/shop/monitors"
-      printers: "/uk-en/shop/printers"
-      accessories: "/uk-en/shop/accessories"
-      workstations: "/uk-en/shop/workstations"
+      laptops: "/uk-en/shop/listings/laptops"
+      desktops: "/uk-en/shop/listings/desktops"
+      monitors: "/uk-en/shop/listings/monitors"
+      printers: "/uk-en/shop/listings/printers"
+      workstations: "/uk-en/shop/listings/workstations"
+      accessories: "/uk-en/shop/listings/accessories"
     rate_limit: 0.5
     timeout: 30
