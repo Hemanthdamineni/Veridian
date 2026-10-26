@@ -11,10 +11,10 @@
   "certifiedSpecs": 1136,
   "components": 477,
   "skuComponentLinks": 3368,
-  "webTests": 520,
+  "webTests": 524,
   "pythonTests": 216,
   "schemaModels": 25,
-  "routeHandlers": 30,
+  "routeHandlers": 31,
   "pages": 14,
   "buildRoutes": 43
 }

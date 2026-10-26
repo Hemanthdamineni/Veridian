@@ -117,7 +117,8 @@ model Sku {
   /// Product type as reported by the source (Notebook, Two-In-One Notebook…).
   productType       String?
   /// Provenance tier, written explicitly at ingestion time (ADR-005).
-  /// One of: certified | manufacturer | retailer | unverified.
+  /// One of: certified | manufacturer | unverified.
+  /// (retail/review are evidence classes on SkuSource.kind, not SKU tiers.)
   provenance        String   @default("unverified")
   cpuBrand          String
   cpuModel          String

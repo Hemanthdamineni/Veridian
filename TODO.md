@@ -25,7 +25,7 @@ marked done.
 | Source rows rejected, with reasons | 44 | `npm run db:audit` |
 | Shared components | 477 | `npm run db:audit` |
 | Configuration ↔ component links | 3,368 | `npm run db:audit` |
-| Web test suites | 520 passing (Vitest) | `npm test` |
+| Web test suites | 524 passing (Vitest) | `npm test` |
 | Python test suite | 216 passing (pytest) | `pytest` |
 | Build routes | 43 | `npm run build` |
 | CI | `.github/workflows/ci.yml` (lint, types, tests, build, live PostgreSQL ingestion) | |
@@ -270,5 +270,5 @@ tier a row belongs to.
 | 3 | 38 provenance records carry no source URL | The reader cannot check those values against a page | `npm run db:audit`, `coverage/source-url` |
 | 4 | The scraper fleet has a scheduled run in CI, but it records the health report without failing the build | A regression in one manufacturer is recorded, not paged | Epic 2, Story 2.7.4; `run_scrapers.py --alert` dispatches to `VERIDIAN_ALERT_WEBHOOK` |
 | 5 | Twelve of thirteen manufacturers are unverified against their live sites | Their scrapers may extract nothing, as ASUS's did | Epic 2, Story 2.8.3 |
-| 6 | The Python `Seller` / `PriceListing` models still duplicate the Prisma ones | Two stores describe the same thing; the boundary is documented but not yet collapsed | Epic 3, Story 3.1 |
+| 6 | The scraper fleet is a health reporter, not a catalog writer | Verified manufacturer rows enter through the Prisma ingestion path (`verify-manufacturer-specs.ts`, `verify-reference-specs.py`); the Python `Seller`/`PriceListing` models are an opt-in scratch workspace (`run_scrapers.py --db`), not a second catalog store | Epic 3, Story 3.1; boundary in `docs/engineering/architecture.md` §7 |
 | 7 | No component-to-component or issue-level relationships | "Which laptops are affected by this component issue" is not answerable | Epic 6 |

@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 /**
  * Admin Login Form
  *
- * Authenticates admin users by setting a session cookie.
- * The cookie value is validated against ADMIN_TOKEN by middleware.
+ * Authenticates admin users by posting the token to POST /api/admin/login,
+ * which sets the `admin_session` cookie server-side with HttpOnly, SameSite
+ * and Secure attributes. The cookie is validated against ADMIN_TOKEN by
+ * middleware on every /admin and /api/admin request.
  */
 export function AdminLoginForm() {
   const router = useRouter();
@@ -21,23 +23,22 @@ export function AdminLoginForm() {
     setError(null);
 
     try {
-      // Set session cookie
-      const secure = window.location.protocol === "https:" ? "; Secure" : "";
-      document.cookie = `admin_session=${encodeURIComponent(token)}; path=/; max-age=86400; SameSite=Strict${secure}`;
-
-      // Verify by making a test request
-      const response = await fetch("/api/admin/skus", {
-        method: "GET",
+      const response = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
+        body: JSON.stringify({ token }),
       });
 
       if (response.ok) {
         router.push("/admin");
         router.refresh();
       } else {
-        // Clear invalid cookie
-        document.cookie = "admin_session=; path=/; max-age=0";
-        setError("Invalid admin token");
+        setError(
+          response.status === 401
+            ? "Invalid admin token"
+            : "Admin login is not configured on this deployment."
+        );
       }
     } catch {
       setError("Authentication failed");

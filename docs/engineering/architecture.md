@@ -34,7 +34,7 @@ determines the schema, the ingestion path, the API shape and the UI.
 | Styling | Tailwind CSS v4 with a token set in `src/app/globals.css` | No component library |
 | Database | SQLite for local work, PostgreSQL 16 for production | One schema, two projections — §4 |
 | ORM | Prisma | `prisma/schema.prisma` is the single source of truth |
-| Tests | Vitest (web), pytest (Python) | 520 web tests, 216 Python tests |
+| Tests | Vitest (web), pytest (Python) | 524 web tests, 216 Python tests |
 | CI | GitHub Actions | Three jobs: web, Python, live PostgreSQL — §6 |
 | Scraper fleet | Python, `httpx` + BeautifulSoup | `veridian_scraper/`, 13 manufacturers |
 | Domain engine | Python, SQLAlchemy models | `veridian_db/`, §7 |

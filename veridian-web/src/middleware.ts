@@ -61,8 +61,13 @@ export function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/admin") ||
     request.nextUrl.pathname.startsWith("/api/admin")
   ) {
-    // Allow the login page itself
-    if (request.nextUrl.pathname === "/admin/login") {
+    // Allow the login page and the login endpoint themselves. The login
+    // endpoint sets the HttpOnly session cookie; it must be reachable
+    // before a session exists.
+    if (
+      request.nextUrl.pathname === "/admin/login" ||
+      request.nextUrl.pathname === "/api/admin/login"
+    ) {
       return NextResponse.next();
     }
 
