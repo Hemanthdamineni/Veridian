@@ -1,0 +1,280 @@
+{
+  "registerVersion": "1.0.0",
+  "title": "ENERGY STAR / EPA open-data source register",
+  "purpose": "Every source Veridian may cite for a certified laptop configuration, with the exact endpoint, the HTTP status that was observed, the number of laptop rows the source actually returned, and the terms the source publishes. A source that does not exist, or that returns no laptop rows, is recorded as such. Nothing in this file is written from a catalogue entry: every status and every row count comes from an actual HTTP response on the date below.",
+  "lastChecked": "2026-10-21",
+  "checkedBy": "veridian-web/scripts/discover-energy-star-sources.ts",
+  "discoveryCommand": "cd veridian-web && npx tsx scripts/discover-energy-star-sources.ts",
+  "accessMethod": "Socrata open-data JSON API, HTTPS only, one request per second per host, identifiable VeridianBot user agent, no redirects followed, no browser impersonation.",
+  "termsUrl": "https://edg.epa.gov/EPA_Data_License.html",
+  "license": "US Public Domain - EPA Standard Open Data License (data.gov Open Government Data Initiative)",
+  "allowedSourceHosts": [
+    "data.energystar.gov"
+  ],
+  "sources": [
+    {
+      "datasetId": "rxdj-2c88",
+      "name": "US EPA ENERGY STAR Certified Computers V9.0",
+      "publisher": "U.S. Environmental Protection Agency",
+      "endpoint": "https://data.energystar.gov/resource/rxdj-2c88.json",
+      "metadataEndpoint": "https://data.energystar.gov/api/views/rxdj-2c88",
+      "catalogueUrl": "https://data.energystar.gov/d/rxdj-2c88",
+      "dataGovUrl": "https://catalog.data.gov/dataset/energy-star-certified-computers-v9-0",
+      "httpStatus": 200,
+      "termsUrl": "https://edg.epa.gov/EPA_Data_License.html",
+      "license": "US Public Domain - EPA Standard Open Data License (data.gov Open Government Data Initiative)",
+      "totalRows": 1825,
+      "productTypeField": "type",
+      "productTypeRowCounts": {
+        "Notebook": 1162,
+        "Desktop": 307,
+        "Integrated Desktop": 133,
+        "Slate/Tablet": 110,
+        "Workstation": 70,
+        "Mobile Workstation": 12,
+        "Thin Client": 11,
+        "Ruggedized Notebook": 9,
+        "Two-In-One Notebook": 9,
+        "Integrated Thin Client": 2
+      },
+      "laptopProductTypes": [
+        "Notebook",
+        "Two-In-One Notebook",
+        "Ruggedized Notebook",
+        "Mobile Workstation"
+      ],
+      "laptopRowCounts": {
+        "Notebook": 1162,
+        "Two-In-One Notebook": 9,
+        "Ruggedized Notebook": 9,
+        "Mobile Workstation": 12
+      },
+      "laptopRowsTotal": 1192,
+      "laptopTypeEvidence": "Read from the source's own `type` column, not guessed. Mobile Workstation is a laptop: 12 of 12 of its rows carry both an integrated display diagonal and a total battery capacity, and all 12 report `product_marketed_as_a_workstation = No`. The separate `Workstation` type is not a laptop: 0 of its 70 rows carry a display diagonal or a battery capacity, and all 70 report `product_marketed_as_a_workstation = Yes`. `Slate/Tablet` (110 rows) is a tablet, `Desktop` (307) and `Integrated Desktop` (133) are fixed, `Thin Client` (11) and `Integrated Thin Client` (2) are terminals.",
+      "carriesSpecifications": true,
+      "status": "live",
+      "contributesNewConfigurations": true,
+      "newConfigurationsVsExistingPipeline": 12,
+      "newConfigurationProductType": "Mobile Workstation",
+      "notes": "This is the dataset the base pipeline already reads. The expansion adds one laptop product type to it: Mobile Workstation, 12 rows, all of them full specification rows (CPU, memory, display, battery, storage, operating system), all of them certified by EPA and all of them absent from the catalog because the base product-type allowlist did not include them."
+    },
+    {
+      "datasetId": "8wj2-sec8",
+      "name": "US EPA ENERGY STAR Model Index",
+      "publisher": "U.S. Environmental Protection Agency",
+      "endpoint": "https://data.energystar.gov/resource/8wj2-sec8.json",
+      "metadataEndpoint": "https://data.energystar.gov/api/views/8wj2-sec8",
+      "catalogueUrl": "https://data.energystar.gov/d/8wj2-sec8",
+      "httpStatus": 200,
+      "termsUrl": "https://edg.epa.gov/EPA_Data_License.html",
+      "license": "US Public Domain - EPA Standard Open Data License (data.gov Open Government Data Initiative)",
+      "totalRows": 1236,
+      "totalRowsScope": "product_category = 'Computers'",
+      "productTypeField": "product_type",
+      "productTypeRowCounts": {
+        "Notebook": 793,
+        "Desktop": 210,
+        "Integrated Desktop": 75,
+        "Slate/Tablet": 72,
+        "Workstation": 57,
+        "Mobile Workstation": 10,
+        "Thin Client": 6,
+        "Ruggedized Notebook": 6,
+        "Two-In-One Notebook": 4,
+        "Integrated Thin Client": 3
+      },
+      "laptopProductTypes": [
+        "Notebook",
+        "Two-In-One Notebook",
+        "Ruggedized Notebook",
+        "Mobile Workstation"
+      ],
+      "laptopRowCounts": {
+        "Notebook": 793,
+        "Two-In-One Notebook": 4,
+        "Ruggedized Notebook": 6,
+        "Mobile Workstation": 10
+      },
+      "laptopRowsTotal": 813,
+      "laptopTypeEvidence": "Read from the source's own `product_type` column, scoped to `product_category = 'Computers'`.",
+      "carriesSpecifications": false,
+      "status": "live-no-specifications",
+      "contributesNewConfigurations": false,
+      "newConfigurationsVsExistingPipeline": 0,
+      "additionalCertifiedLaptopModelsNotInComputersDataset": 72,
+      "notes": "A second, independent EPA dataset that lists every currently certified model across every product category. It returns 813 laptop certifications. 741 of them are also in rxdj-2c88; 72 are additional certified laptop models that the certified-computers dataset does not carry (for example Lenovo ThinkPad T14 Gen 5 / 21ML, Dell Latitude 9450 2-in-1 / P166G, HP ZBook, LG Gram and VAIO families). The source publishes no CPU, memory, display or battery fields, and Veridian's `Sku` requires a CPU, a RAM size and an operating system, so these rows cannot become canonical configurations. They are registered and reported, not ingested."
+    },
+    {
+      "datasetId": "8edu-y555",
+      "name": "US EPA ENERGY STAR Certified Products UPC Codes",
+      "publisher": "U.S. Environmental Protection Agency",
+      "endpoint": "https://data.energystar.gov/resource/8edu-y555.json",
+      "metadataEndpoint": "https://data.energystar.gov/api/views/8edu-y555",
+      "catalogueUrl": "https://data.energystar.gov/d/8edu-y555",
+      "httpStatus": 200,
+      "termsUrl": "https://edg.epa.gov/EPA_Data_License.html",
+      "license": "US Public Domain - EPA Standard Open Data License (data.gov Open Government Data Initiative)",
+      "totalRows": 18635,
+      "totalRowsScope": "product_program_category = 'Computers'",
+      "productTypeField": "product_type",
+      "productTypeRowCounts": {
+        "Notebook": 12787,
+        "Desktop": 2740,
+        "Slate/Tablet": 2085,
+        "Integrated Desktop": 751,
+        "Two-In-One Notebook": 138,
+        "Mobile Workstation": 72,
+        "Thin Client": 31,
+        "Workstation": 22,
+        "Ruggedized Notebook": 7,
+        "Integrated Thin Client": 2
+      },
+      "laptopProductTypes": [
+        "Notebook",
+        "Two-In-One Notebook",
+        "Ruggedized Notebook",
+        "Mobile Workstation"
+      ],
+      "laptopRowCounts": {
+        "Notebook": 12787,
+        "Two-In-One Notebook": 138,
+        "Ruggedized Notebook": 7,
+        "Mobile Workstation": 72
+      },
+      "laptopRowsTotal": 13004,
+      "laptopTypeEvidence": "Read from the source's own `product_type` column, scoped to `product_program_category = 'Computers'`.",
+      "carriesSpecifications": false,
+      "status": "live-no-specifications",
+      "contributesNewConfigurations": 0,
+      "newConfigurationsVsExistingPipeline": 0,
+      "notes": "A third EPA dataset, one row per UPC code. It returns 13,004 laptop rows, but those rows cover only 552 distinct ENERGY STAR certifications and every one of them is already in rxdj-2c88, which publishes the same semicolon separated UPC list for each of them. It adds no configuration and no UPC code. It is registered and reported, not ingested."
+    },
+    {
+      "datasetId": "qbg3-d468",
+      "name": "US EPA ENERGY STAR Certified Displays",
+      "publisher": "U.S. Environmental Protection Agency",
+      "endpoint": "https://data.energystar.gov/resource/qbg3-d468.json",
+      "metadataEndpoint": "https://data.energystar.gov/api/views/qbg3-d468",
+      "catalogueUrl": "https://data.energystar.gov/d/qbg3-d468",
+      "httpStatus": 200,
+      "termsUrl": "https://edg.epa.gov/EPA_Data_License.html",
+      "license": "US Public Domain - EPA Standard Open Data License (data.gov Open Government Data Initiative)",
+      "totalRows": 2930,
+      "productTypeField": "display_type",
+      "productTypeRowCounts": {
+        "Monitor": 1603,
+        "Signage Display": 1327
+      },
+      "laptopProductTypes": [],
+      "laptopRowCounts": {},
+      "laptopRowsTotal": 0,
+      "laptopTypeEvidence": "Read from the source's own `display_type` column: Monitor 1,603 rows and Signage Display 1,327 rows (2026-10-21). Neither is a laptop, so the source yields zero laptop rows.",
+      "carriesSpecifications": false,
+      "status": "live-no-laptop-rows",
+      "contributesNewConfigurations": false,
+      "newConfigurationsVsExistingPipeline": 0,
+      "notes": "Registered because it is the honest negative case: a real, official, government dataset that yields zero laptop configurations, and reports that fact rather than failing."
+    }
+  ],
+  "ruledOut": [
+    {
+      "candidate": "ed9u-v8cw",
+      "description": "The predecessor ENERGY STAR Certified Computers dataset - the Socrata dataset the data.gov catalogue page pointed at before 2020. An earlier version would have carried laptop configurations that have since been superseded.",
+      "endpoint": "https://data.energystar.gov/api/views/ed9u-v8cw",
+      "rowsEndpoint": "https://data.energystar.gov/resource/ed9u-v8cw.json",
+      "httpStatus": 403,
+      "verdict": "not-publicly-served",
+      "evidence": "GET /api/views/ed9u-v8cw -> HTTP 403. GET /resource/ed9u-v8cw.json -> HTTP 403 \"You must be logged in to access this resource\". The dataset id exists in the record but the endpoint refuses anonymous access, so it cannot be cited.",
+      "termsUrl": "https://edg.epa.gov/EPA_Data_License.html"
+    },
+    {
+      "candidate": "data.gov CKAN catalogue API",
+      "description": "The catalogue API that used to list every published ENERGY STAR version (V1.0 through V9.0) with its Socrata resource URL.",
+      "endpoint": "https://catalog.data.gov/api/3/action/package_search?q=ENERGY+STAR+Certified+Computers",
+      "httpStatus": 404,
+      "verdict": "not-published-at-this-endpoint",
+      "evidence": "GET -> HTTP 404 {\"detail\":{},\"message\":\"Not Found\"}. The CKAN API has been retired; https://data.gov/api/3/action/package_search/ -> HTTP 404. The dataset catalogue page recorded in docs/DATA_SOURCES.md, https://catalog.data.gov/dataset/energy-star-certified-computers-9-0, also returns HTTP 404: the live slug is energy-star-certified-computers-v9-0.",
+      "termsUrl": "https://edg.epa.gov/EPA_Data_License.html"
+    },
+    {
+      "candidate": "ENERGY STAR Product Finder API",
+      "description": "The human-facing certified-product search on www.energystar.gov, which would have carried the same certifications with their specifications.",
+      "endpoint": "https://www.energystar.gov/productfinder/api/products?type=computers",
+      "httpStatus": 404,
+      "verdict": "not-published-at-this-endpoint",
+      "evidence": "GET /productfinder/api/products -> HTTP 404. GET /productfinder/api/v1/products -> HTTP 404. GET /api/products -> HTTP 404. /productfinder/product/certified-computers/results returns a 3,095 byte JavaScript shell with no data endpoint; the application bundles do not expose a public JSON API. robots.txt for www.energystar.gov was retrieved (HTTP 200) and does not disallow /productfinder/, but there is no machine-readable dataset to read there.",
+      "termsUrl": "https://edg.epa.gov/EPA_Data_License.html"
+    },
+    {
+      "candidate": "Other ENERGY STAR datasets on the Socrata portal (25 dataset ids recovered from the Internet Archive index of data.energystar.gov/resource/*)",
+      "description": "Dataset ids that once existed on the EPA portal but are not in the current portal catalogue. Each was fetched to see whether it was an earlier version of the certified-computers dataset.",
+      "endpoint": "https://data.energystar.gov/api/views/<id>",
+      "httpStatus": 403,
+      "verdict": "none-is-a-computers-dataset",
+      "evidence": "25 ids checked, one by one. 9 answered HTTP 200 and are older versions of other product datasets (Residential Freezers, Ducted Heat Pumps, Commercial Griddles, Mini-Split Heat Pumps, Commercial Fryers, Most Efficient Dehumidifiers, Tax Credit Eligible Central and Mini-Split Air Conditioners, Hot Food Holding, Most Efficient Dishwashers). 15 answered HTTP 403 \"You must be logged in to access this resource\". 1 answered HTTP 404. Not one of them is a computers dataset.",
+      "termsUrl": "https://edg.epa.gov/EPA_Data_License.html"
+    },
+    {
+      "candidate": "ENERGY STAR computer datasets on another Socrata portal",
+      "description": "A network-wide search of the Socrata catalogue for datasets whose name mentions a computer, laptop, notebook, portable device or tablet.",
+      "endpoint": "https://api.us.socrata.com/api/catalog/v1?q=ENERGY+STAR&only=dataset&limit=200",
+      "httpStatus": 200,
+      "verdict": "none-found",
+      "evidence": "133 ENERGY STAR datasets matched. Exactly one has a computer-like name: rxdj-2c88 ENERGY STAR Certified Computers V9.0. A second search for the full phrase \"ENERGY STAR Certified Computers\" matched 242 datasets across the whole Socrata network and returned the same single computers dataset. On the EPA portal itself, /api/catalog/v1?domains=data.energystar.gov&only=dataset returns 53 datasets, of which exactly one is a computers dataset.",
+      "termsUrl": "https://edg.epa.gov/EPA_Data_License.html"
+    },
+    {
+      "candidate": "ENERGY STAR Certified Displays / Certified Televisions / other appliance datasets",
+      "description": "The other EPA product datasets were checked for laptop rows.",
+      "endpoint": "https://data.energystar.gov/api/catalog/v1?domains=data.energystar.gov&only=dataset",
+      "httpStatus": 200,
+      "verdict": "no-laptop-rows",
+      "evidence": "The 53 datasets on the EPA portal cover air conditioners, water heaters, refrigerators, dishwashers, clothes washers and dryers, lighting, displays, televisions, imaging equipment, data centre storage, enterprise servers, telephones and similar. None of them publishes a laptop product type.",
+      "termsUrl": "https://edg.epa.gov/EPA_Data_License.html"
+    }
+  ],
+  "measurements": {
+    "measuredOn": "2026-10-21",
+    "method": "Every count in this file was produced by fetching the source with the Veridian user agent and reading the response. The row counts come from the source's own $select=type,count(*)&$group=type aggregation, and the laptop row counts from the same query filtered to the laptop product types.",
+    "expansionPipeline": {
+      "baseProductTypes": [
+        "Notebook",
+        "Two-In-One Notebook",
+        "Ruggedized Notebook"
+      ],
+      "expandedProductTypes": [
+        "Notebook",
+        "Two-In-One Notebook",
+        "Ruggedized Notebook",
+        "Mobile Workstation"
+      ],
+      "basePipelineRun": {
+        "recordsFetched": 1180,
+        "accepted": 1136,
+        "rejected": 44,
+        "canonicalSkusCreated": 1125,
+        "configurationsMerged": 11,
+        "visibleSkus": 1125,
+        "certifiedSkuSpecRecords": 1136,
+        "rawObservations": 1180
+      },
+      "expandedPipelineRun": {
+        "recordsFetched": 1192,
+        "accepted": 1148,
+        "rejected": 44,
+        "canonicalSkusCreated": 12,
+        "configurationsMerged": 0,
+        "distinctCanonicalConfigurations": 1137
+      },
+      "newConfigurationsProduced": 12,
+      "newConfigurationsAlreadyPresentInTheBasePipeline": 0,
+      "howTheNumberWasMeasured": "The base pipeline (`npx tsx scripts/ingest-energy-star.ts`) was run against the live dataset into a throwaway SQLite catalog. It read 1,180 rows, accepted 1,136, rejected 44, and produced 1,125 canonical configurations. The expanded pipeline (`npx tsx scripts/ingest-energy-star-expanded.ts`) was then run against the same live dataset into the same catalog. It read 1,192 rows (the extra 12 are the Mobile Workstation rows), accepted 1,148, and created exactly 12 canonical configurations that the base pipeline did not produce, all of them Mobile Workstation rows, and merged 0. A third run created 0, so the expansion is idempotent."
+    }
+  },
+  "knownLimitations": [
+    "The 12 new configurations are the whole of the expansion that is possible from a live government source that publishes specifications. Every other official source checked either returns no laptop rows or returns laptop rows without the specification fields a configuration is made of.",
+    "The ENERGY STAR Model Index certifies 72 further laptop models that the certified-computers dataset does not carry. They cannot be published as configurations without a schema change, because `Sku.ramGb`, `Sku.cpuBrand`, `Sku.cpuModel` and `Sku.os` are required columns.",
+    "The `data.gov` CKAN catalogue API has been retired, so the archive of superseded ENERGY STAR dataset versions is no longer reachable through the official catalogue. The predecessor dataset that the archive points at is no longer publicly served (HTTP 403).",
+    "The dataset catalogue page recorded in docs/DATA_SOURCES.md (catalog.data.gov/dataset/energy-star-certified-computers-9-0) is dead; the live slug is energy-star-certified-computers-v9-0."
+  ]
+}
