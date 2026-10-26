@@ -117,8 +117,8 @@ let prismaClient: PrismaClient | null = null;
 
 async function getPrisma(): Promise<PrismaClient> {
   if (!prismaClient) {
-    const module = await import("../src/lib/db");
-    prismaClient = module.prisma;
+    const dbModule = await import("../src/lib/db");
+    prismaClient = dbModule.prisma;
   }
   return prismaClient;
 }
