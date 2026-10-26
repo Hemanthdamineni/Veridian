@@ -8,7 +8,7 @@
 
 ## Where the project actually stands
 
-The application is operational end to end. The catalog holds **1,165 laptop
+The application is operational end to end. The catalog holds **1,168 laptop
 configurations across 36 manufacturers**, and the majority of them trace to a
 cited source.
 
@@ -16,18 +16,18 @@ cited source.
 
 | Tier | Count | Source | Prices |
 |------|------:|--------|--------|
-| Certified | 1,122 | US EPA ENERGY STAR Certified Computers V9.0 — cited record, certification date, SHA-256 of the verbatim payload | None — the source publishes no price |
+| Certified | 1,125 | US EPA ENERGY STAR Certified Computers V9.0 — cited record, certification date, SHA-256 of the verbatim payload | None — the source publishes no price |
 | Manufacturer | 2 | Checked against the manufacturer's own technical specification page, which is cited | Reference MSRP |
 | Unverified | 41 | Our own reference dataset, not independently checked | Reference MSRP |
 
-**Measured integrity (from `npm run db:audit`):** 1,177 raw source observations
-stored (44 of them rejected, each with its verbatim reason) · 1,133
-certification records · 477 shared components with 3,359 configuration links ·
+**Measured integrity (from `npm run db:audit`):** 1,181 raw source observations
+stored (44 of them rejected, each with its verbatim reason) · 1,136
+certification records · 477 shared components with 3,368 configuration links ·
 0 duplicate part numbers · 0 impossible values · 0 rows without a provenance
 record.
 
 **Verified engineering baseline:** types clean · lint clean (no warnings) ·
-108 web tests · 124 Python tests · 35 build routes · CI on every push and
+520 web tests · 216 Python tests · 43 build routes · CI on every push and
 pull request, with a job that ingests into a live PostgreSQL server, audits
 the result and exercises the public API end to end.
 
@@ -66,16 +66,20 @@ the result and exercises the public API end to end.
   broken and never read them; fixed and covered by a test
 - 2.3 Incremental scraping (`--incremental`, `max_age_hours` cutoff) ✅
 - 2.4 Data quality validation layer (spec, product, price-observation) ✅
-- 2.5 Scraper monitoring — per-manufacturer health report ✅; alerting 🔴
+- 2.5 Scraper monitoring — per-manufacturer health report ✅; alerting ✅
+  (`veridian_scraper/health_alerting.py` + `run_scrapers.py --alert`, wired into
+  the scheduled CI job)
 - 2.6 SQLite → Postgres parity ✅ — the two schemas had drifted apart; the
   PostgreSQL file is now generated from the SQLite one
 - 2.7 robots.txt compliance ✅ — was never implemented, contrary to ADR-003
 - 2.8 ASUS technical-specification extraction ✅ — the live page had moved on
   and the selectors matched nothing
-- 2.9 Live re-verification of the remaining manufacturers 🔴
-- **Remaining:** durable per-manufacturer scrape checkpoints, failure
-  alerting, and live verification for the twelve manufacturers that are
-  blocked from CI (see the scraper status below).
+- 2.9 Live re-verification of the remaining manufacturers 🟡 — Apple adapter
+  added; confirms family-level fields and reports the SKU-specific fields as
+  unconfirmable; Lenovo, Dell, HP and the rest still blocked from CI
+- **Remaining:** durable per-manufacturer scrape checkpoints and live
+  verification for the manufacturers that are blocked from CI (see the
+  scraper status below).
 
 ### Scraper status
 
@@ -119,7 +123,7 @@ the result and exercises the public API end to end.
   every pick, including the constraints it could not check
 - 4.7 LLM-backed parsing and ranking 🔴
 - 4.8 Dedicated search engine ⛔ Deferred — Postgres filtering is sufficient
-  below ~5K configurations; the catalog is at 1,165
+  below ~5K configurations; the catalog is at 1,168
 - 4.9 Semantic similarity (pgvector) 🔴
 
 ---
@@ -138,7 +142,7 @@ the result and exercises the public API end to end.
 
 - 6.1 Category abstraction in the schema ✅ — `Category` and `Series.categoryId`
   exist, so adding a product class does not require rewriting the platform
-- 6.2 Component knowledge graph ✅ — 477 shared components, 3,359 links,
+- 6.2 Component knowledge graph ✅ — 477 shared components, 3,368 links,
   browsable at `/components` and served by `/api/components`
 - 6.3 Public developer API ✅ — API keys issued through a CLI and stored only
   as a hash, an hourly budget per key counted in the database, real
@@ -175,7 +179,7 @@ Then       Multi-category rollout and the second product class
 | Provenance representation | Infer from another record vs store it | **Store it** — `Sku.provenance` plus a row per source | Adopted 2026-10-21 |
 | Duplicate handling | Merge on part number vs part number + signature | **Part number + signature** — one product line can be certified in several configurations | Adopted 2026-10-21 |
 | Data source for MVP | Manual CSV vs scraper output | **Both** — the certification dataset for cited rows, the scraper fleet for manufacturer pages | In effect |
-| Search engine | Postgres only vs Meilisearch | **Postgres first** — add Meilisearch when >5K configurations | Holding (1,165 configurations) |
+| Search engine | Postgres only vs Meilisearch | **Postgres first** — add Meilisearch when >5K configurations | Holding (1,168 configurations) |
 | Region semantics | Region filters rows vs selects the price shown | **Region selects the price shown** — rows are never hidden for lacking a price | Adopted 2026-10-21 |
 | Price data | Hide prices vs show with a caveat | **Show with a caveat** — every price is labelled a reference value, never a live quote | Adopted 2026-10-21 |
 | Provenance disclosure | Implicit vs explicit tiers | **Explicit tier filter and badge on every listing** | Adopted 2026-10-21 |

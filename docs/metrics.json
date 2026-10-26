@@ -1,0 +1,20 @@
+{
+  "catalogSkus": 1168,
+  "certified": 1125,
+  "manufacturerTier": 2,
+  "unverified": 41,
+  "manufacturers": 36,
+  "series": 578,
+  "models": 1002,
+  "rawObservations": 1181,
+  "rejectedObservations": 44,
+  "certifiedSpecs": 1136,
+  "components": 477,
+  "skuComponentLinks": 3368,
+  "webTests": 520,
+  "pythonTests": 216,
+  "schemaModels": 25,
+  "routeHandlers": 30,
+  "pages": 14,
+  "buildRoutes": 43
+}

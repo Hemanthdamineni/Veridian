@@ -30,11 +30,14 @@ Three things follow from that, and they shape the whole codebase:
 
 | Tier | Configurations | Source | Prices |
 |------|---------------:|--------|--------|
-| **Certified** | 1,122 | US EPA ENERGY STAR Certified Computers V9.0 — cited record, certification date, SHA-256 of the verbatim payload | none — the source publishes no price |
+| **Certified** | 1,125 | US EPA ENERGY STAR Certified Computers V9.0 — cited record, certification date, SHA-256 of the verbatim payload | none — the source publishes no price |
 | **Manufacturer** | 2 | Checked against the manufacturer's own technical specification page, which is cited | reference MSRP |
 | **Unverified** | 41 | Our own reference dataset. Not independently checked. Labelled as such on every surface | reference MSRP |
 
 Everything is disclosed in the UI: each card, each product page, the filter panel and the methodology page state which tier a row belongs to.
+
+Retailer price feeds are gated by credentials and terms, not implemented
+against them; the operator-facing registry is [docs/PRICE_FEEDS.md](./docs/PRICE_FEEDS.md).
 
 ## Project Structure
 

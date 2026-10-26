@@ -14,20 +14,20 @@ marked done.
 
 | Metric | Value | Measured by |
 |---|---:|---|
-| Configurations in the catalog | 1,165 | `npm run db:audit` |
-| Certified configurations (cited source) | 1,122 | `npm run db:audit` |
+| Configurations in the catalog | 1,168 | `npm run db:audit` |
+| Certified configurations (cited source) | 1,125 | `npm run db:audit` |
 | Manufacturer-verified configurations (cited page) | 2 | `npm run db:audit` |
 | Unverified configurations (no citation) | 41 | `npm run db:audit` |
 | Manufacturers | 36 | `npm run db:audit` |
-| Product families (series) | 577 | `npm run db:audit` |
-| Models | 999 | `npm run db:audit` |
-| Raw source observations stored | 1,177 | `npm run db:audit` |
+| Product families (series) | 578 | `npm run db:audit` |
+| Models | 1,002 | `npm run db:audit` |
+| Raw source observations stored | 1,181 | `npm run db:audit` |
 | Source rows rejected, with reasons | 44 | `npm run db:audit` |
 | Shared components | 477 | `npm run db:audit` |
-| Configuration ↔ component links | 3,359 | `npm run db:audit` |
-| Web test suites | 108 passing (Vitest) | `npm test` |
-| Python test suite | 124 passing (pytest) | `pytest` |
-| Build routes | 35 | `npm run build` |
+| Configuration ↔ component links | 3,368 | `npm run db:audit` |
+| Web test suites | 520 passing (Vitest) | `npm test` |
+| Python test suite | 216 passing (pytest) | `pytest` |
+| Build routes | 43 | `npm run build` |
 | CI | `.github/workflows/ci.yml` (lint, types, tests, build, live PostgreSQL ingestion) | |
 
 **Product rule:** the catalog mixes three tiers of record. `Certified` rows
@@ -126,18 +126,18 @@ tier a row belongs to.
 - [x] **Task 2.6.1:** `EnergyStarAdapter` (ADR-003) — pinned HTTPS host, SSRF guard, SHA-256 payload hashing
 - [x] **Task 2.6.2:** Audited write path — `Manufacturer → Series → Model → Sku → CertifiedSkuSpec` + immutable `RawObservation`
 - [x] **Task 2.6.3:** Full-dataset ingestion with pagination across every laptop product type
-- [x] **Task 2.6.4:** 1,133 accepted, 44 rejected with verbatim reasons
+- [x] **Task 2.6.4:** 1,136 accepted, 44 rejected with verbatim reasons
 
-### Story 2.7: Scraper Monitoring 🟡
+### Story 2.7: Scraper Monitoring ✅
 - [x] **Task 2.7.1:** Per-manufacturer health report (`veridian_scraper/health.py`, `run_scrapers.py --report`)
 - [x] **Task 2.7.2:** robots.txt compliance in the HTTP client, with an honest user agent
-- [ ] **Task 2.7.3:** Failure alerting to a real channel
+- [x] **Task 2.7.3:** Failure alerting to a real channel (`veridian_scraper/health_alerting.py`, `run_scrapers.py --alert`, CI dispatches to a Discord webhook via `VERIDIAN_ALERT_WEBHOOK`)
 - [ ] **Task 2.7.4:** Scheduled run orchestration in CI
 
 ### Story 2.8: Manufacturer Verification 🟡
 - [x] **Task 2.8.1:** `scripts/verify-reference-specs.py` — checks the reference dataset against manufacturer specification pages and reports every contradiction with a citation
 - [x] **Task 2.8.2:** ASUS technical-specification extraction working against the live page
-- [ ] **Task 2.8.3:** Extend to Lenovo, Dell, HP, Acer, Apple and the rest
+- [x] **Task 2.8.3:** Apple adapter added — the family spec page confirms family-level fields (display size, type) and reports the SKU-specific fields (part number, CPU, weight) as unconfirmable rather than silently verified; Lenovo, Dell, HP, Acer and the rest still blocked or unverified against live pages
 
 ---
 
@@ -207,7 +207,7 @@ tier a row belongs to.
 - [ ] **Task 4.4.1:** Meilisearch / Typesense
 - [ ] **Task 4.4.2:** CDC or dual-write sync
 - [ ] **Task 4.4.3:** Faceted configuration
-- **Decision:** deferred. Postgres filtering is sufficient below ~5K configurations; the catalog is at 1,165.
+- **Decision:** deferred. Postgres filtering is sufficient below ~5K configurations; the catalog is at 1,168.
 
 ### Story 4.5: Semantic Similarity 🔴 NOT STARTED
 - [ ] **Task 4.5.1:** pgvector embeddings for "find similar laptops"
@@ -265,10 +265,10 @@ tier a row belongs to.
 
 | # | Gap | Impact | Where it is tracked |
 |---|---|---|---|
-| 1 | No live retailer price source — every price shown is reference MSRP | Price filters and price sorting operate on reference values | Epic 3, Story 3.5 |
+| 1 | No live retailer price source — every price shown is reference MSRP | Price filters and price sorting operate on reference values | Epic 3, Story 3.5; per-feed credential/TOS gates in `docs/PRICE_FEEDS.md` |
 | 2 | 41 reference configurations are not independently verified | Their figures may contradict the manufacturer | Epic 2, Story 2.8.3; reported by `npm run db:audit` |
 | 3 | 38 provenance records carry no source URL | The reader cannot check those values against a page | `npm run db:audit`, `coverage/source-url` |
-| 4 | The scraper fleet has no scheduled run in CI | Manufacturer data has to be refreshed by hand | Epic 2, Story 2.7.4 |
+| 4 | The scraper fleet has a scheduled run in CI, but it records the health report without failing the build | A regression in one manufacturer is recorded, not paged | Epic 2, Story 2.7.4; `run_scrapers.py --alert` dispatches to `VERIDIAN_ALERT_WEBHOOK` |
 | 5 | Twelve of thirteen manufacturers are unverified against their live sites | Their scrapers may extract nothing, as ASUS's did | Epic 2, Story 2.8.3 |
 | 6 | The Python `Seller` / `PriceListing` models still duplicate the Prisma ones | Two stores describe the same thing; the boundary is documented but not yet collapsed | Epic 3, Story 3.1 |
 | 7 | No component-to-component or issue-level relationships | "Which laptops are affected by this component issue" is not answerable | Epic 6 |

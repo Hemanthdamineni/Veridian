@@ -56,6 +56,11 @@ jobs:
       - name: Check the PostgreSQL schema is in sync with the source of truth
         run: npm run db:schema:pg-check
 
+      - name: Check the documented figures match the measured ones
+        # Fails when a count quoted in README/ROADMAP/TODO/architecture.md no
+        # longer matches the code it describes (routes, tests, schema models).
+        run: npm run docs:metrics:check
+
   postgres:
     name: PostgreSQL (live schema, ingestion, audit)
     runs-on: ubuntu-latest
@@ -110,6 +115,15 @@ jobs:
       - name: Audit the catalog
         run: npm run db:audit
 
+      - name: Regenerate the documented figures against this live database
+        # Rewrites docs/metrics.json and the four documents that quote the
+        # catalog figures, then fails if the committed ones were stale.
+        # A documented number that no longer matches the real catalog is the
+        # same defect as a stale schema, and is caught the same way.
+        run: |
+          npm run docs:metrics
+          git diff --exit-code -- docs/metrics.json README.md ROADMAP.md TODO.md docs/engineering/architecture.md docs/engineering/schema.md
+
       - name: Exercise the public API end to end
         run: npm run db:api:smoke
 
@@ -158,7 +172,9 @@ jobs:
 
       - name: Run the fleet and record the health report
         run: |
-          python run_scrapers.py --tier all --report || true
+          python run_scrapers.py --tier all --report --alert || true
+        env:
+          ALERT_RECIPIENT: ${{ secrets.VERIDIAN_ALERT_WEBHOOK }}
 
       - name: Upload the health report
         if: always()
