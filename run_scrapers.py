@@ -37,6 +37,11 @@ from sqlalchemy.orm import sessionmaker
 
 # Import the health reporting layer
 from veridian_scraper.health import get_collector
+from veridian_scraper.health_alerting import (
+    compare_reports,
+    dispatch_alerts,
+    load_previous_reports,
+)
 
 # Scraper registry
 SCRAPERS = {
@@ -234,10 +239,21 @@ def main():
     parser.add_argument('--incremental', action='store_true', help='Run incremental update')
     parser.add_argument('--report', action='store_true',
                         help='Print the scraper health summary table')
+    parser.add_argument('--alert', action='store_true',
+                        help='Compare this run against the previous run and dispatch '
+                             'failure alerts to the configured operator channel')
 
     args = parser.parse_args()
 
     manufacturers = args.manufacturers if args.manufacturers else None
+
+    # Snapshot the previous run's reports *before* this run overwrites them,
+    # so the alert step can compare the two. Reading them afterwards would
+    # compare the run against itself and never see a transition.
+    from veridian_scraper.health import HealthCollector
+
+    health_dir = Path(HealthCollector().output_dir)
+    baseline = load_previous_reports(health_dir) if args.alert else {}
 
     if args.incremental:
         asyncio.run(run_incremental_update(manufacturers, args.regions, args.db_url))
@@ -255,6 +271,32 @@ def main():
         print("SCRAPER HEALTH REPORT")
         print(f"{'='*60}")
         print(get_collector().summary_table())
+
+    if args.alert:
+        # Compare the just-finished run against the pre-run snapshot and
+        # dispatch alerts for the state transitions. The baseline was captured
+        # before the fleet ran, so a source that stopped working is a change.
+        import os
+
+        current = get_collector().reports
+        alerts = compare_reports(baseline, current)
+        if alerts:
+            print(f"\n{'='*60}")
+            print("SCRAPER ALERTS")
+            print(f"{'='*60}")
+            for alert in alerts:
+                print(
+                    f"  [{alert.severity:9}] {alert.manufacturer:12} "
+                    f"{alert.status} — {alert.reason or 'no reason'}"
+                )
+            sent = dispatch_alerts(
+                alerts,
+                config=os.environ,
+                recipient=os.environ.get("ALERT_RECIPIENT"),
+            )
+            print(f"Alerts dispatched: {sent}/{len(alerts)}")
+        else:
+            print("\nNo alertable state transitions.")
 
 
 if __name__ == '__main__':

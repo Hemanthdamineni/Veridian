@@ -56,6 +56,14 @@ TECHSPEC_PAGES: Dict[str, str] = {
     "Zephyrus G14 (2025)": "https://www.asus.com/us/laptops/gaming/rog-republic-of-gamers/asus-rog-zephyrus-g14-ga403/techspec/",
     "ProArt P16 (H7606)": "https://www.asus.com/us/laptops/for-creators/asus-proart-p16-h7606/techspec/",
     "Zenbook 14 Flip (UP3404)": "https://www.asus.com/us/laptops/for-home/zenbook/asus-zenbook-14-flip-up3404/techspec/",
+    # Apple publishes per-family spec pages, not per-part-number sheets, so
+    # the page can confirm family-level fields (display size, RAM, storage)
+    # but cannot confirm a specific MRX...LL/A configuration. The adapter
+    # reports the fields it can verify and flags the SKU-specific ones it
+    # cannot, so a row is never silently called confirmed.
+    "MacBook Air 13 (M4)": "https://www.apple.com/macbook-air/specs/",
+    "MacBook Air 15 (M4)": "https://www.apple.com/macbook-air/specs/",
+    "MacBook Pro 14 (M4 Pro)": "https://www.apple.com/macbook-pro/specs/",
 }
 
 
@@ -170,6 +178,129 @@ class AsusAdapter:
 
 def names_for(values: Dict[str, Dict[str, str]], order: List[str]) -> List[str]:
     return order
+
+
+# Apple part numbers are retailer SKUs (e.g. "MRXN3LL/A") that Apple's own
+# family spec page never publishes; the page confirms family-level fields
+# (display size, RAM, storage) but not a specific configuration.
+APPLE_SKU_RE = re.compile(r"[A-Z0-9]{6,}[LZ]L/A", re.IGNORECASE)
+
+
+class AppleAdapter:
+    """Apple publishes one family spec page per product line (Air, Pro).
+
+    The page confirms family-level fields (display size, RAM, storage options)
+    but does not publish a per-configuration part number, processor or weight.
+    So this adapter returns a ``SpecTable`` with a single anonymous column
+    holding the family-level values, and leaves the per-SKU comparison to the
+    caller, which reports the SKU-specific fields as unconfirmable rather than
+    silently confirming them.
+    """
+
+    name = "Apple"
+
+    def __init__(self, client: httpx.AsyncClient) -> None:
+        self.client = client
+
+    async def spec_table(self, techspec_url: str) -> Optional[SpecTable]:
+        response = await self.client.get(techspec_url)
+        if response.status_code != 200:
+            return None
+        soup = BeautifulSoup(response.text, "html.parser")
+        text = re.sub(r"\s+", " ", soup.get_text(" ", strip=True))
+        if not text:
+            return None
+        # A single anonymous column carrying the whole family page.
+        return SpecTable(
+            source_url=str(response.url),
+            order=["family"],
+            rows={"family": {"display": text, "memory": text, "storage": text}},
+        )
+
+    def parse_family(self, table: SpecTable) -> Dict[str, str]:
+        """Extract the family-level fields the page actually publishes."""
+        cell = table.rows["family"].get("display", "")
+        out: Dict[str, str] = {}
+        # Only fields the page states once are usable: an ambiguous page that
+        # lists several options can never contradict a catalog row.
+        sizes = distinct_values(cell, SIZE_RE)
+        if len(sizes) == 1:
+            out["display_size"] = re.sub(r"[^\d.]", "", sizes[0])
+        panels = [p for p in ("OLED", "IPS", "Mini-LED", "Liquid Retina") if p in cell]
+        if len(panels) == 1:
+            out["display_type"] = panels[0]
+        memory = table.rows["family"].get("memory", "")
+        rams = distinct_values(memory, re.compile(r"\b(\d{2,3})\s*GB\b"))
+        if len(rams) == 1:
+            out["ram_gb"] = rams[0]
+        storages = re.findall(r"\b(\d{1,2})\s*(TB|GB)\b", table.rows["family"].get("storage", ""), re.IGNORECASE)
+        sizes_gb = {
+            int(size) * 1024 if unit.upper() == "TB" else int(size) for size, unit in storages
+        }
+        if len(sizes_gb) == 1:
+            out["storage_gb"] = str(sizes_gb.pop())
+        return out
+
+
+async def _verify_apple_row(
+    client: httpx.AsyncClient, row: Dict[str, str], techspec_url: str
+) -> Dict[str, Any]:
+    """Verify an Apple catalog row against the family spec page.
+
+    Apple publishes one family page per product line (Air, Pro). It confirms
+    family-level fields (display size, RAM, storage) but never the per-SKU
+    part number, processor or weight, so those are reported as unconfirmable
+    rather than silently called correct. A row is reported ``confirmed`` only
+    for the fields the page actually states.
+    """
+    adapter = AppleAdapter(client)
+    table = await adapter.spec_table(techspec_url)
+    if table is None:
+        return {"status": "unconfirmed", "reason": "Apple spec page not found"}
+
+    observed = adapter.parse_family(table)
+
+    # Apple's family page does not carry the retailer part number
+    # (e.g. "MRXN3LL/A"), so the specific configuration cannot be confirmed.
+    sku_on_page = bool(
+        APPLE_SKU_RE.search(table.rows["family"].get("display", ""))
+    ) if table.rows else False
+
+    # SKU-specific fields the family page cannot state. Reported explicitly so
+    # a row is never silently treated as fully verified.
+    sku_only = ("cpu_model", "cpu_brand", "cpu_cores", "gpu_model", "weight_kg", "battery_wh")
+    unconfirmable = [f for f in sku_only if (row.get(f) or "").strip()]
+
+    conflicts = []
+    for field_name, value in observed.items():
+        current = (row.get(field_name) or "").strip()
+        if not current:
+            continue
+        try:
+            same = abs(float(current) - float(value)) < 0.051
+        except (TypeError, ValueError):
+            same = normalize_cpu(current) == normalize_cpu(str(value))
+        if not same:
+            conflicts.append(
+                {"field": field_name, "catalog": current, "manufacturer": value}
+            )
+
+    result: Dict[str, Any] = {
+        "status": "confirmed" if observed else "unconfirmed",
+        "source_url": table.source_url,
+        "sku_published_on_page": sku_on_page,
+        "observed": observed,
+        "conflicts": conflicts,
+    }
+    if unconfirmable:
+        result["unconfirmable"] = {
+            "fields": unconfirmable,
+            "reason": "Apple's family page does not publish per-configuration "
+                      "part numbers, processor or weight",
+        }
+    if not observed:
+        result["reason"] = "no family-level field could be parsed from the page"
+    return result
 
 
 
@@ -302,6 +433,9 @@ def normalize_cpu(value: str) -> str:
 async def verify_row(
     client: httpx.AsyncClient, row: Dict[str, str], techspec_url: str
 ) -> Dict[str, Any]:
+    manufacturer = row.get("manufacturer", "").strip().lower()
+    if manufacturer == "apple":
+        return await _verify_apple_row(client, row, techspec_url)
     adapter = AsusAdapter(client)
     table = await adapter.spec_table(techspec_url)
     if table is None:
