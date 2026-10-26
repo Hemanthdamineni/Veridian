@@ -113,7 +113,7 @@ async def run_all_scrapers(
     manufacturers: List[str] = None,
     regions: List[str] = None,
     tier: str = 'all',
-    save_to_db: bool = True,
+    save_to_db: bool = False,
     db_url: str = 'sqlite:///veridian.db',
     exclusion_list: Optional[set] = None
 ) -> Dict[str, List]:
@@ -121,6 +121,11 @@ async def run_all_scrapers(
 
     Args:
         exclusion_list: Set of URLs to skip (for incremental updates)
+
+    The fleet writes nothing to a database by default. Its output is a health
+    report (per manufacturer); the catalog is the Prisma schema, which is
+    written only through the audited ingestion path. ``save_to_db=True``
+    writes to the experimental SQLAlchemy graph and is opt-in.
     """
 
     if manufacturers:
@@ -234,7 +239,10 @@ def main():
     parser.add_argument('manufacturers', nargs='*', help='Specific manufacturers to scrape')
     parser.add_argument('--regions', '-r', nargs='+', help='Regions to scrape (e.g., us in uk)')
     parser.add_argument('--tier', choices=['tier1', 'tier2', 'all'], default='all', help='Tier to scrape')
-    parser.add_argument('--no-db', action='store_true', help='Do not save to database')
+    parser.add_argument('--db', action='store_true',
+                        help='Also write the fleet output to the experimental SQLAlchemy graph '
+                             '(veridian.db). Off by default: the catalog is the Prisma schema, and '
+                             'the fleet is a health reporter, not a second catalog store.')
     parser.add_argument('--db-url', default='sqlite:///veridian.db', help='Database URL')
     parser.add_argument('--incremental', action='store_true', help='Run incremental update')
     parser.add_argument('--report', action='store_true',
@@ -262,7 +270,7 @@ def main():
             manufacturers=manufacturers,
             regions=args.regions,
             tier=args.tier,
-            save_to_db=not args.no_db,
+            save_to_db=args.db,
             db_url=args.db_url
         ))
 

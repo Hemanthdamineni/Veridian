@@ -1,36 +1,31 @@
 from veridian_db.clock import utcnow
 
 def test_normalize_product():
-    """Test normalization of product specs."""
-    from asus_scraper.data_normalizer import normalize_product
-    product = {
-        "brand": "ASUS",
-        "model": "Zenbook UX3407",
-        "cpu": "Intel Core Ultra 7 155H 1.4 GHz",
-        "ram": "16GB LPDDR5X 5600MHz",
-        "storage": "512GB NVMe SSD",
-        "display": "14.0\" OLED 2880x1800 120Hz",
-        "weight": "1.2 kg",
-        "battery": "75 Wh",
-        "ports": "USB-C, HDMI, Thunderbolt 4"
-    }
-    normalized = normalize_product(product)
-    assert "cpu" in normalized
-    assert "ram" in normalized
-    print("✅ Product normalization test passed")
+    """The shared spec normalizer turns a scraped spec into a typed, unit-standardised value."""
+    from veridian_db.normalizer import SpecNormalizer
+
+    ram = SpecNormalizer.normalize_value("16GB LPDDR5X 5600MHz", "ram_gb")
+    assert ram.value == 16.0
+    assert ram.unit == "GB"
+    assert ram.spec_type == "number"
+
+    cpu = SpecNormalizer.normalize_value("Intel Core Ultra 7 155H 1.4 GHz", "cpu_model")
+    assert cpu.value == "Intel Core Ultra 7 155H"
+    assert cpu.spec_type == "string"
+
 
 def test_normalize_variant():
-    """Test normalization of product variants."""
-    from asus_scraper.data_normalizer import normalize_variant
-    variant = {
-        "config": "16GB/512GB",
-        "ram": "16GB LPDDR5X 5600MHz",
-        "storage": "512GB NVMe SSD"
-    }
-    normalized = normalize_variant(variant)
-    assert "ram" in normalized
-    assert "storage" in normalized
-    print("✅ Variant normalization test passed")
+    """The normalizer separates the value from the unit and keeps the raw text."""
+    from veridian_db.normalizer import SpecNormalizer
+
+    storage = SpecNormalizer.normalize_value("512GB NVMe SSD", "storage_gb")
+    assert storage.value == 512.0
+    assert storage.unit == "GB"
+
+    weight = SpecNormalizer.normalize_value("1.2 kg", "weight_kg")
+    assert weight.value == 1.2
+    assert weight.unit == "kg"
+    assert weight.raw_text == "1.2 kg"
 
 def test_validate_spec():
     """Test specification validation."""

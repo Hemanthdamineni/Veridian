@@ -207,13 +207,17 @@ The fleet enforces `robots.txt` before every request and refuses a
 disallowed path rather than fetching it. A source that cannot be reached is
 reported as blocked, with the reason.
 
-`veridian_db/` is a richer SQLAlchemy knowledge graph — components and their
-relationships, product relationships, benchmarks, reviews, community reports,
-knowledge entries, an audit log, pending entities. It holds more than the
-Prisma schema does, and is the intended home for the parts of the domain
-that the live application does not use yet. The three models it shares with
-Prisma (`Seller`, `PriceListing`, `PriceHistory`) are the known duplication;
-the boundary is documented but not yet collapsed.
+`veridian_db/` is an SQLAlchemy domain model — a normalizer, identity
+resolution, and the models behind the price tracker and alert engine. The
+scraper fleet writes nothing to a database by default: its output is a
+per-manufacturer health report, and the catalog is the Prisma schema
+(`Manufacturer → Series → Model → Sku`), written only through the audited
+ingestion path. The fleet's parsed products are persisted only when
+`run_scrapers.py --db` opts in, and that experimental SQLAlchemy graph is
+not the catalog. The price models it shares with Prisma (`Seller`,
+`PriceListing`, `PriceHistory`) remain, but the two stores no longer
+pretend to be one: the catalog is Prisma, and the SQLAlchemy graph is a
+scratch workspace for the Python side of the domain.
 
 ---
 

@@ -42,7 +42,7 @@ against them; the operator-facing registry is [docs/PRICE_FEEDS.md](./docs/PRICE
 ## Project Structure
 
 - `/veridian-web`: The Next.js application (UI + API routes) and the data tooling.
-- `/veridian-scraper`: The manufacturer scraper fleet, its health reporting and its domain engine.
+- `/veridian_scraper`: The manufacturer scraper fleet, its health reporting and its domain engine.
 - `/veridian_db`: The Python domain model (normalization, identity resolution).
 - `/docs`: Technical specifications, research, ADRs and engineering architecture.
 - `Veridian-spec.md`: The full system specification.
