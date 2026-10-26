@@ -57,13 +57,24 @@ veridian-web/
     api.ts                      the shared catalog query builder and formatters
     ai.ts                       the natural-language parser and the scorer
     api-key.ts                  key issuance, hashing, the durable rate limit
+    admin-keys.ts               the admin API-key workspace (key views, scopes, windows)
     public-api.ts               the queries behind /api/v1
     openapi.ts                  the hand-written OpenAPI 3.1 description
     catalog.ts                  filter state and URL serialisation
+    contracts.ts                the catalog's trust contract as executable checks
+    data-quality.ts             the data-quality audit shared by CLI and dashboard
+    alerts.ts                   price-alert evaluation
+    notifications.ts            notification dispatch (email/telegram/discord/push)
+    contributions.ts            the community correction workflow
+    compare.ts                  side-by-side comparison logic
+    lifecycle.ts                product lineage derivation
+    audit/                      the extended data-quality checks
     prices/source.ts            the PriceSource contract
     prices/stats.ts             windowed price statistics
     energy-star/                the certification ingestion path
     verify/                     manufacturer specification verification
+    wikidata/                   the Wikidata (CC0) ingestion path
+    icecat/                     the Icecat open-product-data connection
   src/app/                      pages and route handlers
   scripts/                      the data tooling, one script per job
   tests/                        Vitest
