@@ -1,10 +1,27 @@
-model_slug,manufacturer,region,url
-zenbook-a14-ux3407,ASUS,US,https://www.asus.com/us/laptops/for-home/zenbook/asus-zenbook-a14-ux3407/
-zenbook-14-ux3405,ASUS,US,https://www.asus.com/us/laptops/for-home/zenbook/asus-zenbook-14-ux3405/
-zenbook-s-16-um5606,ASUS,US,https://www.asus.com/us/laptops/for-home/zenbook/asus-zenbook-s-16-um5606/
-zenbook-duo-ux8406,ASUS,US,https://www.asus.com/us/laptops/for-home/zenbook/asus-zenbook-duo-ux8406/
-zenbook-14-flip-up3404,ASUS,US,https://www.asus.com/us/laptops/for-home/zenbook/asus-zenbook-14-flip-up3404/
-zephyrus-g14-2025,ASUS,US,https://www.asus.com/us/laptops/gaming/rog-republic-of-gamers/asus-rog-zephyrus-g14-ga403/
-proart-p16-h7606,ASUS,US,https://www.asus.com/us/laptops/for-creators/asus-proart-p16-h7606/
-vivobook-s-14-s3407,ASUS,US,https://www.asus.com/us/laptops/for-home/vivobook/asus-vivobook-s-14-s3407/
-vivobook-s-15-s3507,ASUS,US,https://www.asus.com/us/laptops/for-home/vivobook/asus-vivobook-s-15-s3507/
+# The manufacturer's published list price for each product family, in the
+# market the catalog is about.
+#
+#   model_slug,manufacturer,region,currency,url
+#
+# The page of every row was fetched and was seen to publish the price in
+# schema.org `Product` markup. The price is the figure the manufacturer
+# publishes for the whole family — the starting price, never the price of
+# one configuration — and it is recorded on the family.
+#
+# The same family in another market is listed in
+# `data/regional-price-sources.csv`; those prices are recorded as regional
+# observations and never overwrite the family's own price.
+#
+# The region and the currency have to agree. A page that publishes a
+# different currency from the one declared here is believed, and the
+# difference is reported by the refresh.
+model_slug,manufacturer,region,currency,url
+zenbook-a14-ux3407,ASUS,US,USD,https://www.asus.com/us/laptops/for-home/zenbook/asus-zenbook-a14-ux3407/
+zenbook-14-ux3405,ASUS,US,USD,https://www.asus.com/us/laptops/for-home/zenbook/asus-zenbook-14-ux3405/
+zenbook-s-16-um5606,ASUS,US,USD,https://www.asus.com/us/laptops/for-home/zenbook/asus-zenbook-s-16-um5606/
+zenbook-duo-ux8406,ASUS,US,USD,https://www.asus.com/us/laptops/for-home/zenbook/asus-zenbook-duo-2024-ux8406/
+proart-p16-h7606,ASUS,US,USD,https://www.asus.com/us/laptops/for-creators/proart/proart-p16-h7606/
+vivobook-s-14-s3407,ASUS,US,USD,https://www.asus.com/us/laptops/for-home/vivobook/asus-vivobook-s14-s3407/
+macbook-air-13-m4,Apple,US,USD,https://www.apple.com/shop/buy-mac/macbook-air/13-inch
+macbook-air-15-m4,Apple,US,USD,https://www.apple.com/shop/buy-mac/macbook-air/15-inch
+macbook-pro-14-m4-pro,Apple,US,USD,https://www.apple.com/shop/buy-mac/macbook-pro
