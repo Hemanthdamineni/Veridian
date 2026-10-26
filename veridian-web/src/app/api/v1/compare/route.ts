@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { authenticateApiKey } from "@/lib/api-key";
+import { buildComparisonAnalysis, type CompareRow } from "@/lib/compare";
 
 export const dynamic = "force-dynamic";
 
@@ -134,8 +135,9 @@ export async function GET(request: NextRequest) {
       })),
     }));
 
-    // Generate comparison analysis
-    const analysis = generateComparisonAnalysis(ordered);
+    // Generate comparison analysis. The rules live in `@/lib/compare` so the
+    // comparison page and this endpoint can never disagree about a winner.
+    const analysis = buildComparisonAnalysis(ordered.map(toAnalysisRow));
 
     // Regions we actually hold prices for, so the client only offers a region
     // that can produce a price instead of an empty column.
@@ -160,7 +162,13 @@ export async function GET(request: NextRequest) {
   }
 }
 
-interface ComparableSku {
+/**
+ * The subset of a catalog row the winner map needs.
+ *
+ * The analysis only ever ranks a metric every compared row reports, so the
+ * adapter carries just those fields and leaves the rest unreported.
+ */
+interface AnalysisSku {
   id: string;
   model: { name: string };
   ramGb: number;
@@ -171,71 +179,38 @@ interface ComparableSku {
   displayNits: number | null;
 }
 
-function generateComparisonAnalysis(skus: ComparableSku[]) {
-  if (skus.length < 2) return null;
-
-  const analysis: Record<string, { winner: string; explanation: string }> = {};
-
-  // Compare RAM
-  const maxRam = Math.max(...skus.map((s) => s.ramGb));
-  const ramWinners = skus.filter((s) => s.ramGb === maxRam);
-  if (ramWinners.length === 1) {
-    analysis.memory = {
-      winner: ramWinners[0].id,
-      explanation: `${ramWinners[0].model.name} has the most RAM at ${maxRam}GB`,
-    };
-  }
-
-  // Only declare a winner when every compared SKU reports the metric; otherwise a
-  // missing value would be treated as a loss and the claim would be misleading.
-  const withWeight = skus.every((s) => s.weightKg !== null)
-    ? (skus as (ComparableSku & { weightKg: number })[])
-    : [];
-  if (withWeight.length > 1) {
-    const minWeight = Math.min(...withWeight.map((s) => s.weightKg));
-    const weightWinners = withWeight.filter((s) => s.weightKg === minWeight);
-    if (weightWinners.length === 1) {
-      analysis.portability = {
-        winner: weightWinners[0].id,
-        explanation: `${weightWinners[0].model.name} is the lightest at ${minWeight}kg`,
-      };
-    }
-  }
-
-  const withBattery = skus.every((s) => s.batteryWh !== null)
-    ? (skus as (ComparableSku & { batteryWh: number })[])
-    : [];
-  if (withBattery.length > 1) {
-    const maxBattery = Math.max(...withBattery.map((s) => s.batteryWh));
-    const batteryWinners = withBattery.filter((s) => s.batteryWh === maxBattery);
-    if (batteryWinners.length === 1) {
-      analysis.battery = {
-        winner: batteryWinners[0].id,
-        explanation: `${batteryWinners[0].model.name} has the largest battery at ${maxBattery}Wh`,
-      };
-    }
-  }
-
-  // Compare display — only when every SKU reports type and refresh rate
-  const displayScores = skus.every((s) => s.displayRefreshHz !== null && s.displayType !== null)
-    ? skus
-        .map((s) => {
-          let score = 0;
-          if (s.displayType === "OLED") score += 3;
-          else if (s.displayType === "Mini-LED") score += 2;
-          else if (s.displayType === "IPS") score += 1;
-          score += (s.displayRefreshHz as number) / 60;
-          score += (s.displayNits || 300) / 500;
-          return { sku: s, score };
-        })
-        .sort((a, b) => b.score - a.score)
-    : [];
-  if (displayScores.length > 1 && displayScores[0].score > displayScores[1].score) {
-    analysis.display = {
-      winner: displayScores[0].sku.id,
-      explanation: `${displayScores[0].sku.model.name} has the best display (${displayScores[0].sku.displayType}, ${displayScores[0].sku.displayRefreshHz}Hz)`,
-    };
-  }
-
-  return analysis;
+function toAnalysisRow(sku: AnalysisSku): CompareRow {
+  return {
+    id: sku.id,
+    skuCode: "",
+    modelName: sku.model.name,
+    brand: "",
+    series: "",
+    provenance: "unverified",
+    values: {
+      cpu: null,
+      cpuCores: null,
+      gpu: null,
+      ramGb: sku.ramGb,
+      ramType: null,
+      ramSoldered: null,
+      storageGb: null,
+      storageType: null,
+      storageSlots: null,
+      displaySizeIn: null,
+      displayResolution: null,
+      displayType: sku.displayType,
+      displayRefreshHz: sku.displayRefreshHz,
+      displayNits: sku.displayNits,
+      displayTouch: null,
+      weightKg: sku.weightKg,
+      batteryWh: sku.batteryWh,
+      batteryLifeHours: null,
+      os: null,
+      ports: [],
+      price: null,
+      priceCurrency: null,
+      priceUpdatedAt: null,
+    },
+  };
 }
