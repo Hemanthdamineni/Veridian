@@ -1,0 +1,145 @@
+# Veridian — laptop configurations from Wikidata
+#
+# This file is the single source of truth for the query the ingestion script
+# sends to the Wikidata Query Service (https://query.wikidata.org/sparql).
+# It is data, not code: the query can be reviewed, pasted into the WDQS web
+# UI and diffed without reading any TypeScript.
+#
+# ---------------------------------------------------------------------------
+# PROPERTY MAP
+#
+# Every property below was verified against the live Wikidata API on
+# 2026-10-21 (`wbgetentities`). The property identifiers named in the
+# original task brief do not exist in Wikidata under those meanings:
+#
+#   brief    reality in Wikidata                      used here
+#   ------  ---------------------------------------  ------------------------
+#   P176     manufacturer                              P176  manufacturer
+#   P577     publication date                          P577  publication date
+#   P306     operating system                          P306  operating system
+#   P276     location (generic)                        P880  CPU
+#   P2810    LPGA Tour golf player ID                  P13749 display size (diagonal)
+#   P2062    HSDB ID                                   P2067 mass
+#   P2132    nominal GDP per capita                    P13525 RAM capacity
+#   P1097    g-factor                                  P13525 RAM capacity (quantity)
+#   P217     inventory number                          P217  inventory number
+#                                                      P13802 part number
+#   P155     follows (predecessor)                     P155  follows
+#   P156     followed by (successor)                   P156  followed by
+#
+# Class identifiers named in the brief are likewise not laptops:
+#
+#   brief    reality in Wikidata                       used here
+#   ------  ---------------------------------------  ------------------------
+#   Q278     Talisker distillery                       Q3962    laptop
+#   Q1107    anime                                     Q1258213 all-in-one computer
+#                                                      Q56155   desktop computer (excluded)
+#
+# ---------------------------------------------------------------------------
+# CLASS SELECTION
+#
+# Laptops are selected through the subclass chain: an item is a laptop when
+# it is an instance of a class whose own subclass chain reaches "laptop"
+# (Q3962) — `?laptopClass wdt:P279* wd:Q3962` — so netbooks, Chromebooks,
+# subnotebooks, gaming laptops and 2-in-1 PCs are included without naming
+# each one.
+#
+# A second branch covers product models that are filed *under* a laptop class
+# (their P31 is "product model" / "computer model" / "laptop model" rather
+# than a laptop class itself), e.g. individual ThinkPad and MacBook models.
+#
+# All-in-one computers (Q1258213) are admitted by a third branch, which is
+# allowed because desktop computers (Q56155) are excluded below. In Wikidata
+# an all-in-one computer is itself a subclass of desktop computer, so that
+# exclusion also removes the all-in-ones: the admitted set stays laptops only.
+#
+# ---------------------------------------------------------------------------
+# QUANTITIES
+#
+# Quantity statements carry their unit inside the statement value. The
+# amount and the unit are therefore read through `psv:` plus the
+# `wikibase:quantityAmount` / `wikibase:quantityUnit` predicates, so the
+# unit is never guessed: a mass in kilograms and a mass in grams are
+# distinguishable, and a statement without a unit contributes no value.
+# ---------------------------------------------------------------------------
+
+SELECT DISTINCT
+  ?item ?itemLabel
+  ?manufacturer ?manufacturerLabel
+  ?releaseDate
+  ?cpu ?cpuLabel
+  ?displayAmount ?displayUnit ?displayUnitLabel
+  ?massAmount ?massUnit ?massUnitLabel
+  ?ramAmount ?ramUnit ?ramUnitLabel
+  ?ramType ?ramTypeLabel
+  ?os ?osLabel
+  ?inventoryNumber
+  ?partNumber
+  ?predecessor ?predecessorLabel
+  ?successor ?successorLabel
+WHERE {
+  # --- laptop selection -------------------------------------------------
+  #
+  # The subclass chain is written as a join (`wdt:P279*`) rather than as
+  # FILTER EXISTS: the join lets the query planner drive the class table,
+  # while EXISTS re-evaluates the whole path per row and times out. The
+  # duplicate solutions the path produces are collapsed by SELECT DISTINCT.
+  {
+    ?item wdt:P31 ?laptopClass .
+    ?laptopClass wdt:P279* wd:Q3962 .
+  }
+  UNION
+  {
+    # All-in-one computers, admitted only because desktop computers are
+    # excluded below. Wikidata files an all-in-one computer as a subclass of
+    # desktop computer, so the exclusion removes these rows again.
+    ?item wdt:P31 ?laptopClass .
+    ?laptopClass wdt:P279* wd:Q1258213 .
+  }
+  UNION
+  {
+    ?item wdt:P31 ?productClass .
+    VALUES ?productClass { wd:Q10929058 wd:Q55990535 wd:Q73343954 }
+    ?item wdt:P279 ?laptopClass .
+    ?laptopClass wdt:P279* wd:Q3962 .
+  }
+
+  # Desktop computers are not laptops. (This also removes all-in-one
+  # computers, which Wikidata files as a subclass of desktop computer.)
+  FILTER NOT EXISTS { ?item wdt:P31/wdt:P279* wd:Q56155 }
+
+  # --- observed facts ---------------------------------------------------
+  OPTIONAL { ?item wdt:P176 ?manufacturer . }
+  OPTIONAL { ?item wdt:P577 ?releaseDate . }
+  # The CPU is selected as an item; its *label* names the processor. The
+  # CPU's own manufacturer statement is deliberately not selected: several
+  # widely shared CPU items (e.g. "Intel 8088") list half a dozen makers,
+  # which would multiply every configuration into one row per maker.
+  OPTIONAL { ?item wdt:P880 ?cpu . }
+  OPTIONAL {
+    ?item p:P13749 ?displayStatement .
+    ?displayStatement psv:P13749 ?displayValue .
+    ?displayValue wikibase:quantityAmount ?displayAmount ;
+                  wikibase:quantityUnit ?displayUnit .
+  }
+  OPTIONAL {
+    ?item p:P2067 ?massStatement .
+    ?massStatement psv:P2067 ?massValue .
+    ?massValue wikibase:quantityAmount ?massAmount ;
+               wikibase:quantityUnit ?massUnit .
+  }
+  OPTIONAL {
+    ?item p:P13525 ?ramStatement .
+    ?ramStatement psv:P13525 ?ramValue .
+    ?ramValue wikibase:quantityAmount ?ramAmount ;
+               wikibase:quantityUnit ?ramUnit .
+  }
+  OPTIONAL { ?item wdt:P12323 ?ramType . }
+  OPTIONAL { ?item wdt:P306 ?os . }
+  OPTIONAL { ?item wdt:P217 ?inventoryNumber . }
+  OPTIONAL { ?item wdt:P13802 ?partNumber . }
+  OPTIONAL { ?item wdt:P155 ?predecessor . }
+  OPTIONAL { ?item wdt:P156 ?successor . }
+
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en,mul". }
+}
