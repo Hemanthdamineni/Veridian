@@ -1,0 +1,52 @@
+# Razer official sitemap feed configuration.
+#
+# Razer publishes an XML sitemap index at https://www.razer.com/sitemap.xml.
+# Its child product sitemaps live on api-p1.phoenix.razer.com and are
+# explicitly allowed by that host's robots.txt ("Allow: /medias/Product"), so
+# the product list may be read. The product URL carries the part number, and
+# the product page carries the server rendered specification list.
+#
+# This file is the source of truth for the sitemap URLs, the product
+# categories and the region list.
+manufacturer: "razer_api"
+brand: "Razer"
+base_url: "https://www.razer.com/"
+user_agent: "VeridianBot/1.0 (+https://veridian.dev; contact@veridian.dev)"
+robots_user_agent: "VeridianBot/1.0 (+https://veridian.dev; contact@veridian.dev)"
+output_dir: "./output"
+max_concurrent: 1
+retry_attempts: 3
+checkpoint_interval: 10
+
+official_feed:
+  kind: "sitemap"
+  # The sitemap index and the pattern that selects the product sitemaps of the
+  # configured locale out of it.
+  sitemap_index: "https://www.razer.com/sitemap.xml"
+  product_sitemap_pattern: "/medias/Product-en-US"
+  # The product page renders the specification list of the selected
+  # configuration server side; the full technical table is fetched by the
+  # site's own front end and is not part of the response.
+  spec_list_selector: "ul.current-spec-list"
+  product_name_selector: "h1.product-name"
+  categories:
+    - name: "gaming-laptops"
+      slug: "gaming-laptops"
+      path_segment: "gaming-laptops"
+      category_type: "laptops"
+    - name: "refurb-laptops"
+      slug: "refurb-laptops"
+      path_segment: "refurb-laptops"
+      category_type: "laptops"
+  # Upper bound on the products collected per category, so a demonstration run
+  # stays polite. Set to 0 to collect every product of the sitemap.
+  max_products: 25
+
+regions:
+  - code: "us"
+    name: "United States"
+    base_url: "https://www.razer.com/"
+    language: "en"
+    currency: "USD"
+    rate_limit: 0.5
+    timeout: 30

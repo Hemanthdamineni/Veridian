@@ -1,0 +1,51 @@
+# Gigabyte official feed configuration.
+#
+# VERIFIED 2026-10-21: Gigabyte publishes no reachable official product feed.
+# www.gigabyte.com answers HTTP 403 (Akamai "Access Denied") to the honest
+# Veridian agent, so its robots.txt cannot be read and every path on the host
+# is refused. api.gigabyte.com publishes no robots.txt (the request answers
+# 404, which RFC 9309 defines as "no restrictions") but the API answers 401
+# for every resource and carries no product data.
+#
+# This file records the endpoints that were probed, so the next reviewer does
+# not have to repeat the search, and so the collector reports the real reason
+# instead of "successful with zero rows".
+manufacturer: "gigabyte_api"
+brand: "Gigabyte"
+base_url: "https://www.gigabyte.com/"
+user_agent: "VeridianBot/1.0 (+https://veridian.dev; contact@veridian.dev)"
+robots_user_agent: "VeridianBot/1.0 (+https://veridian.dev; contact@veridian.dev)"
+output_dir: "./output"
+max_concurrent: 1
+retry_attempts: 3
+checkpoint_interval: 10
+
+official_feed:
+  kind: "unavailable"
+  status: "unavailable"
+  reason: >-
+    www.gigabyte.com answers HTTP 403 (Akamai "Access Denied") to the honest
+    Veridian agent, so the site's robots policy cannot be read and every
+    path on the host is refused. api.gigabyte.com publishes no robots.txt
+    but answers 401 Unauthorized for every resource and carries no product
+    data.
+  # Every endpoint that was probed, with the kind of payload it would carry.
+  candidates:
+    - url: "https://www.gigabyte.com/sitemap.xml"
+      kind: "xml"
+      note: "Official sitemap of the manufacturer site; unreachable, the host policy is unreadable."
+    - url: "https://www.gigabyte.com/products.json"
+      kind: "json"
+      note: "JSON product feed of the manufacturer site; unreachable, the host policy is unreadable."
+    - url: "https://api.gigabyte.com/products"
+      kind: "json"
+      note: "API host with no published robots.txt; answers 401 Unauthorized and carries no product data."
+
+regions:
+  - code: "us"
+    name: "United States"
+    base_url: "https://www.gigabyte.com/"
+    language: "en"
+    currency: "USD"
+    rate_limit: 0.5
+    timeout: 30

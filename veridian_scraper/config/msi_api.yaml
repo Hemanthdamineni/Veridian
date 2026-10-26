@@ -1,0 +1,51 @@
+# MSI official feed configuration.
+#
+# VERIFIED 2026-10-21: MSI publishes no reachable official product feed.
+# www.msi.com answers HTTP 403 (Akamai "Access Denied") to the honest Veridian
+# agent, so its robots.txt cannot be read and every path on the host is
+# refused. api.msi.com publishes a readable robots.txt that allows
+# everything, but it is the login protected "MSI Tool Box" service and it
+# carries no product data.
+#
+# This file records the endpoints that were probed, so the next reviewer does
+# not have to repeat the search, and so the collector reports the real reason
+# instead of "successful with zero rows".
+manufacturer: "msi_api"
+brand: "MSI"
+base_url: "https://www.msi.com/"
+user_agent: "VeridianBot/1.0 (+https://veridian.dev; contact@veridian.dev)"
+robots_user_agent: "VeridianBot/1.0 (+https://veridian.dev; contact@veridian.dev)"
+output_dir: "./output"
+max_concurrent: 1
+retry_attempts: 3
+checkpoint_interval: 10
+
+official_feed:
+  kind: "unavailable"
+  status: "unavailable"
+  reason: >-
+    www.msi.com answers HTTP 403 (Akamai "Access Denied") to the honest
+    Veridian agent, so the site's robots policy cannot be read and every
+    path on the host is refused. api.msi.com publishes an allow-all policy
+    but serves the login protected MSI Tool Box service, which carries no
+    product data.
+  # Every endpoint that was probed, with the kind of payload it would carry.
+  candidates:
+    - url: "https://www.msi.com/sitemap.xml"
+      kind: "xml"
+      note: "Official sitemap of the manufacturer site; unreachable, the host policy is unreadable."
+    - url: "https://www.msi.com/products.json"
+      kind: "json"
+      note: "JSON product feed of the manufacturer site; unreachable, the host policy is unreadable."
+    - url: "https://api.msi.com/api/products"
+      kind: "json"
+      note: "API host with a readable allow-all robots.txt; answers 404, it is the MSI Tool Box service and not a product feed."
+
+regions:
+  - code: "us"
+    name: "United States"
+    base_url: "https://www.msi.com/"
+    language: "en"
+    currency: "USD"
+    rate_limit: 0.5
+    timeout: 30
