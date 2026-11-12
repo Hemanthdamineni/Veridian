@@ -22,6 +22,8 @@
     "db:audit:repair": "tsx scripts/audit-data.ts --repair",
     "db:assert": "tsx scripts/assert-catalog.ts",
     "db:prices": "tsx scripts/refresh-family-prices.ts",
+    "db:retail-prices": "tsx scripts/refresh-retail-prices.ts",
+    "verify:registry": "tsx scripts/verify-registry.ts",
     "db:apikey": "tsx scripts/create-api-key.ts",
     "db:api:smoke": "tsx scripts/api-smoke.ts",
     "docs:metrics": "tsx scripts/doc-metrics.ts --write",

@@ -29,9 +29,26 @@ step() {
   fi
 }
 
+# Files the documentation tells a contributor to copy must actually exist, or
+# the onboarding instructions and the tree silently drift apart. Used below to
+# assert the documented environment templates are present.
+require_files() {
+  local missing=0 f
+  for f in "$@"; do
+    if [ -f "$f" ]; then
+      printf '   found   %s\n' "$f"
+    else
+      printf '\033[31m   missing %s\033[0m\n' "$f"
+      missing=1
+    fi
+  done
+  return "$missing"
+}
+
 # --- Static checks ----------------------------------------------------------
 step "lint (web)"            bash -c "cd '$WEB' && npm run lint"
 step "typecheck (web)"       bash -c "cd '$WEB' && npm run typecheck"
+step "env templates present" require_files "$ROOT/.env.example" "$WEB/.env.example"
 
 # --- Tests ------------------------------------------------------------------
 step "tests (web)"           bash -c "cd '$WEB' && npm test"
@@ -48,6 +65,7 @@ step "postgres schema drift" bash -c "cd '$WEB' && npm run db:schema:pg-check"
 # assertions will say so rather than pass silently, which is what we want.
 step "catalog audit"         bash -c "cd '$WEB' && npm run db:audit"
 step "catalog assertions"    bash -c "cd '$WEB' && npm run db:assert"
+step "manufacturer registry" bash -c "cd '$WEB' && npm run verify:registry"
 step "public API smoke"      bash -c "cd '$WEB' && npm run db:api:smoke"
 
 printf '\n'
