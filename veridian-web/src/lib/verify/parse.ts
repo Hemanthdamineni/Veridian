@@ -395,6 +395,206 @@ export function looksLikePartNumber(label: string): boolean {
 }
 
 /**
+ * Does this column label look like a Lenovo part number?
+ *
+ * Lenovo PSREF part numbers look like `21KC000UUS` or `83A3000UUS` — eight to
+ * ten alphanumeric characters, often with no separator at all — so they do
+ * not match the shared `looksLikePartNumber` (which expects a hyphenated or
+ * slashed code). This is the Lenovo-specific test.
+ */
+export function looksLikeLenovoPartNumber(label: string): boolean {
+  return /^(?=.*\d)[A-Z0-9]{8,12}$/i.test(label.trim());
+}
+
+/**
+ * Does this column label look like an HP part number?
+ *
+ * HP part numbers look like `9G0Y0UA#ABA` or `9G1D5UA#ABA` — an alphanumeric
+ * SKU, a `#` separator known from HP's regional suffix convention, then a
+ * short suffix. The shared `looksLikePartNumber` only accepts `-` or `/`
+ * separators, so HP codes need their own test.
+ */
+export function looksLikeHpPartNumber(label: string): boolean {
+  return /^[A-Z0-9]{2,10}(?:[-/#][A-Z0-9]{1,10})+$/i.test(label.trim());
+}
+
+/**
+ * Parse a Lenovo server-rendered specification table.
+ *
+ * Lenovo's ThinkPad and Yoga pages render one native `<table>` with a header
+ * row of `<th>` part numbers (e.g. `21KC000UUS`) and body rows whose leading
+ * `<th>` is the specification name (`Processor`, `Memory`, `Storage`,
+ * `Display`, `Weight`, `Battery`) followed by `<td>` values aligned by index.
+ * A row with a single full-width cell describes every configuration.
+ */
+export function parseLenovoTable(root: Element, sourceUrl: string): SpecTable | null {
+  const tables = queryAll(root, "table");
+  const candidates: SpecTable[] = [];
+
+  for (const panel of tables.length > 0 ? tables : [root]) {
+    // The header row is the first row of the table; its cells (other than the
+    // leading corner cell) are the part-number columns.
+    const headerRow = query(panel, "thead tr") ?? queryAll(panel, "tr")[0];
+    if (!headerRow) continue;
+    const headerCells = queryAll(headerRow, "th,td");
+    const labels: string[] = [];
+    headerCells.forEach((cell, index) => {
+      const label = textOf(cell);
+      if (index === 0 && !looksLikeLenovoPartNumber(label)) return; // corner cell
+      if (label) labels.push(label);
+    });
+    if (labels.length === 0) continue;
+
+    const columns: SpecColumn[] = labels.map((label) => ({ name: label, values: {} }));
+
+    // Body rows live in the tbody, or every row after the header row.
+    const bodyRows = queryAll(panel, "tbody tr");
+    const rows = bodyRows.length > 0 ? bodyRows : queryAll(panel, "tr").slice(1);
+    for (const row of rows) {
+      const cells = queryAll(row, "th,td");
+      if (cells.length === 0) continue;
+      const title = textOf(cells[0]);
+      if (!title) continue;
+      const values = cells.slice(1);
+      if (values.length === 1 && columns.length > 1) {
+        // A full-width row describes every configuration.
+        const published = textOf(values[0]);
+        if (published) for (const column of columns) column.values[title] = published;
+        continue;
+      }
+      values.forEach((cell, index) => {
+        const published = textOf(cell);
+        if (index < columns.length && published) columns[index].values[title] = published;
+      });
+    }
+
+    const hasPartNumbers = columns.every((column) => looksLikeLenovoPartNumber(column.name));
+    candidates.push({ sourceUrl, columns, hasPartNumbers });
+  }
+
+  if (candidates.length === 0) return null;
+  return candidates.find((table) => table.hasPartNumbers) ?? candidates[0];
+}
+
+/**
+ * Parse a Dell server-rendered 'Tech Specs' table.
+ *
+ * Dell's XPS and Latitude pages render a native `<table>` with a header row
+ * of `<th>` Dell part numbers (e.g. `7440-7328BLU`) and body rows whose
+ * leading `<th>` is the specification name (`Processor`, `Memory`, `Storage`,
+ * `Display`, `Weight`, `Battery`) followed by `<td>` values aligned by index.
+ * A row with a single full-width cell describes every configuration.
+ *
+ * Dell part numbers contain a `-` separator (unlike Lenovo's separator-less
+ * codes), so the shared `looksLikePartNumber` recognises them.
+ */
+export function parseDellTable(root: Element, sourceUrl: string): SpecTable | null {
+  const tables = queryAll(root, "table");
+  const candidates: SpecTable[] = [];
+
+  for (const panel of tables.length > 0 ? tables : [root]) {
+    const headerRow = query(panel, "thead tr") ?? queryAll(panel, "tr")[0];
+    if (!headerRow) continue;
+    const labels: string[] = [];
+    for (const cell of queryAll(headerRow, "th,td")) {
+      const label = textOf(cell);
+      // The corner cell is often a column title such as "Specification".
+      if (label && (labels.length === 0 ? looksLikePartNumber(label) : true)) {
+        labels.push(label);
+      }
+    }
+    if (labels.length === 0) continue;
+
+    const columns: SpecColumn[] = labels.map((label) => ({ name: label, values: {} }));
+
+    const bodyRows = queryAll(panel, "tbody tr");
+    const rows = bodyRows.length > 0 ? bodyRows : queryAll(panel, "tr").slice(1);
+    for (const row of rows) {
+      const cells = queryAll(row, "th,td");
+      if (cells.length === 0) continue;
+      const title = textOf(cells[0]);
+      if (!title) continue;
+      const values = cells.slice(1);
+      if (values.length === 1 && columns.length > 1) {
+        // A full-width row describes every configuration.
+        const published = textOf(values[0]);
+        if (published) for (const column of columns) column.values[title] = published;
+        continue;
+      }
+      values.forEach((cell, index) => {
+        const published = textOf(cell);
+        if (index < columns.length && published) columns[index].values[title] = published;
+      });
+    }
+
+    const hasPartNumbers = columns.every((column) => looksLikePartNumber(column.name));
+    candidates.push({ sourceUrl, columns, hasPartNumbers });
+  }
+
+  if (candidates.length === 0) return null;
+  return candidates.find((table) => table.hasPartNumbers) ?? candidates[0];
+}
+
+/**
+ * Parse an HP server-rendered specification table.
+ *
+ * HP's EliteBook, Spectre and OmniBook pages render one native `<table>` with
+ * a header row of part numbers (such as `9G0Y0UA#ABA`) and rows where the
+ * leading `<th>` is the specification name (`Processor`, `Memory`, `Storage`,
+ * `Display`, `Weight`, `Battery`) followed by `<td>` values aligned by index.
+ * A row with a single full-width cell describes every configuration.
+ *
+ * HP part numbers contain a `#` separator, so they need the HP-specific
+ * `looksLikeHpPartNumber` test rather than the shared hyphen/slash test.
+ */
+export function parseHpTable(root: Element, sourceUrl: string): SpecTable | null {
+  const tables = queryAll(root, "table");
+  const candidates: SpecTable[] = [];
+
+  for (const panel of tables.length > 0 ? tables : [root]) {
+    const headerRow = query(panel, "thead tr") ?? queryAll(panel, "tr")[0];
+    if (!headerRow) continue;
+    const labels: string[] = [];
+    for (const cell of queryAll(headerRow, "th,td")) {
+      const label = textOf(cell);
+      // The corner cell is often a column title such as "Specification".
+      if (label && (labels.length === 0 ? looksLikeHpPartNumber(label) : true)) {
+        labels.push(label);
+      }
+    }
+    if (labels.length === 0) continue;
+
+    const columns: SpecColumn[] = labels.map((label) => ({ name: label, values: {} }));
+
+    const bodyRows = queryAll(panel, "tbody tr");
+    const rows = bodyRows.length > 0 ? bodyRows : queryAll(panel, "tr").slice(1);
+    for (const row of rows) {
+      const cells = queryAll(row, "th,td");
+      if (cells.length === 0) continue;
+      const title = textOf(cells[0]);
+      if (!title) continue;
+      const values = cells.slice(1);
+      if (values.length === 1 && columns.length > 1) {
+        // A full-width row describes every configuration.
+        const published = textOf(values[0]);
+        if (published) for (const column of columns) column.values[title] = published;
+        continue;
+      }
+      values.forEach((cell, index) => {
+        const published = textOf(cell);
+        if (index < columns.length && published) columns[index].values[title] = published;
+      });
+    }
+
+    const hasPartNumbers = columns.every((column) => looksLikeHpPartNumber(column.name));
+    candidates.push({ sourceUrl, columns, hasPartNumbers });
+  }
+
+  if (candidates.length === 0) return null;
+  return candidates.find((table) => table.hasPartNumbers) ?? candidates[0];
+}
+
+/**
  * Parse a manufacturer page into a specification table.
  *
  * The adapter is chosen by the manufacturer the page belongs to; an unknown
@@ -405,6 +605,9 @@ export function parseSpecTable(html: string, sourceUrl: string, manufacturer: st
   const name = manufacturer.trim().toUpperCase();
   if (name === "ASUS") return parseAsusTable(root, sourceUrl);
   if (name === "APPLE") return parseAppleTable(root, sourceUrl);
+  if (name === "LENOVO") return parseLenovoTable(root, sourceUrl);
+  if (name === "DELL") return parseDellTable(root, sourceUrl);
+  if (name === "HP") return parseHpTable(root, sourceUrl);
   return null;
 }
 
