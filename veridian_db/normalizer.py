@@ -6,11 +6,8 @@ Following database-design.md specification exactly
 from .clock import utcnow
 
 import re
-import hashlib
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass
+from typing import Dict, Any, Optional
 from datetime import datetime
-from urllib.parse import urlparse
 
 # Import our database models
 from veridian_db.models import (
@@ -22,15 +19,17 @@ from veridian_db.models import (
     MediaAsset, VerificationStatus, ProductStatus, SourceType
 )
 
-
-@dataclass
-class NormalizedValue:
-    """A normalized specification value with metadata"""
-    value: Any
-    unit: Optional[str]
-    raw_text: str
-    confidence: float = 1.0
-    spec_type: str = "number"  # number, string, boolean, array, object
+# Dedicated spec parsers live in veridian_db.normalizers.* and are orchestrated
+# from SpecNormalizer below, keeping this module focused on coordination.
+from veridian_db.normalizers import (
+    NormalizedValue,           # re-exported so the public API is unchanged
+    infer_type,
+    parse_cpu,
+    parse_gpu,
+    parse_memory,
+    parse_storage,
+    parse_display,
+)
 
 
 class SpecNormalizer:
@@ -179,75 +178,26 @@ class SpecNormalizer:
         clean_value = re.sub(r'[™®]', '', raw_value)
         spec_name_lower = spec_name.lower()
 
-        # Extract CPU model - MUST be first before array detection
-        if 'processor' in spec_name_lower or 'cpu' in spec_name_lower:
-            # Try to match common CPU patterns
-            cpu_patterns = [
-                r'(intel\s+core\s+(?:i\d|ultra)\s+(?:\d\s+)?\d{3,4}[a-z]?)(?=\s+(?:processor|ghz|cache|core|thread|up\sto|\d)|$)',
-                r'(amd\s+ryzen\s+(?:ai\s+)?\d?\s*[\w]+\s+\d{3,4}[a-z]?)(?=\s+(?:processor|ghz|cache|core|thread|npU|up\sto|\d)|$)',
-                r'(apple\s+m\d[\w\s-]+?)(?=\s+(?:core|cpu|gpu|processor|ghz|cache|up\sto|\d)|$)',
-                r'(qualcomm\s+snapdragon\s+(?:x|8\s+gen)\s+[\w\s-]+?)(?=\s+(?:processor|ghz|cache|core|thread|npU|up\sto|\d)|$)',
-            ]
-            for pattern in cpu_patterns:
-                match = re.search(pattern, clean_value, re.IGNORECASE)
-                if match:
-                    return NormalizedValue(
-                        value=match.group(1).strip(),
-                        unit=None,
-                        raw_text=raw_value,
-                        spec_type='string'
-                    )
-            # Fallback: return raw string
-            return NormalizedValue(
-                value=raw_value,
-                unit=None,
-                raw_text=raw_value,
-                spec_type='string'
-            )
+        # Spec-name-specific extraction (before array detection).
+        # Each dedicated parser gates on the normalized spec name, so calling
+        # them in this order replicates the historical precedence exactly.
 
-        # Extract GPU model - MUST be before array detection
-        if 'graphics' in spec_name_lower or 'gpu' in spec_name_lower:
-            gpu_patterns = [
-                r'(nvidia\s+geforce\s+rtx\s+\d{4}[a-z]?)(?=\s+(?:laptop|desktop|mobile|gpu|gb|gd|ti)|$)',
-                r'(nvidia\s+geforce\s+gtx\s+\d{4}[a-z]?)(?=\s+(?:laptop|desktop|mobile|gpu|gb|gd|ti)|$)',
-                r'(nvidia\s+rtx\s+a\d{4})(?=\s+(?:laptop|desktop|mobile|gpu|gb|gd|ti)|$)',
-                r'(amd\s+radeon\s+[\w\s]+?)(?=\s+(?:graphics|gpu|gb|gd|processor|ghz)|$)',
-                r'(intel\s+(?:arc|iris|uhd|hd)\s+[\w\s]+?)(?=\s+(?:graphics|gpu|gb|gd|processor|ghz)|$)',
-                r'(apple\s+gpu\s+[\w\s]+?)(?=\s+(?:core|graphics|gpu|processor|ghz)|$)',
-                r'(qualcomm\s+adreno\s+[\w\s]+?)(?=\s+(?:graphics|gpu|processor|ghz)|$)',
-            ]
-            for pattern in gpu_patterns:
-                match = re.search(pattern, clean_value, re.IGNORECASE)
-                if match:
-                    return NormalizedValue(
-                        value=match.group(1).strip(),
-                        unit=None,
-                        raw_text=raw_value,
-                        spec_type='string'
-                    )
-            # Fallback
-            return NormalizedValue(
-                value=raw_value,
-                unit=None,
-                raw_text=raw_value,
-                spec_type='string'
-            )
+        # CPU model - MUST be first before array detection.
+        cpu_result = parse_cpu(clean_value, raw_value, spec_name_lower)
+        if cpu_result is not None:
+            return cpu_result
 
-        # Spec-name-specific extraction (before array detection)
-        # Extract display size from complex display strings
-        if 'size' in spec_name_lower or 'display' in spec_name_lower or 'screen' in spec_name_lower:
-            # Look for inch pattern (with or without hyphen/space)
-            inch_match = re.search(r'(\d+(?:\.\d+)?)[-\s]*(?:inch|"|in)\b', clean_value, re.IGNORECASE)
-            if not inch_match:
-                # Try "Panel Size (inch) : 26.5" format
-                inch_match = re.search(r'panel\s*size\s*\(inch\)\s*[:=]\s*(\d+(?:\.\d+)?)', clean_value, re.IGNORECASE)
-            if inch_match:
-                return NormalizedValue(
-                    value=float(inch_match.group(1)) * 25.4,
-                    unit='mm',
-                    raw_text=raw_value,
-                    spec_type='number'
-                )
+        # GPU model - MUST be before array detection.
+        gpu_result = parse_gpu(clean_value, raw_value, spec_name_lower)
+        if gpu_result is not None:
+            return gpu_result
+
+        # Display characteristics (size, refresh, brightness, panel, response,
+        # contrast, aspect, resolution). Size is attempted first, matching the
+        # original display-size precedence over weight/battery.
+        display_result = parse_display(clean_value, raw_value, spec_name_lower)
+        if display_result is not None:
+            return display_result
 
         # Extract weight from complex strings
         if 'weight' in spec_name_lower:
@@ -288,122 +238,14 @@ class SpecNormalizer:
                 )
 
         # Extract memory
-        if 'memory' in spec_name_lower or 'ram' in spec_name_lower:
-            gb_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:GB|Gb)\b', clean_value, re.IGNORECASE)
-            if gb_match:
-                return NormalizedValue(
-                    value=float(gb_match.group(1)),
-                    unit='GB',
-                    raw_text=raw_value,
-                    spec_type='number'
-                )
-            mb_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:MB|Mb)\b', clean_value, re.IGNORECASE)
-            if mb_match:
-                return NormalizedValue(
-                    value=float(mb_match.group(1)) / 1024,
-                    unit='GB',
-                    raw_text=raw_value,
-                    spec_type='number'
-                )
+        memory_result = parse_memory(clean_value, raw_value)
+        if memory_result is not None:
+            return memory_result
 
         # Extract storage
-        if 'storage' in spec_name_lower or 'ssd' in spec_name_lower or 'hdd' in spec_name_lower:
-            gb_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:GB|Gb)\b', clean_value, re.IGNORECASE)
-            if gb_match:
-                return NormalizedValue(
-                    value=float(gb_match.group(1)),
-                    unit='GB',
-                    raw_text=raw_value,
-                    spec_type='number'
-                )
-            tb_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:TB|Tb)\b', clean_value, re.IGNORECASE)
-            if tb_match:
-                return NormalizedValue(
-                    value=float(tb_match.group(1)) * 1024,
-                    unit='GB',
-                    raw_text=raw_value,
-                    spec_type='number'
-                )
-
-        # Extract refresh rate
-        if 'refresh' in spec_name_lower:
-            hz_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:Hz|hz)\b', clean_value, re.IGNORECASE)
-            if hz_match:
-                return NormalizedValue(
-                    value=float(hz_match.group(1)),
-                    unit='Hz',
-                    raw_text=raw_value,
-                    spec_type='number'
-                )
-
-        # Extract brightness (nits)
-        if 'bright' in spec_name_lower or 'nit' in spec_name_lower:
-            nit_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:nits?)\b', clean_value, re.IGNORECASE)
-            if nit_match:
-                return NormalizedValue(
-                    value=float(nit_match.group(1)),
-                    unit='nits',
-                    raw_text=raw_value,
-                    spec_type='number'
-                )
-
-        # Extract panel type
-        if 'panel' in spec_name_lower:
-            panel_types = ['oled', 'ips', 'va', 'tn', 'mini led', 'micro led', 'qled', 'lcd', 'led']
-            for panel in panel_types:
-                if re.search(r'\b' + panel + r'\b', clean_value, re.IGNORECASE):
-                    return NormalizedValue(
-                        value=panel.upper(),
-                        unit=None,
-                        raw_text=raw_value,
-                        spec_type='string'
-                    )
-
-        # Extract response time
-        if 'response' in spec_name_lower:
-            ms_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:ms|millisecond)\b', clean_value, re.IGNORECASE)
-            if ms_match:
-                return NormalizedValue(
-                    value=float(ms_match.group(1)),
-                    unit='ms',
-                    raw_text=raw_value,
-                    spec_type='number'
-                )
-
-        # Extract contrast ratio
-        if 'contrast' in spec_name_lower:
-            # Match large ratios like 1000000:1 or 1000:1
-            contrast_match = re.search(r'(\d{4,})\s*:\s*(\d+)', clean_value)
-            if contrast_match:
-                return NormalizedValue(
-                    value=f"{int(contrast_match.group(1))}:{int(contrast_match.group(2))}",
-                    unit='ratio',
-                    raw_text=raw_value,
-                    spec_type='string'
-                )
-
-        # Extract aspect ratio
-        if 'aspect' in spec_name_lower:
-            # Match typical aspect ratios like 16:10, 16:9, 4:3, 3:2, 21:9
-            aspect_match = re.search(r'(\d{1,2})\s*:\s*(\d{1,2})\b', clean_value)
-            if aspect_match:
-                return NormalizedValue(
-                    value=f"{int(aspect_match.group(1))}:{int(aspect_match.group(2))}",
-                    unit=None,
-                    raw_text=raw_value,
-                    spec_type='string'
-                )
-
-        # Extract resolution
-        if 'resolution' in spec_name_lower:
-            res_match = re.search(r'(\d+)\s*[x×]\s*(\d+)\b', clean_value, re.IGNORECASE)
-            if res_match:
-                return NormalizedValue(
-                    value=(int(res_match.group(1)), int(res_match.group(2))),
-                    unit='px',
-                    raw_text=raw_value,
-                    spec_type='object'
-                )
+        storage_result = parse_storage(clean_value, raw_value)
+        if storage_result is not None:
+            return storage_result
 
         # Try pattern matching for units - only for values that look like single measurements
         # Skip if value is too long (likely concatenated specs)
@@ -491,15 +333,7 @@ class SpecNormalizer:
 
     @classmethod
     def _infer_type(cls, value: Any) -> str:
-        if isinstance(value, bool):
-            return 'boolean'
-        elif isinstance(value, (int, float)):
-            return 'number'
-        elif isinstance(value, list):
-            return 'array'
-        elif isinstance(value, dict):
-            return 'object'
-        return 'string'
+        return infer_type(value)
 
 
 class ComponentMatcher:
