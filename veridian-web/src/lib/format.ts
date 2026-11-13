@@ -38,7 +38,11 @@ export function formatDate(date: string | null | undefined): string {
   if (!date) return "—";
   const d = new Date(date);
   if (isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-US", { year: "numeric", month: "short" });
+  return d.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
 }
 
 export function plural(n: number, singular: string, pluralForm?: string): string {

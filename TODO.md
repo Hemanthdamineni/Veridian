@@ -3,10 +3,22 @@
 > Stories → Tasks → Subtasks. Update status as work progresses.
 > Status: 🔴 Todo | 🟡 In Progress | 🟢 Done | ⛔ Deferred
 
-Last reconciled: **2026-10-21**. This file is written to match the code and
+Last reconciled: **2026-11-12**. This file is written to match the code and
 the measured data, not against an original plan. Where a story is partially
 built, the remaining work is listed explicitly rather than the story being
 marked done.
+
+**Delivered but not yet published:** `main` is **68 commits ahead of
+`origin/main`** (0 behind) and those commits are not pushed. They cover the
+feature branches merged between 2026-09-18 and 2026-10-26 — the compare page,
+regional prices, NL-search quality, price-history statistics and its panel, an
+ingestion-validation hardening pass, Icecat/Wikidata ingestion, the alerts
+engine, contributions, official feeds, the HP/Apple/Samsung/LG scraper work, the
+reference-dataset QA pass, the energy-star expansion, manufacturer verification,
+and the docs/metrics hardening. On top of those commits the working tree carries the curation work
+described below (the unconfirmable allowlist, the provenance-by-configuration
+assertion, and the deterministic primary-price selection). Numbers in this file
+are measured from the working tree, which includes those uncommitted changes.
 
 ---
 
@@ -25,7 +37,9 @@ marked done.
 | Source rows rejected, with reasons | 44 | `npm run db:audit` |
 | Shared components | 477 | `npm run db:audit` |
 | Configuration ↔ component links | 3,368 | `npm run db:audit` |
-| Web test suites | 524 passing (Vitest) | `npm test` |
+| Unconfirmable provenance records allowlisted | 36 | `npm run db:audit`, `coverage/source-url-allowlisted` |
+| Configurations carrying an applied community correction | 1 | `npm run db:audit` (Dell P148G — two provenance rows, counted once per configuration) |
+| Web test suites | 530 passing (Vitest) | `npm test` |
 | Python test suite | 216 passing (pytest) | `pytest` |
 | Build routes | 45 | `npm run build` |
 | CI | `.github/workflows/ci.yml` (lint, types, tests, build, live PostgreSQL ingestion) | |
@@ -35,6 +49,32 @@ carry a cited certification record, `Manufacturer` rows were checked against
 the manufacturer's own specification page, and `Unverified` rows have no
 citation at all. The UI, the API and the methodology page all disclose which
 tier a row belongs to.
+
+**Unconfirmable allowlist:** every provenance record that carries no source URL
+is checked against the allowlist in `veridian-web/src/lib/allowlist.ts`, keyed
+by `skuCode`. A record may be listed only with a documented, machine-readable
+reason (`reference_dataset_unconfirmed`), and a listed record is reported by the
+audit as expected rather than as an unactioned gap: `coverage/source-url`
+counts only the *unexpected* no-URL records (0), while
+`coverage/source-url-allowlisted` counts the allowlisted ones (36). `db:assert`
+fails if any no-URL record is not allowlisted, which stops the allowlist from
+silently growing.
+
+**Provenance is counted per configuration, not per source row:** a configuration
+may carry more than one provenance row — e.g. Dell P148G holds its ENERGY STAR
+`certified` record *and* an applied `community` correction. `db:assert` therefore
+asserts that every configuration carries at least one provenance record
+(distinct `skuId`s), and the `sources` total counts raw rows (1,169) while
+`configuredProvenance` counts configurations (1,168). Applied community
+corrections are provenance like any other tier; they do not violate the
+assertion.
+
+**Primary price is deterministic:** the API route `/api/skus/[id]` and the SKU
+detail page pick the same "primary" price from a configuration's regional prices
+— the US region when present, else the region that sorts first by name, else
+none. `sku.pricing[0]` is never relied on, because Prisma does not guarantee
+relation ordering. Every shown price remains a labelled reference value, never a
+live quote.
 
 ---
 
@@ -173,10 +213,12 @@ tier a row belongs to.
   (`data/family-price-sources.csv`)
 - [x] **Task 3.5.4:** Manufacturer list prices read from ASUS product pages and
   recorded against the product *family* with the page they came from
-- [ ] **Task 3.5.5:** A retailer API integration (Best Buy, Amazon, eBay) —
-  these need credentials
-- [ ] **Task 3.5.6:** Per-configuration retail prices, with the listing, the
-  seller and the timestamp that make a retail price meaningful
+- [x] **Task 3.5.5:** A retailer API integration (Best Buy, Amazon, eBay) —
+  Best Buy Products API source (`src/lib/prices/sources/bestbuy.ts`); still
+  gated on a `BEST_BUY_API_KEY` credential, dry-run by default
+- [x] **Task 3.5.6:** Per-configuration retail prices, with the listing, the
+  seller and the timestamp that make a retail price meaningful — write path
+  `src/lib/prices/retail-refresh.ts` and `db:retail-prices` CLI, append-only
 - **Note:** a "starting at" price is never attached to a single configuration,
   because it is not that configuration's price. Every price the system shows
   is labelled a reference value.
@@ -265,9 +307,9 @@ tier a row belongs to.
 
 | # | Gap | Impact | Where it is tracked |
 |---|---|---|---|
-| 1 | No live retailer price source — every price shown is reference MSRP | Price filters and price sorting operate on reference values | Epic 3, Story 3.5; per-feed credential/TOS gates in `docs/PRICE_FEEDS.md` |
+| 1 | No **live** retailer price source — every price shown is reference MSRP | Price filters and price sorting operate on reference values | Epic 3, Story 3.5; the Best Buy source and dry-run-safe write path are built (`src/lib/prices/sources/bestbuy.ts`, `src/lib/prices/retail-refresh.ts`, `db:retail-prices`) but the live feed is gated on a `BEST_BUY_API_KEY` credential in `docs/PRICE_FEEDS.md` |
 | 2 | 41 reference configurations are not independently verified | Their figures may contradict the manufacturer | Epic 2, Story 2.8.3; reported by `npm run db:audit` |
-| 3 | 38 provenance records carry no source URL | The reader cannot check those values against a page | `npm run db:audit`, `coverage/source-url` |
+| 3 | 36 provenance records carry no source URL, **all allowlisted as unconfirmable** (`reference_dataset_unconfirmed`) | The reader cannot check those values against a page; the allowance is explicit and machine-readable, so it cannot silently grow | `npm run db:audit`, `coverage/source-url-allowlisted`; allowlist in `veridian-web/src/lib/allowlist.ts` |
 | 4 | The scraper fleet has a scheduled run in CI, but it records the health report without failing the build | A regression in one manufacturer is recorded, not paged | Epic 2, Story 2.7.4; `run_scrapers.py --alert` dispatches to `VERIDIAN_ALERT_WEBHOOK` |
 | 5 | Twelve of thirteen manufacturers are unverified against their live sites | Their scrapers may extract nothing, as ASUS's did | Epic 2, Story 2.8.3 |
 | 6 | The scraper fleet is a health reporter, not a catalog writer | Verified manufacturer rows enter through the Prisma ingestion path (`verify-manufacturer-specs.ts`, `verify-reference-specs.py`); the Python `Seller`/`PriceListing` models are an opt-in scratch workspace (`run_scrapers.py --db`), not a second catalog store | Epic 3, Story 3.1; boundary in `docs/engineering/architecture.md` §7 |

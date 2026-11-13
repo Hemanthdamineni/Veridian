@@ -125,7 +125,11 @@ async function getSku(id: string): Promise<SkuDetail | null> {
     launchDate: sku.launchDate?.toISOString() || null,
     discontinued: sku.discontinued,
     productUrl: sku.model.productUrl,
-    price: sku.pricing[0] ? { region: sku.pricing[0].region, currency: sku.pricing[0].currency, msrp: sku.pricing[0].msrp } : null,
+    // Prisma does not guarantee relation ordering. Keep the page aligned with
+    // /api/skus/[id]: prefer the catalog's default region (US), else fall back
+    // to the region that sorts first, and null only when there is no price.
+    price: primaryPriceOf(sku.pricing),
+    pricing: sku.pricing.map((p) => ({ region: p.region, currency: p.currency, msrp: p.msrp })),
     familyPrice:
       sku.model.priceFrom !== null
         ? {
@@ -135,7 +139,6 @@ async function getSku(id: string): Promise<SkuDetail | null> {
             observedAt: sku.model.priceFromObservedAt?.toISOString() ?? null,
           }
         : null,
-    pricing: sku.pricing.map((p) => ({ region: p.region, currency: p.currency, msrp: p.msrp })),
     ports: sku.ports.map((p) => ({ portType: p.portType, count: p.count })),
     components: sku.components.map((link) => ({
       id: link.component.id,
@@ -161,7 +164,9 @@ export default async function SkuDetailPage({ params }: SkuDetailPageProps) {
   const sku = await getSku(id);
   if (!sku) notFound();
 
-  const primaryRegion = sku.pricing[0]?.region || "US";
+  // Align with /api/skus/[id]'s primary price: the US region, else the region
+  // that sorts first, else "US" as a safe read key for the observations query.
+  const primaryRegion = primaryPriceOf(sku.pricing)?.region ?? "US";
   const observations = await prisma.priceObservation.findMany({
     where: { skuId: sku.id, region: primaryRegion },
     orderBy: { timestamp: "desc" },
@@ -502,6 +507,22 @@ function hasPhysical(sku: SkuDetail): boolean {
 
 function hasBattery(sku: SkuDetail): boolean {
   return sku.batteryWh !== null || sku.batteryLifeHours !== null;
+}
+
+/**
+ * The catalog's primary price for a configuration, matching /api/skus/[id].
+ *
+ * Prisma does not guarantee relation ordering, so the "first" pricing row is
+ * not a stable default. Prefer the catalog's default region (US), else fall
+ * back to the region that sorts first, and null only when there is no price.
+ * The string sort deliberately uses localeCompare to mirror the route; both
+ * run in the same Node runtime so they cannot disagree.
+ */
+function primaryPriceOf(pricing: SkuDetail["pricing"]): SkuDetail["price"] {
+  const primary =
+    pricing.find((price) => price.region === "US") ??
+    [...pricing].sort((a, b) => a.region.localeCompare(b.region))[0];
+  return primary ? { region: primary.region, currency: primary.currency, msrp: primary.msrp } : null;
 }
 
 /** One-sentence summary that only mentions facts actually reported. */

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { isAllowlistedSku, unconfirmableReasonForSku } from "@/lib/allowlist";
 
 /**
  * The data-quality checks for the Veridian catalog.
@@ -295,12 +296,32 @@ export async function runDataQualityAudit(): Promise<DataQualityReport> {
   });
   add("coverage/series", "error", missingSeries, "Configurations with no series name");
 
-  const missingProvenanceUrl = await prisma.skuSource.count({ where: { sourceUrl: null } });
+  // A provenance record with no source URL is a gap unless the configuration
+  // is allowlisted as unconfirmable (see `src/lib/allowlist.ts`). The warning
+  // reports the unexpected gaps; the allowlisted rows are reported separately
+  // so they stay visible but never count against the catalog.
+  const noSourceUrlRows = await prisma.skuSource.findMany({
+    where: { sourceUrl: null },
+    select: { skuId: true, source: true, sku: { select: { skuCode: true } } },
+  });
+  const unallowlisted = noSourceUrlRows.filter((row) => !isAllowlistedSku(row.sku.skuCode));
+  const allowlisted = noSourceUrlRows.filter((row) => isAllowlistedSku(row.sku.skuCode));
   add(
     "coverage/source-url",
     "warning",
-    missingProvenanceUrl,
-    "Provenance records with no source URL to check the value against"
+    unallowlisted.length,
+    "Provenance records with no source URL to check the value against",
+    unallowlisted.map((row) => `${row.sku.skuCode} · ${row.source}`)
+  );
+  add(
+    "coverage/source-url-allowlisted",
+    "info",
+    allowlisted.length,
+    "Provenance records with no source URL allowlisted as unconfirmable",
+    allowlisted.map(
+      (row) =>
+        `${row.sku.skuCode} · ${unconfirmableReasonForSku(row.sku.skuCode) ?? "unknown reason"}`
+    )
   );
 
   // --- Prices ---------------------------------------------------------------

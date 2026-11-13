@@ -256,7 +256,7 @@ async function seed() {
 
       const existingObservation = await prisma.priceObservation.findFirst({
         where: { skuId: sku.id, region: entry.region, sourceName: REFERENCE_SOURCE },
-        select: { id: true },
+        select: { id: true, sourceUrl: true },
       });
       if (!existingObservation) {
         await prisma.priceObservation.create({
@@ -272,6 +272,17 @@ async function seed() {
             kind: "manufacturer",
             confidence: confirmed ? 0.8 : 0.4,
           },
+        });
+      } else if (sourceUrl && !existingObservation.sourceUrl) {
+        // B-2.1 provenance completion (Workstream B): the reference observation
+        // is append-only and was created before its CSV row carried a source
+        // URL. Backfill only the missing sourceUrl from the exact value in the
+        // current laptops.csv row -- price, timestamp and history are untouched
+        // and this observation is not fabricated or rewritten. No-op when the
+        // row still has no source_url, so unpublishable SKUs stay unchanged.
+        await prisma.priceObservation.update({
+          where: { id: existingObservation.id },
+          data: { sourceUrl },
         });
       }
     }

@@ -257,6 +257,7 @@ describe("GET /api/admin/quality", () => {
       "provenance/unsupported-claim",
       "provenance/missing",
       "coverage/source-url",
+      "coverage/source-url-allowlisted",
       "values/ram",
       "ingestion/rejected-without-reason",
       "components/no-alias",

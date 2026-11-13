@@ -34,7 +34,7 @@ determines the schema, the ingestion path, the API shape and the UI.
 | Styling | Tailwind CSS v4 with a token set in `src/app/globals.css` | No component library |
 | Database | SQLite for local work, PostgreSQL 16 for production | One schema, two projections — §4 |
 | ORM | Prisma | `prisma/schema.prisma` is the single source of truth |
-| Tests | Vitest (web), pytest (Python) | 524 web tests, 216 Python tests |
+| Tests | Vitest (web), pytest (Python) | 530 web tests, 216 Python tests |
 | CI | GitHub Actions | Three jobs: web, Python, live PostgreSQL — §6 |
 | Scraper fleet | Python, `httpx` + BeautifulSoup | `veridian_scraper/`, 13 manufacturers |
 | Domain engine | Python, SQLAlchemy models | `veridian_db/`, §7 |
@@ -224,7 +224,7 @@ scratch workspace for the Python side of the domain.
 ## 8. What is deliberately not there
 
 **A separate search engine.** Postgres filtering is sufficient below roughly
-5,000 configurations. The catalog is at 1,165. Meilisearch would add a second
+5,000 configurations. The catalog is at 1,168. Meilisearch would add a second
 store to keep in sync with the first, for a speedup nobody can currently
 perceive. The decision is reviewed when the catalog passes the threshold.
 

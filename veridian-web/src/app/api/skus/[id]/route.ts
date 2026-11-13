@@ -61,7 +61,13 @@ export async function GET(
       return NextResponse.json({ error: "SKU not found" }, { status: 404 });
     }
 
-    const primaryPrice = sku.pricing[0] || null;
+    // Prisma does not guarantee relation ordering. Keep the legacy single
+    // price field aligned with the catalog's default region, then use a
+    // stable fallback when a SKU has no US price.
+    const primaryPrice =
+      sku.pricing.find((price) => price.region === "US") ??
+      [...sku.pricing].sort((a, b) => a.region.localeCompare(b.region))[0] ??
+      null;
 
     return NextResponse.json({
       id: sku.id,

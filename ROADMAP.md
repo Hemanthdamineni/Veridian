@@ -2,7 +2,7 @@
 
 > **North Star:** A trusted decision platform for laptops — not just specs, but verified, connected, decision-ready data.
 
-> **Last updated: 2026-10-21.** Statuses reflect verified code and measured data, not intent. Every number below comes from `npm run db:audit`.
+> **Last updated: 2026-11-12.** Statuses reflect verified code and measured data, not intent. Every number below comes from `npm run db:audit`. `main` is 68 commits ahead of `origin/main` (unpushed); the working tree adds the unconfirmable-provenance allowlist, provenance-by-configuration assertions and the deterministic primary-price selection described below.
 
 ---
 
@@ -23,13 +23,35 @@ cited source.
 **Measured integrity (from `npm run db:audit`):** 1,181 raw source observations
 stored (44 of them rejected, each with its verbatim reason) · 1,136
 certification records · 477 shared components with 3,368 configuration links ·
-0 duplicate part numbers · 0 impossible values · 0 rows without a provenance
-record.
+0 duplicate part numbers · 0 impossible values · 0 configurations without a
+provenance record. Provenance is counted per configuration, not per source row:
+1,169 source rows describe 1,168 configurations, because one configuration
+(Dell P148G) carries both its ENERGY STAR `certified` record and an applied
+`community` correction. Of the 1,169 source rows, 36 carry no source URL; all
+36 are allowlisted as `reference_dataset_unconfirmed` and reported by the audit
+as expected (`coverage/source-url-allowlisted`), so `coverage/source-url`
+reports only the *unexpected* gaps (0).
 
 **Verified engineering baseline:** types clean · lint clean (no warnings) ·
-524 web tests · 216 Python tests · 45 build routes · CI on every push and
+530 web tests · 216 Python tests · 45 build routes · CI on every push and
 pull request, with a job that ingests into a live PostgreSQL server, audits
-the result and exercises the public API end to end.
+the result and exercises the public API end to end. `bash scripts/verify-all.sh`
+is the single gate: lint, typecheck, env templates, web + Python tests,
+production build, Postgres schema drift, catalog audit, catalog assertions and
+public API smoke.
+
+**Since the 2026-10-21 reconciliation (68 unpushed commits + working tree):**
+the compare page, regional prices, NL-search quality, price-history statistics
+and its detail-page panel, an ingestion-validation hardening pass, Icecat and
+Wikidata ingestion, the alerts engine, contributions, official feeds, the
+HP/Apple/Samsung/LG scraper work, the reference-dataset QA pass, the energy-star
+expansion, manufacturer verification, and docs/metrics hardening all landed on
+`main` but are **not yet pushed**. The working tree on top adds the curation
+described above: the machine-readable unconfirmable allowlist
+(`veridian-web/src/lib/allowlist.ts`), provenance-by-configuration assertions in
+`db:assert` (so an applied community correction such as Dell P148G is provenance,
+not a violation), and a deterministic US-first primary-price selection shared by
+the API route and the SKU detail page.
 
 ---
 
@@ -104,8 +126,12 @@ the result and exercises the public API end to end.
 - 3.7 Price sources 🟡 — the source contract, the structured-data reader,
   the refresh CLI and the append-only history are in place, and four product
   families carry a manufacturer list price read from the manufacturer's own
-  page. A per-configuration *retail* price still needs a retailer feed, which
-  needs credentials. Every price shown is labelled a reference value.
+  page. The per-configuration *retail* path is now built: a Best Buy Products
+  API source (`src/lib/prices/sources/bestbuy.ts`), a dry-run-safe write path
+  (`src/lib/prices/retail-refresh.ts`), the `db:retail-prices` CLI and their
+  tests. The live feed is still gated on a `BEST_BUY_API_KEY` credential (see
+  `docs/PRICE_FEEDS.md`), and the refresh defaults to a dry run until a key is
+  configured. Every price shown is labelled a reference value.
 - 3.8 `POST /api/refresh` ✅ — the ingestion bridge, admin-authenticated
 
 ---
@@ -157,10 +183,9 @@ the result and exercises the public API end to end.
 ## Recommended Build Order
 
 ```
-Now        A per-configuration retail price feed — the largest remaining
-           gap between the product promise and the reality
-Then       Extend manufacturer verification beyond ASUS, so the unverified
-           tier shrinks toward zero
+Now        Extend manufacturer verification beyond ASUS (Lenovo, Dell, HP),
+           so the unverified tier shrinks toward zero — the retail feed path
+           is built and only needs a Best Buy credential to go live
 Then       Accounts (Auth.js) → unlocks alerts and contributions
 Then       LLM-backed natural-language parsing and recommendation ranking
 Then       Public developer API with rate limiting and an OpenAPI document
@@ -183,3 +208,6 @@ Then       Multi-category rollout and the second product class
 | Region semantics | Region filters rows vs selects the price shown | **Region selects the price shown** — rows are never hidden for lacking a price | Adopted 2026-10-21 |
 | Price data | Hide prices vs show with a caveat | **Show with a caveat** — every price is labelled a reference value, never a live quote | Adopted 2026-10-21 |
 | Provenance disclosure | Implicit vs explicit tiers | **Explicit tier filter and badge on every listing** | Adopted 2026-10-21 |
+| Source-less provenance records | Suppress silently vs allowlist with a reason | **Allowlist with a machine-readable reason** — `veridian-web/src/lib/allowlist.ts` maps each `skuCode` to a documented reason (`reference_dataset_unconfirmed`); the audit reports allowlisted records as expected and fails on any unallowlisted one | Adopted 2026-11-12 |
+| Provenance counting | Source rows vs distinct configurations | **Distinct configurations** — `db:assert` requires every configuration to carry ≥1 provenance record, so an applied community correction (two rows on one SKU) is not a violation | Adopted 2026-11-12 |
+| Primary price selection | First pricing row vs deterministic region order | **Deterministic** — US region when present, else the region that sorts first by name, else none; the API route and the SKU detail page share this rule | Adopted 2026-11-12 |

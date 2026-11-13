@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { extractKeyword, parseNaturalLanguageQuery, describeFilters } from "@/lib/ai";
 import { activeChips, filtersToQuery, DEFAULT_FILTERS } from "@/lib/catalog";
-import { formatCpu, formatStorage, formatWeight, formatPrice } from "@/lib/format";
+import { formatCpu, formatDate, formatStorage, formatWeight, formatPrice } from "@/lib/format";
 
 describe("natural-language keyword extraction", () => {
   it("keeps the model keyword while dropping price phrases", () => {
@@ -65,6 +65,10 @@ describe("catalog URL state", () => {
 });
 
 describe("display formatting", () => {
+  it("keeps UTC timestamps in their recorded month", () => {
+    expect(formatDate("2026-01-01T00:00:00.000Z")).toBe("Jan 2026");
+  });
+
   it("never repeats the CPU brand already present in the model string", () => {
     expect(formatCpu("Intel", "Intel N4500")).toBe("Intel N4500");
     expect(formatCpu("Intel", "Core Ultra 7 258V")).toBe("Intel Core Ultra 7 258V");
